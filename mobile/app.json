@@ -1,0 +1,27 @@
+{
+  "expo": {
+    "name": "MyPet",
+    "slug": "mypet-mobile",
+    "version": "1.0.0",
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTabletMode": true,
+      "supportsSmallDevice": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./src/assets/adaptive-icon.png",
+        "backgroundColor": "#FFFFFF"
+      },
+      "permissions": [
+        "android.permission.INTERNET",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
+      ]
+    },
+    "plugins": [],
+    "web": {
+      "favicon": "./src/assets/favicon.png"
+    }
+  }
+}
