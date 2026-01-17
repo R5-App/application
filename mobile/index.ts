@@ -1,3 +1,5 @@
 // Entry point
-import App from './App';
-export default App;
+import { registerRootComponent } from 'expo';
+import App from './src/App';
+
+registerRootComponent(App);

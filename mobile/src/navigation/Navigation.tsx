@@ -3,9 +3,13 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useAuth } from '@contexts/AuthContext';
+import { ActivityIndicator, View } from 'react-native';
 import HomeScreen from '@screens/HomeScreen';
 import PetsScreen from '@screens/PetsScreen';
 import SettingsScreen from '@screens/SettingsScreen';
+import LoginScreen from '@screens/LoginScreen';
+import RegisterScreen from '@screens/RegisterScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -63,14 +67,42 @@ function HomeTabs() {
 }
 
 export default function Navigation() {
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="#6200ee" />
+      </View>
+    );
+  }
+
   return (
     <NavigationContainer>
       <Stack.Navigator>
-        <Stack.Screen
-          name="HomeTabs"
-          component={HomeTabs}
-          options={{ headerShown: false }}
-        />
+        {isAuthenticated ? (
+          <Stack.Screen
+            name="HomeTabs"
+            component={HomeTabs}
+            options={{ headerShown: false }}
+          />
+        ) : (
+          <>
+            <Stack.Screen
+              name="Login"
+              component={LoginScreen}
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen
+              name="Register"
+              component={RegisterScreen}
+              options={{
+                title: 'Rekisteröidy',
+                headerBackTitle: 'Takaisin',
+              }}
+            />
+          </>
+        )}
       </Stack.Navigator>
     </NavigationContainer>
   );

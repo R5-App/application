@@ -3,16 +3,15 @@
     "name": "MyPet",
     "slug": "mypet-mobile",
     "version": "1.0.0",
+    "orientation": "portrait",
+    "entryPoint": "./index.ts",
     "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTabletMode": true,
       "supportsSmallDevice": true
     },
     "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./src/assets/adaptive-icon.png",
-        "backgroundColor": "#FFFFFF"
-      },
+      "package": "com.mypet.mobile",
       "permissions": [
         "android.permission.INTERNET",
         "android.permission.READ_EXTERNAL_STORAGE",

@@ -13,7 +13,36 @@ export interface User {
   id: string;
   name: string;
   email: string;
+  username: string;
   avatar?: string;
+  createdAt?: string;
+  role?: 'admin' | 'member';
+}
+
+export interface SubUser extends User {
+  parentUserId: string;
+}
+
+export interface AuthResponse {
+  success: boolean;
+  message: string;
+  data?: {
+    user: User;
+    token: string;
+  };
+  errors?: string[];
+}
+
+export interface LoginCredentials {
+  username: string;
+  password: string;
+}
+
+export interface RegisterData {
+  email: string;
+  username: string;
+  password: string;
+  name: string;
 }
 
 export interface HealthRecord {

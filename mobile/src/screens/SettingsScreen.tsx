@@ -1,14 +1,30 @@
 import React from 'react';
 import { ScrollView, View } from 'react-native';
 import { Text, List, Switch, Button } from 'react-native-paper';
+import { useAuth } from '@contexts/AuthContext';
 import styles from './SettingsScreen.styles';
 
 export default function SettingsScreen() {
+  const { user, logout } = useAuth();
   const [notifications, setNotifications] = React.useState(true);
   const [darkMode, setDarkMode] = React.useState(false);
 
+  const handleLogout = async () => {
+    await logout();
+  };
+
   return (
     <ScrollView style={styles.container}>
+      <View style={styles.section}>
+        <Text variant="titleMedium" style={styles.sectionTitle}>
+          Käyttäjä
+        </Text>
+        <List.Item
+          title={user?.name || user?.username || 'Käyttäjä'}
+          description={user?.email}
+        />
+      </View>
+
       <View style={styles.section}>
         <Text variant="titleMedium" style={styles.sectionTitle}>
           Ilmoitukset
@@ -54,7 +70,7 @@ export default function SettingsScreen() {
       </View>
 
       <View style={styles.buttonContainer}>
-        <Button mode="outlined" style={styles.button}>
+        <Button mode="outlined" style={styles.button} onPress={handleLogout}>
           Kirjaudu ulos
         </Button>
       </View>
