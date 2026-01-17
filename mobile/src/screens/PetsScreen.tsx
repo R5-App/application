@@ -1,11 +1,17 @@
 import React from 'react';
-import { View, ScrollView, FlatList } from 'react-native';
-import { Text, Card, Button, FAB } from 'react-native-paper';
-import { useStyles } from './PetsScreen.styles';
+import { View, FlatList } from 'react-native';
+import { Text, Card, FAB } from 'react-native-paper';
+import { petsStyles } from '../styles/screenStyles';
+
+interface Pet {
+  id: string;
+  name: string;
+  breed: string;
+}
 
 export default function PetsScreen() {
-  const styles = useStyles();
-  const [pets, setPets] = React.useState([]);
+  const styles = petsStyles;
+  const [pets] = React.useState<Pet[]>([]);
 
   const renderEmptyState = () => (
     <View style={styles.emptyContainer}>
