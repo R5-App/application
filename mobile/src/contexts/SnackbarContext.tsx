@@ -2,6 +2,7 @@
 import React, { createContext, useState, useContext, ReactNode } from 'react';
 import { Snackbar } from 'react-native-paper';
 import { StyleSheet } from 'react-native';
+import { COLORS } from '../styles/theme';
 
 type SnackbarType = 'success' | 'error' | 'info' | 'warning';
 
@@ -32,14 +33,28 @@ export const SnackbarProvider: React.FC<{ children: ReactNode }> = ({ children }
   const getBackgroundColor = () => {
     switch (type) {
       case 'success':
-        return '#4caf50'; // vihreä
+        return COLORS.tertiary; // MD3 tertiary for success (teal/green)
       case 'error':
       case 'warning':
-        return '#f44336'; // punainen
+        return COLORS.error; // MD3 error color
       case 'info':
-        return '#2196f3'; // sininen
+        return COLORS.primary; // MD3 primary for info
       default:
-        return '#323232'; // oletus
+        return COLORS.inverseSurface; // MD3 inverse surface for default
+    }
+  };
+
+  const getTextColor = () => {
+    switch (type) {
+      case 'success':
+        return COLORS.onTertiary;
+      case 'error':
+      case 'warning':
+        return COLORS.onError;
+      case 'info':
+        return COLORS.onPrimary;
+      default:
+        return COLORS.inverseOnSurface;
     }
   };
 
@@ -53,9 +68,15 @@ export const SnackbarProvider: React.FC<{ children: ReactNode }> = ({ children }
         action={{
           label: 'Sulje',
           onPress: hideSnackbar,
-          textColor: '#ffffff',
+          textColor: getTextColor(),
         }}
         style={[styles.snackbar, { backgroundColor: getBackgroundColor() }]}
+        theme={{
+          colors: {
+            onSurface: getTextColor(),
+            surface: getBackgroundColor(),
+          },
+        }}
       >
         {message}
       </Snackbar>

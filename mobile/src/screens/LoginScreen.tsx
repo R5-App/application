@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, Image, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { TextInput, Button, Text, Checkbox, Surface } from 'react-native-paper';
 import { useAuth } from '@contexts/AuthContext';
 import { useSnackbar } from '@contexts/SnackbarContext';
+import { authStyles } from '../styles/authStyles';
 
 interface LoginScreenProps {
   navigation: any;
@@ -42,14 +43,14 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}
+      style={authStyles.container}
     >
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={authStyles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
-        <Surface style={styles.logoContainer}>
-          <Text style={styles.logoText}>Logo</Text>
+        <Surface style={authStyles.logoContainer}>
+          <Text style={authStyles.logoText}>Logo</Text>
         </Surface>
 
         <TextInput
@@ -57,7 +58,7 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
           value={username}
           onChangeText={setUsername}
           mode="outlined"
-          style={styles.input}
+          style={authStyles.input}
           autoCapitalize="none"
           autoCorrect={false}
         />
@@ -74,10 +75,10 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
               onPress={() => setShowPassword(!showPassword)}
             />
           }
-          style={styles.input}
+          style={authStyles.input}
         />
 
-        <View style={styles.checkboxContainer}>
+        <View style={authStyles.checkboxContainer}>
           <Checkbox
             status={rememberMe ? 'checked' : 'unchecked'}
             onPress={() => setRememberMe(!rememberMe)}
@@ -90,8 +91,8 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
           onPress={handleLogin}
           loading={loading}
           disabled={loading}
-          style={styles.loginButton}
-          contentStyle={styles.buttonContent}
+          style={authStyles.loginButton}
+          contentStyle={authStyles.buttonContent}
         >
           Kirjaudu sisään
         </Button>
@@ -99,14 +100,14 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
         <Button
           mode="outlined"
           onPress={() => navigation.navigate('Register')}
-          style={styles.registerButton}
-          contentStyle={styles.buttonContent}
+          style={authStyles.registerButton}
+          contentStyle={authStyles.buttonContent}
         >
           Rekisteröidy
         </Button>
 
         <Text
-          style={styles.forgotPassword}
+          style={authStyles.forgotPassword}
           onPress={() => {
             showSnackbar('Tämä toiminnallisuus on vielä kehitteillä', 'info');
           }}
@@ -117,55 +118,3 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
     </KeyboardAvoidingView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    padding: 24,
-  },
-  logoContainer: {
-    width: 120,
-    height: 120,
-    alignSelf: 'center',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 32,
-    backgroundColor: '#f0f0f0',
-  },
-  logoText: {
-    fontSize: 18,
-    color: '#999',
-  },
-  input: {
-    marginBottom: 16,
-  },
-  checkboxContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  errorText: {
-    color: '#b00020',
-    marginBottom: 16,
-    textAlign: 'center',
-  },
-  loginButton: {
-    marginBottom: 12,
-  },
-  registerButton: {
-    marginBottom: 16,
-  },
-  buttonContent: {
-    height: 48,
-  },
-  forgotPassword: {
-    textAlign: 'center',
-    color: '#6200ee',
-    marginTop: 8,
-  },
-});

@@ -2,7 +2,7 @@ import React from 'react';
 import { ScrollView, View } from 'react-native';
 import { Text, List, Switch, Button } from 'react-native-paper';
 import { useAuth } from '@contexts/AuthContext';
-import styles from './SettingsScreen.styles';
+import { settingsStyles as styles } from '../styles/screenStyles';
 
 export default function SettingsScreen() {
   const { user, logout } = useAuth();

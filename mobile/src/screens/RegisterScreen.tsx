@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { TextInput, Button, Text, Surface } from 'react-native-paper';
 import { useAuth } from '@contexts/AuthContext';
 import { useSnackbar } from '@contexts/SnackbarContext';
+import { authStyles } from '../styles/authStyles';
 
 interface RegisterScreenProps {
   navigation: any;
@@ -79,17 +80,17 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}
+      style={authStyles.container}
     >
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={authStyles.scrollContentRegister}
         keyboardShouldPersistTaps="handled"
       >
-        <Surface style={styles.logoContainer}>
-          <Text style={styles.logoText}>Logo</Text>
+        <Surface style={authStyles.logoContainer}>
+          <Text style={authStyles.logoText}>Logo</Text>
         </Surface>
 
-        <Text variant="headlineSmall" style={styles.title}>
+        <Text variant="headlineSmall" style={authStyles.title}>
           Luo uusi tili
         </Text>
 
@@ -98,7 +99,7 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
           value={email}
           onChangeText={setEmail}
           mode="outlined"
-          style={styles.input}
+          style={authStyles.input}
           keyboardType="email-address"
           autoCapitalize="none"
           autoCorrect={false}
@@ -109,7 +110,7 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
           value={username}
           onChangeText={setUsername}
           mode="outlined"
-          style={styles.input}
+          style={authStyles.input}
           autoCapitalize="none"
           autoCorrect={false}
         />
@@ -119,7 +120,7 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
           value={name}
           onChangeText={setName}
           mode="outlined"
-          style={styles.input}
+          style={authStyles.input}
           autoCapitalize="words"
         />
 
@@ -135,7 +136,7 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
               onPress={() => setShowPassword(!showPassword)}
             />
           }
-          style={styles.input}
+          style={authStyles.input}
         />
 
         <TextInput
@@ -150,10 +151,10 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
               onPress={() => setShowConfirmPassword(!showConfirmPassword)}
             />
           }
-          style={styles.input}
+          style={authStyles.input}
         />
 
-        <Text variant="bodySmall" style={styles.passwordHint}>
+        <Text variant="bodySmall" style={authStyles.passwordHint}>
           Salasanan tulee olla vähintään 8 merkkiä ja sisältää iso kirjain, pieni kirjain ja numero
         </Text>
 
@@ -162,8 +163,8 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
           onPress={handleRegister}
           loading={loading}
           disabled={loading}
-          style={styles.registerButton}
-          contentStyle={styles.buttonContent}
+          style={authStyles.registerButton}
+          contentStyle={authStyles.buttonContent}
         >
           Rekisteröidy
         </Button>
@@ -171,7 +172,7 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
         <Button
           mode="text"
           onPress={() => navigation.goBack()}
-          style={styles.backButton}
+          style={authStyles.backButton}
           disabled={loading}
         >
           Takaisin kirjautumiseen
@@ -180,55 +181,3 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
     </KeyboardAvoidingView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  scrollContent: {
-    flexGrow: 1,
-    padding: 24,
-    paddingTop: 40,
-  },
-  logoContainer: {
-    width: 120,
-    height: 120,
-    alignSelf: 'center',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 24,
-    backgroundColor: '#f0f0f0',
-  },
-  logoText: {
-    fontSize: 18,
-    color: '#999',
-  },
-  title: {
-    textAlign: 'center',
-    marginBottom: 24,
-    fontWeight: 'bold',
-  },
-  input: {
-    marginBottom: 16,
-  },
-  passwordHint: {
-    color: '#666',
-    marginBottom: 16,
-    marginTop: -8,
-  },
-  errorText: {
-    color: '#b00020',
-    marginBottom: 16,
-    textAlign: 'center',
-  },
-  registerButton: {
-    marginBottom: 12,
-  },
-  backButton: {
-    marginTop: 8,
-  },
-  buttonContent: {
-    height: 48,
-  },
-});
