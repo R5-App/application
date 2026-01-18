@@ -8,6 +8,7 @@ import { View, Animated, Easing, StyleSheet } from 'react-native';
 import { COLORS, SPACING, LAYOUT } from '../styles/theme';
 import HomeScreen from '@screens/HomeScreen';
 import PetsScreen from '@screens/PetsScreen';
+import ProfileScreen from '@screens/ProfileScreen';
 import SettingsScreen from '@screens/SettingsScreen';
 import LoginScreen from '@screens/LoginScreen';
 import RegisterScreen from '@screens/RegisterScreen';
@@ -72,6 +73,8 @@ function HomeTabs() {
             iconName = 'home';
           } else if (route.name === 'PetsTab') {
             iconName = 'paw';
+          } else if (route.name === 'ProfileTab') {
+            iconName = 'account';
           } else if (route.name === 'SettingsTab') {
             iconName = 'cog';
           } else {
@@ -99,6 +102,14 @@ function HomeTabs() {
         options={{
           title: 'Lemmikki',
           tabBarLabel: 'Lemmikki',
+        }}
+      />
+      <Tab.Screen
+        name="ProfileTab"
+        component={ProfileScreen}
+        options={{
+          title: 'Profiili',
+          tabBarLabel: 'Profiili',
         }}
       />
       <Tab.Screen

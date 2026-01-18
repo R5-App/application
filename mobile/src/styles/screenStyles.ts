@@ -1,10 +1,10 @@
 /**
  * Screen Styles
- * HomeScreen, PetsScreen, SettingsScreen
+ * HomeScreen, PetsScreen, SettingsScreen, ProfileScreen
  */
 
 import { StyleSheet } from 'react-native';
-import { COLORS, SPACING, COMMON_STYLES, LAYOUT, TYPOGRAPHY } from './theme';
+import { COLORS, SPACING, COMMON_STYLES, LAYOUT, TYPOGRAPHY, BORDER_RADIUS, ELEVATION } from './theme';
 
 // ============================================
 // HOME SCREEN STYLES
@@ -146,5 +146,88 @@ export const settingsStyles = StyleSheet.create({
   
   button: {
     ...COMMON_STYLES.button,
+  },
+});
+
+// ============================================
+// PROFILE SCREEN STYLES
+// ============================================
+export const profileStyles = StyleSheet.create({
+  container: {
+    ...COMMON_STYLES.container,
+  },
+  
+  header: {
+    padding: LAYOUT.screenPadding,
+    paddingTop: SPACING['2xl'],
+    paddingBottom: SPACING.xl,
+    backgroundColor: COLORS.primaryContainer,
+    alignItems: 'center',
+  },
+  
+  avatar: {
+    backgroundColor: COLORS.primary,
+    marginBottom: SPACING.md,
+  },
+  
+  name: {
+    ...TYPOGRAPHY.headlineMedium,
+    color: COLORS.onPrimaryContainer,
+    marginBottom: SPACING.xs,
+    textAlign: 'center',
+  },
+  
+  role: {
+    ...TYPOGRAPHY.bodyMedium,
+    color: COLORS.onPrimaryContainer,
+    textAlign: 'center',
+  },
+  
+  section: {
+    marginBottom: SPACING.lg,
+    paddingHorizontal: LAYOUT.screenPadding,
+  },
+  
+  sectionTitle: {
+    ...TYPOGRAPHY.titleMedium,
+    color: COLORS.onBackground,
+    marginBottom: SPACING.md,
+    marginTop: SPACING.md,
+  },
+  
+  card: {
+    backgroundColor: COLORS.surface,
+    borderRadius: BORDER_RADIUS.medium,
+    ...ELEVATION.level1,
+  },
+  
+  statsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: SPACING.md,
+  },
+  
+  statCard: {
+    flex: 1,
+    backgroundColor: COLORS.surface,
+    borderRadius: BORDER_RADIUS.medium,
+    ...ELEVATION.level1,
+  },
+  
+  statContent: {
+    alignItems: 'center',
+    paddingVertical: SPACING.lg,
+  },
+  
+  statNumber: {
+    ...TYPOGRAPHY.headlineSmall,
+    color: COLORS.primary,
+    marginTop: SPACING.sm,
+  },
+  
+  statLabel: {
+    ...TYPOGRAPHY.bodyMedium,
+    color: COLORS.onSurfaceVariant,
+    marginTop: SPACING.xs,
   },
 });
