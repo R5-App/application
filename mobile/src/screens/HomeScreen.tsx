@@ -60,7 +60,7 @@ export default function HomeScreen() {
           </Card.Content>
         </Card>
 
-        <Card style={styles.card} onPress={() => navigation.navigate('ProfileTab' as never)}>
+        <Card style={styles.card} onPress={() => (navigation as any).navigate('ProfileTab')}>
           <Card.Content style={{ alignItems: 'center' }}>
             <MaterialCommunityIcons name="account" size={64} color={COLORS.primary} />
             <Text variant="titleLarge" style={{ marginTop: SPACING.md }}>Profiili</Text>

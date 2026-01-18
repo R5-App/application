@@ -143,6 +143,7 @@ export default function ProfileScreen() {
           <Card style={styles.statCard}>
             <Card.Content style={styles.statContent}>
               <MaterialCommunityIcons name="paw" size={32} color={COLORS.primary} />
+              {/* TODO: Implement actual pets count from user data */}
               <Text variant="headlineSmall" style={styles.statNumber}>
                 0
               </Text>
@@ -154,6 +155,7 @@ export default function ProfileScreen() {
           <Card style={styles.statCard}>
             <Card.Content style={styles.statContent}>
               <MaterialCommunityIcons name="calendar-check" size={32} color={COLORS.primary} />
+              {/* TODO: Implement actual events count from user data */}
               <Text variant="headlineSmall" style={styles.statNumber}>
                 0
               </Text>
