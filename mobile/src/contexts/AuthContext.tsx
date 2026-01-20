@@ -10,6 +10,8 @@ interface AuthContextType {
   login: (credentials: LoginCredentials) => Promise<{ success: boolean; message: string }>;
   register: (data: RegisterData) => Promise<{ success: boolean; message: string }>;
   logout: () => Promise<void>;
+  deleteAccount: (userId: string, password: string) => Promise<{ success: boolean; message: string }>;
+  updateUser: (user: User) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -66,9 +68,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       };
     } catch (error: any) {
       console.error('Register error:', error);
+      console.error('Error response data:', error.response?.data);
+      console.error('Error status:', error.response?.status);
+      const errorMessage = error.response?.data?.message 
+        || error.response?.data?.errors?.join(', ')
+        || error.message 
+        || 'Rekisteröinti epäonnistui';
       return {
         success: false,
-        message: error.response?.data?.message || 'Rekisteröinti epäonnistui',
+        message: errorMessage,
       };
     }
   };
@@ -82,6 +90,26 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  const deleteAccount = async (userId: string, password: string) => {
+    try {
+      const result = await authService.deleteAccount(userId, password);
+      if (result.success) {
+        setUser(null);
+      }
+      return result;
+    } catch (error: any) {
+      console.error('Delete account error:', error);
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Tilin poisto epäonnistui',
+      };
+    }
+  };
+
+  const updateUser = (updatedUser: User) => {
+    setUser(updatedUser);
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -91,6 +119,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         login,
         register,
         logout,
+        deleteAccount,
+        updateUser,
       }}
     >
       {children}

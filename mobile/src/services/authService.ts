@@ -41,6 +41,79 @@ export const authService = {
     }
   },
 
+  // Delete user account
+  deleteAccount: async (userId: string, password: string): Promise<{ success: boolean; message: string }> => {
+    try {
+      const response = await apiClient.delete(`/api/auth/account/${userId}`, {
+        data: { password }
+      });
+      // Clear local data after successful deletion
+      await authService.clearToken();
+      await authService.clearUser();
+      return { success: true, message: 'Tili poistettu onnistuneesti' };
+    } catch (error: any) {
+      console.error('Delete account error:', error);
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Tilin poisto epäonnistui',
+      };
+    }
+  },
+
+  // Update user email
+  updateEmail: async (newEmail: string): Promise<{ success: boolean; message: string; user?: User }> => {
+    try {
+      const response = await apiClient.put('/api/auth/email', { email: newEmail });
+      if (response.data.success && response.data.data?.user) {
+        // Merge with existing user data to preserve fields like created_at
+        const existingUser = await authService.getUser();
+        const updatedUser = { ...existingUser, ...response.data.data.user };
+        await authService.saveUser(updatedUser);
+        return { 
+          success: true, 
+          message: 'Sähköposti päivitetty onnistuneesti',
+          user: updatedUser
+        };
+      }
+      return {
+        success: false,
+        message: response.data.message || 'Sähköpostin päivitys epäonnistui',
+      };
+    } catch (error: any) {
+      console.error('Update email error:', error);
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Sähköpostin päivitys epäonnistui',
+      };
+    }
+  },
+
+  // Update user password
+  updatePassword: async (oldPassword: string, newPassword: string): Promise<{ success: boolean; message: string }> => {
+    try {
+      const response = await apiClient.put('/api/auth/password', { 
+        oldPassword, 
+        newPassword 
+      });
+      if (response.data.success) {
+        return { 
+          success: true, 
+          message: 'Salasana päivitetty onnistuneesti'
+        };
+      }
+      return {
+        success: false,
+        message: response.data.message || 'Salasanan päivitys epäonnistui',
+      };
+    } catch (error: any) {
+      console.error('Update password error:', error);
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Salasanan päivitys epäonnistui',
+      };
+    }
+  },
+
   // Token management
   saveToken: async (token: string): Promise<void> => {
     const expiryDate = new Date();
