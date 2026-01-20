@@ -148,3 +148,92 @@ export const settingsStyles = StyleSheet.create({
     ...COMMON_STYLES.button,
   },
 });
+
+// ============================================
+// PROFILE SCREEN STYLES
+// ============================================
+export const profileStyles = StyleSheet.create({
+  container: {
+    ...COMMON_STYLES.container,
+  },
+  
+  header: {
+    alignItems: 'center',
+    padding: LAYOUT.screenPadding,
+    paddingTop: SPACING['2xl'],
+    paddingBottom: SPACING.xl,
+    backgroundColor: COLORS.primaryContainer,
+  },
+  
+  title: {
+    ...TYPOGRAPHY.headlineMedium,
+    color: COLORS.onPrimaryContainer,
+    marginTop: SPACING.md,
+    textAlign: 'center',
+  },
+  
+  card: {
+    ...COMMON_STYLES.card,
+    margin: LAYOUT.screenPadding,
+    marginBottom: SPACING.md,
+  },
+  
+  infoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    paddingVertical: SPACING.sm,
+  },
+  
+  infoLabel: {
+    ...TYPOGRAPHY.bodyLarge,
+    color: COLORS.onSurfaceVariant,
+    flex: 1,
+  },
+  
+  infoValue: {
+    ...TYPOGRAPHY.bodyLarge,
+    color: COLORS.onSurface,
+    flex: 1,
+    textAlign: 'right',
+  },
+  
+  divider: {
+    marginVertical: SPACING.xs,
+    backgroundColor: COLORS.outlineVariant,
+  },
+  
+  actionButton: {
+    justifyContent: 'flex-start',
+    marginVertical: SPACING.xs,
+  },
+  
+  buttonContent: {
+    justifyContent: 'flex-start',
+  },
+  
+  buttonLabel: {
+    fontSize: 16,
+    textAlign: 'left',
+  },
+  
+  sectionTitle: {
+    ...TYPOGRAPHY.titleMedium,
+    color: COLORS.onSurface,
+    marginBottom: SPACING.xs,
+  },
+  
+  sectionDescription: {
+    ...TYPOGRAPHY.bodyMedium,
+    color: COLORS.onSurfaceVariant,
+  },
+  
+  logoutContainer: {
+    padding: LAYOUT.screenPadding,
+    paddingBottom: SPACING['2xl'],
+  },
+  
+  logoutButton: {
+    borderRadius: COMMON_STYLES.button.borderRadius,
+  },
+});
