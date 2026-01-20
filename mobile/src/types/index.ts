@@ -15,6 +15,7 @@ export interface User {
   email: string;
   username: string;
   avatar?: string;
+  created_at?: string;
   createdAt?: string;
   role?: 'admin' | 'member';
 }
