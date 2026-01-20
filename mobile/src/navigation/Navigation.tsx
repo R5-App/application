@@ -9,6 +9,7 @@ import { COLORS, SPACING, LAYOUT } from '../styles/theme';
 import HomeScreen from '@screens/HomeScreen';
 import PetsScreen from '@screens/PetsScreen';
 import SettingsScreen from '@screens/SettingsScreen';
+import ProfileScreen from '@screens/ProfileScreen';
 import LoginScreen from '@screens/LoginScreen';
 import RegisterScreen from '@screens/RegisterScreen';
 
@@ -124,11 +125,21 @@ export default function Navigation() {
     <NavigationContainer>
       <Stack.Navigator>
         {isAuthenticated ? (
-          <Stack.Screen
-            name="HomeTabs"
-            component={HomeTabs}
-            options={{ headerShown: false }}
-          />
+          <>
+            <Stack.Screen
+              name="HomeTabs"
+              component={HomeTabs}
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen
+              name="Profile"
+              component={ProfileScreen}
+              options={{
+                title: 'Profiili',
+                headerBackTitle: 'Takaisin',
+              }}
+            />
+          </>
         ) : (
           <>
             <Stack.Screen

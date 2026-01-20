@@ -2,12 +2,14 @@ import React, { useEffect, useRef } from 'react';
 import { View, ScrollView, Animated } from 'react-native';
 import { Text, Card, IconButton } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../contexts/AuthContext';
 import { homeStyles as styles } from '../styles/screenStyles';
 import { COLORS, SPACING } from '../styles/theme';
 
 export default function HomeScreen() {
   const { user } = useAuth();
+  const navigation = useNavigation();
   const paw1 = useRef(new Animated.Value(0)).current;
   const paw2 = useRef(new Animated.Value(0)).current;
   const paw3 = useRef(new Animated.Value(0)).current;
@@ -58,7 +60,7 @@ export default function HomeScreen() {
           </Card.Content>
         </Card>
 
-        <Card style={styles.card} onPress={() => console.log('Profiili')}>
+        <Card style={styles.card} onPress={() => navigation.navigate('Profile' as never)}>
           <Card.Content style={{ alignItems: 'center' }}>
             <MaterialCommunityIcons name="account" size={64} color={COLORS.primary} />
             <Text variant="titleLarge" style={{ marginTop: SPACING.md }}>Profiili</Text>
