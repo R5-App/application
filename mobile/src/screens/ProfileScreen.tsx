@@ -26,6 +26,9 @@ export default function ProfileScreen() {
   const [deleteDialogVisible, setDeleteDialogVisible] = useState(false);
   const [deletePassword, setDeletePassword] = useState('');
   const [showDeletePassword, setShowDeletePassword] = useState(false);
+  const [subUsersDialogVisible, setSubUsersDialogVisible] = useState(false);
+  const [subUsers, setSubUsers] = useState<any[]>([]);
+  const [isLoadingSubUsers, setIsLoadingSubUsers] = useState(false);
 
   // Stable style objects to prevent TextInput cursor jumping
   const inputSpacing = useMemo(() => ({ marginBottom: SPACING.md }), []);
@@ -131,6 +134,23 @@ export default function ProfileScreen() {
       Alert.alert('Virhe', 'Salasanan päivitys epäonnistui');
     } finally {
       setIsUpdatingPassword(false);
+    }
+  };
+
+  const handleViewSubUsers = async () => {
+    setSubUsersDialogVisible(true);
+    setIsLoadingSubUsers(true);
+    try {
+      const result = await authService.getSubUsers();
+      if (result.success && result.data) {
+        setSubUsers(result.data);
+      } else {
+        showSnackbar(result.message || 'Alikäyttäjien haku epäonnistui', 'error');
+      }
+    } catch (error) {
+      showSnackbar('Alikäyttäjien haku epäonnistui', 'error');
+    } finally {
+      setIsLoadingSubUsers(false);
     }
   };
 
@@ -254,6 +274,17 @@ export default function ProfileScreen() {
         <Card.Content>
           <Button
             mode="text"
+            onPress={handleViewSubUsers}
+            icon="account-group"
+            contentStyle={styles.buttonContent}
+            labelStyle={styles.buttonLabel}
+            style={styles.actionButton}
+          >
+            Näytä alikäyttäjät
+          </Button>
+
+          <Button
+            mode="text"
             onPress={handleChangeEmail}
             icon="email-edit"
             contentStyle={styles.buttonContent}
@@ -374,6 +405,57 @@ export default function ProfileScreen() {
               textColor={COLORS.error}
             >
               Poista tili
+            </Button>
+          </Dialog.Actions>
+        </Dialog>
+
+        <Dialog visible={subUsersDialogVisible} onDismiss={() => setSubUsersDialogVisible(false)}>
+          <Dialog.Title>Alikäyttäjät</Dialog.Title>
+          <Dialog.Content>
+            <Text variant="bodyMedium" style={{ marginBottom: SPACING.md }}>
+              Tähän tiliin liitetyt alikäyttäjät:
+            </Text>
+            {isLoadingSubUsers ? (
+              <View style={{ padding: SPACING.md, alignItems: 'center' }}>
+                <Text variant="bodyMedium">Ladataan...</Text>
+              </View>
+            ) : subUsers.length > 0 ? (
+              <View>
+                {subUsers.map((subUser, index) => (
+                  <View 
+                    key={subUser.id || index} 
+                    style={{ 
+                      padding: SPACING.md, 
+                      backgroundColor: COLORS.surfaceVariant, 
+                      borderRadius: 8,
+                      marginBottom: index < subUsers.length - 1 ? SPACING.sm : 0
+                    }}
+                  >
+                    <Text variant="bodyLarge" style={{ fontWeight: 'bold', marginBottom: 4 }}>
+                      {subUser.name || subUser.username}
+                    </Text>
+                    <Text variant="bodyMedium" style={{ color: COLORS.onSurfaceVariant }}>
+                      {subUser.email}
+                    </Text>
+                    {subUser.username && subUser.name && (
+                      <Text variant="bodySmall" style={{ color: COLORS.onSurfaceVariant, marginTop: 4 }}>
+                        @{subUser.username}
+                      </Text>
+                    )}
+                  </View>
+                ))}
+              </View>
+            ) : (
+              <View style={{ padding: SPACING.md, backgroundColor: COLORS.surfaceVariant, borderRadius: 8 }}>
+                <Text variant="bodyMedium" style={{ color: COLORS.onSurfaceVariant, fontStyle: 'italic' }}>
+                  Ei alikäyttäjiä vielä lisätty.
+                </Text>
+              </View>
+            )}
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setSubUsersDialogVisible(false)}>
+              Sulje
             </Button>
           </Dialog.Actions>
         </Dialog>
