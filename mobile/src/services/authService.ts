@@ -60,6 +60,24 @@ export const authService = {
     }
   },
 
+  // Get sub-users for the authenticated user's account
+  getSubUsers: async (): Promise<{ success: boolean; data?: any[]; message?: string }> => {
+    try {
+      const response = await apiClient.get('/api/auth/sub-users');
+      return {
+        success: true,
+        data: response.data.data || response.data || [],
+      };
+    } catch (error: any) {
+      console.error('Get sub-users error:', error);
+      return {
+        success: false,
+        data: [],
+        message: error.response?.data?.message || 'Alikäyttäjien haku epäonnistui',
+      };
+    }
+  },
+
   // Update user email
   updateEmail: async (newEmail: string): Promise<{ success: boolean; message: string; user?: User }> => {
     try {
