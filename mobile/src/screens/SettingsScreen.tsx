@@ -77,7 +77,13 @@ export default function SettingsScreen() {
       </View>
 
       <View style={styles.buttonContainer}>
-        <Button mode="outlined" style={styles.button} onPress={handleLogout}>
+        <Button 
+          mode="outlined" 
+          style={[styles.button, { borderColor: COLORS.error }]} 
+          textColor={COLORS.error}
+          icon="logout"
+          onPress={handleLogout}
+        >
           Kirjaudu ulos
         </Button>
       </View>

@@ -69,29 +69,29 @@ export const COLORS = {
 
 export const TYPOGRAPHY = {
   // MD3 Display Typography
-  displayLarge: { fontSize: 57, lineHeight: 64, fontWeight: '400' },
-  displayMedium: { fontSize: 45, lineHeight: 52, fontWeight: '400' },
-  displaySmall: { fontSize: 36, lineHeight: 44, fontWeight: '400' },
+  displayLarge: { fontSize: 57, lineHeight: 64, fontWeight: '400' as const },
+  displayMedium: { fontSize: 45, lineHeight: 52, fontWeight: '400' as const },
+  displaySmall: { fontSize: 36, lineHeight: 44, fontWeight: '400' as const },
   
   // MD3 Headline Typography
-  headlineLarge: { fontSize: 32, lineHeight: 40, fontWeight: '400' },
-  headlineMedium: { fontSize: 28, lineHeight: 36, fontWeight: '400' },
-  headlineSmall: { fontSize: 24, lineHeight: 32, fontWeight: '400' },
+  headlineLarge: { fontSize: 32, lineHeight: 40, fontWeight: '400' as const },
+  headlineMedium: { fontSize: 28, lineHeight: 36, fontWeight: '400' as const },
+  headlineSmall: { fontSize: 24, lineHeight: 32, fontWeight: '400' as const },
   
   // MD3 Title Typography
-  titleLarge: { fontSize: 22, lineHeight: 28, fontWeight: '400' },
-  titleMedium: { fontSize: 16, lineHeight: 24, fontWeight: '500' },
-  titleSmall: { fontSize: 14, lineHeight: 20, fontWeight: '500' },
+  titleLarge: { fontSize: 22, lineHeight: 28, fontWeight: '400' as const },
+  titleMedium: { fontSize: 16, lineHeight: 24, fontWeight: '500' as const },
+  titleSmall: { fontSize: 14, lineHeight: 20, fontWeight: '500' as const },
   
   // MD3 Label Typography
-  labelLarge: { fontSize: 14, lineHeight: 20, fontWeight: '500' },
-  labelMedium: { fontSize: 12, lineHeight: 16, fontWeight: '500' },
-  labelSmall: { fontSize: 11, lineHeight: 16, fontWeight: '500' },
+  labelLarge: { fontSize: 14, lineHeight: 20, fontWeight: '500' as const },
+  labelMedium: { fontSize: 12, lineHeight: 16, fontWeight: '500' as const },
+  labelSmall: { fontSize: 11, lineHeight: 16, fontWeight: '500' as const },
   
   // MD3 Body Typography
-  bodyLarge: { fontSize: 16, lineHeight: 24, fontWeight: '400' },
-  bodyMedium: { fontSize: 14, lineHeight: 20, fontWeight: '400' },
-  bodySmall: { fontSize: 12, lineHeight: 16, fontWeight: '400' },
+  bodyLarge: { fontSize: 16, lineHeight: 24, fontWeight: '400' as const },
+  bodyMedium: { fontSize: 14, lineHeight: 20, fontWeight: '400' as const },
+  bodySmall: { fontSize: 12, lineHeight: 16, fontWeight: '400' as const },
 };
 
 // ============================================

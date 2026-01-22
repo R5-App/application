@@ -406,11 +406,11 @@ export default function ProfileScreen() {
 
       <View style={styles.logoutContainer}>
         <Button
-          mode="contained"
+          mode="outlined"
           onPress={handleLogout}
           icon="logout"
-          buttonColor={COLORS.error}
-          style={styles.logoutButton}
+          textColor={COLORS.error}
+          style={{ borderColor: COLORS.error }}
         >
           Kirjaudu ulos
         </Button>
