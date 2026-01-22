@@ -55,7 +55,7 @@ export const authService = {
       console.error('Delete account error:', error);
       return {
         success: false,
-        message: error.response?.data?.message || 'Tilin poisto epäonnistui',
+        message: 'Tilin poisto epäonnistui',
       };
     }
   },
@@ -86,7 +86,7 @@ export const authService = {
       return {
         success: false,
         data: [],
-        message: error.response?.data?.message || 'Alikäyttäjien haku epäonnistui',
+        message: 'Alikäyttäjien haku epäonnistui',
       };
     }
   },
@@ -111,16 +111,16 @@ export const authService = {
   // Update sub-user role
   updateSubUserRole: async (subUserId: string, role: string): Promise<{ success: boolean; message: string }> => {
     try {
-      const response = await apiClient.put(`/api/auth/sub-user/${subUserId}/role`, { role });
+      await apiClient.put(`/api/auth/sub-user/${subUserId}/role`, { role });
       return {
         success: true,
-        message: response.data.message || 'Rooli päivitetty onnistuneesti',
+        message: 'Rooli päivitetty onnistuneesti',
       };
     } catch (error: any) {
       console.error('Update sub-user role error:', error);
       return {
         success: false,
-        message: error.response?.data?.message || 'Roolin päivitys epäonnistui',
+        message: 'Roolin päivitys epäonnistui',
       };
     }
   },
@@ -142,13 +142,13 @@ export const authService = {
       }
       return {
         success: false,
-        message: response.data.message || 'Sähköpostin päivitys epäonnistui',
+        message: 'Sähköpostin päivitys epäonnistui',
       };
     } catch (error: any) {
       console.error('Update email error:', error);
       return {
         success: false,
-        message: error.response?.data?.message || 'Sähköpostin päivitys epäonnistui',
+        message: 'Sähköpostin päivitys epäonnistui',
       };
     }
   },
@@ -168,13 +168,13 @@ export const authService = {
       }
       return {
         success: false,
-        message: response.data.message || 'Salasanan päivitys epäonnistui',
+        message: 'Salasanan päivitys epäonnistui',
       };
     } catch (error: any) {
       console.error('Update password error:', error);
       return {
         success: false,
-        message: error.response?.data?.message || 'Salasanan päivitys epäonnistui',
+        message: 'Salasanan päivitys epäonnistui',
       };
     }
   },
