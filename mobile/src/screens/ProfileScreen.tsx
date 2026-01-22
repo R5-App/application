@@ -34,6 +34,9 @@ export default function ProfileScreen() {
   const [roleEditDialogVisible, setRoleEditDialogVisible] = useState(false);
   const [editingSubUser, setEditingSubUser] = useState<any>(null);
   const [isUpdatingRole, setIsUpdatingRole] = useState(false);
+  const [deleteSubUserDialogVisible, setDeleteSubUserDialogVisible] = useState(false);
+  const [subUserToDelete, setSubUserToDelete] = useState<{id: string, username: string} | null>(null);
+  const [logoutDialogVisible, setLogoutDialogVisible] = useState(false);
 
   // Stable style objects to prevent TextInput cursor jumping
   const inputSpacing = useMemo(() => ({ marginBottom: SPACING.md }), []);
@@ -196,39 +199,35 @@ export default function ProfileScreen() {
     }
   };
 
-  const handleDeleteSubUser = async (subUserId: string, username: string) => {
-    Alert.alert(
-      'Poista alikäyttäjä',
-      `Haluatko varmasti poistaa alikäyttäjän "${username}"?`,
-      [
-        { text: 'Peruuta', style: 'cancel' },
-        {
-          text: 'Poista',
-          style: 'destructive',
-          onPress: async () => {
-            setIsDeletingSubUser(true);
-            try {
-              const result = await authService.deleteSubUser(subUserId);
-              if (result.success) {
-                showSnackbar(result.message, 'success');
-                setSelectedSubUserId(null);
-                // Refresh the sub-users list
-                const refreshResult = await authService.getSubUsers();
-                if (refreshResult.success && refreshResult.data) {
-                  setSubUsers(refreshResult.data);
-                }
-              } else {
-                showSnackbar(result.message, 'error');
-              }
-            } catch (error) {
-              showSnackbar('Alikäyttäjän poisto epäonnistui', 'error');
-            } finally {
-              setIsDeletingSubUser(false);
-            }
-          },
-        },
-      ]
-    );
+  const handleDeleteSubUser = (subUserId: string, username: string) => {
+    setSubUserToDelete({ id: subUserId, username });
+    setDeleteSubUserDialogVisible(true);
+  };
+
+  const handleConfirmDeleteSubUser = async () => {
+    if (!subUserToDelete) return;
+
+    setIsDeletingSubUser(true);
+    try {
+      const result = await authService.deleteSubUser(subUserToDelete.id);
+      if (result.success) {
+        showSnackbar(result.message, 'success');
+        setSelectedSubUserId(null);
+        setDeleteSubUserDialogVisible(false);
+        // Refresh the sub-users list
+        const refreshResult = await authService.getSubUsers();
+        if (refreshResult.success && refreshResult.data) {
+          setSubUsers(refreshResult.data);
+        }
+      } else {
+        showSnackbar(result.message, 'error');
+      }
+    } catch (error) {
+      showSnackbar('Alikäyttäjän poisto epäonnistui', 'error');
+    } finally {
+      setIsDeletingSubUser(false);
+      setSubUserToDelete(null);
+    }
   };
 
   const handleDeleteAccount = () => {
@@ -267,17 +266,13 @@ export default function ProfileScreen() {
     }
   };
 
-  const handleLogout = async () => {
-    Alert.alert('Kirjaudu ulos', 'Haluatko varmasti kirjautua ulos?', [
-      { text: 'Peruuta', style: 'cancel' },
-      {
-        text: 'Kirjaudu ulos',
-        style: 'destructive',
-        onPress: async () => {
-          await logout();
-        },
-      },
-    ]);
+  const handleLogout = () => {
+    setLogoutDialogVisible(true);
+  };
+
+  const handleConfirmLogout = async () => {
+    setLogoutDialogVisible(false);
+    await logout();
   };
 
   // Format date to Finnish format
@@ -599,6 +594,56 @@ export default function ProfileScreen() {
               </Button>
             </View>
           </Dialog.Content>
+        </Dialog>
+
+        <Dialog 
+          visible={deleteSubUserDialogVisible} 
+          onDismiss={() => setDeleteSubUserDialogVisible(false)}
+          style={{ backgroundColor: 'rgba(255, 255, 255, 0.95)' }}
+        >
+          <Dialog.Title>Poista alikäyttäjä</Dialog.Title>
+          <Dialog.Content>
+            <Text variant="bodyMedium">
+              Haluatko varmasti poistaa alikäyttäjän "{subUserToDelete?.username}"?
+            </Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setDeleteSubUserDialogVisible(false)} disabled={isDeletingSubUser}>
+              Peruuta
+            </Button>
+            <Button 
+              onPress={handleConfirmDeleteSubUser} 
+              loading={isDeletingSubUser} 
+              disabled={isDeletingSubUser}
+              textColor={COLORS.error}
+            >
+              Poista
+            </Button>
+          </Dialog.Actions>
+        </Dialog>
+
+        <Dialog 
+          visible={logoutDialogVisible} 
+          onDismiss={() => setLogoutDialogVisible(false)}
+          style={{ backgroundColor: 'rgba(255, 255, 255, 0.95)' }}
+        >
+          <Dialog.Title>Kirjaudu ulos</Dialog.Title>
+          <Dialog.Content>
+            <Text variant="bodyMedium">
+              Haluatko varmasti kirjautua ulos?
+            </Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setLogoutDialogVisible(false)}>
+              Peruuta
+            </Button>
+            <Button 
+              onPress={handleConfirmLogout}
+              textColor={COLORS.error}
+            >
+              Kirjaudu ulos
+            </Button>
+          </Dialog.Actions>
         </Dialog>
 
         <Dialog visible={passwordDialogVisible} onDismiss={() => setPasswordDialogVisible(false)}>
