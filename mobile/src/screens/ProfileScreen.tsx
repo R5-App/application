@@ -3,12 +3,14 @@ import { View, ScrollView, Alert } from 'react-native';
 import { Text, Card, Button, Divider, Portal, Dialog, TextInput } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
+import { useSnackbar } from '../contexts/SnackbarContext';
 import authService from '../services/authService';
 import { profileStyles as styles } from '../styles/screenStyles';
 import { COLORS, SPACING } from '../styles/theme';
 
 export default function ProfileScreen() {
   const { user, logout, deleteAccount, updateUser } = useAuth();
+  const { showSnackbar } = useSnackbar();
   const [isDeleting, setIsDeleting] = useState(false);
   const [emailDialogVisible, setEmailDialogVisible] = useState(false);
   const [newEmail, setNewEmail] = useState('');
@@ -156,7 +158,7 @@ export default function ProfileScreen() {
         setDeleteDialogVisible(false);
         setDeletePassword('');
         // Show success message
-        Alert.alert('Tili poistettu onnistuneesti', result.message);
+        showSnackbar(result.message, 'success');
         // AuthContext deleteAccount updates state and triggers navigation
       } else {
         Alert.alert('Virhe', result.message);
