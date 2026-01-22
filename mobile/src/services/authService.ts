@@ -64,9 +64,22 @@ export const authService = {
   getSubUsers: async (): Promise<{ success: boolean; data?: any[]; message?: string }> => {
     try {
       const response = await apiClient.get('/api/auth/sub-users');
+      
+      // Handle different response formats
+      let subUsersData = [];
+      if (response.data.success && response.data.data?.subUsers) {
+        subUsersData = response.data.data.subUsers;
+      } else if (response.data.success && Array.isArray(response.data.data)) {
+        subUsersData = response.data.data;
+      } else if (Array.isArray(response.data)) {
+        subUsersData = response.data;
+      } else if (response.data.subUsers) {
+        subUsersData = response.data.subUsers;
+      }
+      
       return {
         success: true,
-        data: response.data.data || response.data || [],
+        data: subUsersData,
       };
     } catch (error: any) {
       console.error('Get sub-users error:', error);

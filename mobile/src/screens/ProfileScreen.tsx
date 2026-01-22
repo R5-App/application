@@ -142,12 +142,14 @@ export default function ProfileScreen() {
     setIsLoadingSubUsers(true);
     try {
       const result = await authService.getSubUsers();
+      
       if (result.success && result.data) {
         setSubUsers(result.data);
       } else {
         showSnackbar(result.message || 'Alikäyttäjien haku epäonnistui', 'error');
       }
     } catch (error) {
+      console.error('Sub-users fetch exception:', error);
       showSnackbar('Alikäyttäjien haku epäonnistui', 'error');
     } finally {
       setIsLoadingSubUsers(false);
@@ -431,16 +433,22 @@ export default function ProfileScreen() {
                       marginBottom: index < subUsers.length - 1 ? SPACING.sm : 0
                     }}
                   >
-                    <Text variant="bodyLarge" style={{ fontWeight: 'bold', marginBottom: 4 }}>
-                      {subUser.name || subUser.username}
+                    <Text variant="bodyLarge" style={{ fontWeight: 'bold', marginBottom: 8 }}>
+                      {subUser.username}
                     </Text>
-                    <Text variant="bodyMedium" style={{ color: COLORS.onSurfaceVariant }}>
-                      {subUser.email}
-                    </Text>
-                    {subUser.username && subUser.name && (
-                      <Text variant="bodySmall" style={{ color: COLORS.onSurfaceVariant, marginTop: 4 }}>
-                        @{subUser.username}
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+                      <MaterialCommunityIcons name="email" size={16} color={COLORS.onSurfaceVariant} style={{ marginRight: 8 }} />
+                      <Text variant="bodyMedium" style={{ color: COLORS.onSurfaceVariant }}>
+                        {subUser.email}
                       </Text>
+                    </View>
+                    {subUser.role && (
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <MaterialCommunityIcons name="shield-account" size={16} color={COLORS.onSurfaceVariant} style={{ marginRight: 8 }} />
+                        <Text variant="bodySmall" style={{ color: COLORS.onSurfaceVariant, textTransform: 'capitalize' }}>
+                          {subUser.role}
+                        </Text>
+                      </View>
                     )}
                   </View>
                 ))}
