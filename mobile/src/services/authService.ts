@@ -44,7 +44,7 @@ export const authService = {
   // Delete user account
   deleteAccount: async (userId: string, password: string): Promise<{ success: boolean; message: string }> => {
     try {
-      const response = await apiClient.delete(`/api/auth/account/${userId}`, {
+      await apiClient.delete(`/api/auth/account/${userId}`, {
         data: { password }
       });
       // Clear local data after successful deletion
@@ -87,6 +87,23 @@ export const authService = {
         success: false,
         data: [],
         message: error.response?.data?.message || 'Alikäyttäjien haku epäonnistui',
+      };
+    }
+  },
+
+  // Remove/unlink a sub-user from the account
+  deleteSubUser: async (subUserId: string): Promise<{ success: boolean; message: string }> => {
+    try {
+      const response = await apiClient.delete(`/api/auth/sub-user/${subUserId}`);
+      return {
+        success: true,
+        message: response.data.message || 'Alikäyttäjä poistettu onnistuneesti',
+      };
+    } catch (error: any) {
+      console.error('Delete sub-user error:', error);
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Alikäyttäjän poisto epäonnistui',
       };
     }
   },

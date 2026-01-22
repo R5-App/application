@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { View, ScrollView, Alert } from 'react-native';
+import { View, ScrollView, Alert, Pressable } from 'react-native';
 import { Text, Card, Button, Divider, Portal, Dialog, TextInput } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
@@ -29,6 +29,8 @@ export default function ProfileScreen() {
   const [subUsersDialogVisible, setSubUsersDialogVisible] = useState(false);
   const [subUsers, setSubUsers] = useState<any[]>([]);
   const [isLoadingSubUsers, setIsLoadingSubUsers] = useState(false);
+  const [selectedSubUserId, setSelectedSubUserId] = useState<string | null>(null);
+  const [isDeletingSubUser, setIsDeletingSubUser] = useState(false);
 
   // Stable style objects to prevent TextInput cursor jumping
   const inputSpacing = useMemo(() => ({ marginBottom: SPACING.md }), []);
@@ -140,6 +142,7 @@ export default function ProfileScreen() {
   const handleViewSubUsers = async () => {
     setSubUsersDialogVisible(true);
     setIsLoadingSubUsers(true);
+    setSelectedSubUserId(null);
     try {
       const result = await authService.getSubUsers();
       
@@ -154,6 +157,45 @@ export default function ProfileScreen() {
     } finally {
       setIsLoadingSubUsers(false);
     }
+  };
+
+  const handleSelectSubUser = (subUserId: string) => {
+    setSelectedSubUserId(prev => prev === subUserId ? null : subUserId);
+  };
+
+  const handleDeleteSubUser = async (subUserId: string, username: string) => {
+    Alert.alert(
+      'Poista alikäyttäjä',
+      `Haluatko varmasti poistaa alikäyttäjän "${username}"?`,
+      [
+        { text: 'Peruuta', style: 'cancel' },
+        {
+          text: 'Poista',
+          style: 'destructive',
+          onPress: async () => {
+            setIsDeletingSubUser(true);
+            try {
+              const result = await authService.deleteSubUser(subUserId);
+              if (result.success) {
+                showSnackbar(result.message, 'success');
+                setSelectedSubUserId(null);
+                // Refresh the sub-users list
+                const refreshResult = await authService.getSubUsers();
+                if (refreshResult.success && refreshResult.data) {
+                  setSubUsers(refreshResult.data);
+                }
+              } else {
+                showSnackbar(result.message, 'error');
+              }
+            } catch (error) {
+              showSnackbar('Alikäyttäjän poisto epäonnistui', 'error');
+            } finally {
+              setIsDeletingSubUser(false);
+            }
+          },
+        },
+      ]
+    );
   };
 
   const handleDeleteAccount = () => {
@@ -425,31 +467,64 @@ export default function ProfileScreen() {
               <View>
                 {subUsers.map((subUser, index) => (
                   <View 
-                    key={subUser.id || index} 
-                    style={{ 
-                      padding: SPACING.md, 
-                      backgroundColor: COLORS.surfaceVariant, 
-                      borderRadius: 8,
+                    key={subUser.id || index}
+                    style={{
                       marginBottom: index < subUsers.length - 1 ? SPACING.sm : 0
                     }}
                   >
-                    <Text variant="bodyLarge" style={{ fontWeight: 'bold', marginBottom: 8 }}>
-                      {subUser.username}
-                    </Text>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-                      <MaterialCommunityIcons name="email" size={16} color={COLORS.onSurfaceVariant} style={{ marginRight: 8 }} />
-                      <Text variant="bodyMedium" style={{ color: COLORS.onSurfaceVariant }}>
-                        {subUser.email}
-                      </Text>
-                    </View>
-                    {subUser.role && (
-                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        <MaterialCommunityIcons name="shield-account" size={16} color={COLORS.onSurfaceVariant} style={{ marginRight: 8 }} />
-                        <Text variant="bodySmall" style={{ color: COLORS.onSurfaceVariant, textTransform: 'capitalize' }}>
-                          {subUser.role}
+                    <Pressable
+                      onPress={() => handleSelectSubUser(subUser.id)}
+                      style={{ 
+                        padding: SPACING.md, 
+                        backgroundColor: COLORS.surfaceVariant, 
+                        borderRadius: 8,
+                        flexDirection: 'row',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        opacity: selectedSubUserId && selectedSubUserId !== subUser.id ? 0.4 : 1
+                      }}
+                    >
+                      <View style={{ flex: 1 }}>
+                        <Text variant="bodyLarge" style={{ fontWeight: 'bold', marginBottom: 8 }}>
+                          {subUser.username}
                         </Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+                          <MaterialCommunityIcons name="email" size={16} color={COLORS.onSurfaceVariant} style={{ marginRight: 8 }} />
+                          <Text variant="bodyMedium" style={{ color: COLORS.onSurfaceVariant }}>
+                            {subUser.email}
+                          </Text>
+                        </View>
+                        {subUser.role && (
+                          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <MaterialCommunityIcons name="shield-account" size={16} color={COLORS.onSurfaceVariant} style={{ marginRight: 8 }} />
+                            <Text variant="bodySmall" style={{ color: COLORS.onSurfaceVariant, textTransform: 'capitalize' }}>
+                              {subUser.role}
+                            </Text>
+                          </View>
+                        )}
                       </View>
-                    )}
+                      {selectedSubUserId === subUser.id && (
+                        <View style={{ flexDirection: 'column', gap: SPACING.sm }}>
+                          <Pressable
+                            onPress={() => {
+                              // TODO: Implement edit functionality
+                              showSnackbar('Muokkaustoiminto tulossa pian', 'info');
+                            }}
+                            disabled={isDeletingSubUser}
+                            style={{ padding: 8 }}
+                          >
+                            <MaterialCommunityIcons name="pencil" size={24} color={COLORS.primary} />
+                          </Pressable>
+                          <Pressable
+                            onPress={() => handleDeleteSubUser(subUser.id, subUser.username)}
+                            disabled={isDeletingSubUser}
+                            style={{ padding: 8 }}
+                          >
+                            <MaterialCommunityIcons name="delete" size={24} color={COLORS.error} />
+                          </Pressable>
+                        </View>
+                      )}
+                    </Pressable>
                   </View>
                 ))}
               </View>
