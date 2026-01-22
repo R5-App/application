@@ -108,6 +108,23 @@ export const authService = {
     }
   },
 
+  // Update sub-user role
+  updateSubUserRole: async (subUserId: string, role: string): Promise<{ success: boolean; message: string }> => {
+    try {
+      const response = await apiClient.put(`/api/auth/sub-user/${subUserId}/role`, { role });
+      return {
+        success: true,
+        message: response.data.message || 'Rooli päivitetty onnistuneesti',
+      };
+    } catch (error: any) {
+      console.error('Update sub-user role error:', error);
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Roolin päivitys epäonnistui',
+      };
+    }
+  },
+
   // Update user email
   updateEmail: async (newEmail: string): Promise<{ success: boolean; message: string; user?: User }> => {
     try {

@@ -31,6 +31,9 @@ export default function ProfileScreen() {
   const [isLoadingSubUsers, setIsLoadingSubUsers] = useState(false);
   const [selectedSubUserId, setSelectedSubUserId] = useState<string | null>(null);
   const [isDeletingSubUser, setIsDeletingSubUser] = useState(false);
+  const [roleEditDialogVisible, setRoleEditDialogVisible] = useState(false);
+  const [editingSubUser, setEditingSubUser] = useState<any>(null);
+  const [isUpdatingRole, setIsUpdatingRole] = useState(false);
 
   // Stable style objects to prevent TextInput cursor jumping
   const inputSpacing = useMemo(() => ({ marginBottom: SPACING.md }), []);
@@ -161,6 +164,36 @@ export default function ProfileScreen() {
 
   const handleSelectSubUser = (subUserId: string) => {
     setSelectedSubUserId(prev => prev === subUserId ? null : subUserId);
+  };
+
+  const handleEditSubUserRole = (subUser: any) => {
+    setEditingSubUser(subUser);
+    setRoleEditDialogVisible(true);
+  };
+
+  const handleUpdateRole = async (newRole: string) => {
+    if (!editingSubUser) return;
+
+    setIsUpdatingRole(true);
+    try {
+      const result = await authService.updateSubUserRole(editingSubUser.id, newRole);
+      if (result.success) {
+        showSnackbar(result.message, 'success');
+        setRoleEditDialogVisible(false);
+        setSelectedSubUserId(null);
+        // Refresh the sub-users list
+        const refreshResult = await authService.getSubUsers();
+        if (refreshResult.success && refreshResult.data) {
+          setSubUsers(refreshResult.data);
+        }
+      } else {
+        showSnackbar(result.message, 'error');
+      }
+    } catch (error) {
+      showSnackbar('Roolin päivitys epäonnistui', 'error');
+    } finally {
+      setIsUpdatingRole(false);
+    }
   };
 
   const handleDeleteSubUser = async (subUserId: string, username: string) => {
@@ -506,10 +539,7 @@ export default function ProfileScreen() {
                       {selectedSubUserId === subUser.id && (
                         <View style={{ flexDirection: 'column', gap: SPACING.sm }}>
                           <Pressable
-                            onPress={() => {
-                              // TODO: Implement edit functionality
-                              showSnackbar('Muokkaustoiminto tulossa pian', 'info');
-                            }}
+                            onPress={() => handleEditSubUserRole(subUser)}
                             disabled={isDeletingSubUser}
                             style={{ padding: 8 }}
                           >
@@ -541,6 +571,34 @@ export default function ProfileScreen() {
               Sulje
             </Button>
           </Dialog.Actions>
+        </Dialog>
+
+        <Dialog visible={roleEditDialogVisible} onDismiss={() => setRoleEditDialogVisible(false)}>
+          <Dialog.Title>Muuta roolia</Dialog.Title>
+          <Dialog.Content>
+            <View style={{ gap: SPACING.sm }}>
+              <Button
+                mode="contained"
+                onPress={() => handleUpdateRole('omistaja')}
+                disabled={isUpdatingRole}
+                loading={isUpdatingRole && editingSubUser?.role !== 'omistaja'}
+                icon="crown"
+                style={{ justifyContent: 'flex-start' }}
+              >
+                Omistaja
+              </Button>
+              <Button
+                mode="contained"
+                onPress={() => handleUpdateRole('hoitaja')}
+                disabled={isUpdatingRole}
+                loading={isUpdatingRole && editingSubUser?.role !== 'hoitaja'}
+                icon="account-heart"
+                style={{ justifyContent: 'flex-start' }}
+              >
+                Hoitaja
+              </Button>
+            </View>
+          </Dialog.Content>
         </Dialog>
 
         <Dialog visible={passwordDialogVisible} onDismiss={() => setPasswordDialogVisible(false)}>
