@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { View, ScrollView, Alert } from 'react-native';
+import React, { useState, useMemo, useEffect } from 'react';
+import { View, ScrollView, Alert, Pressable } from 'react-native';
 import { Text, Card, Button, Divider, Portal, Dialog, TextInput } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
@@ -29,6 +29,19 @@ export default function ProfileScreen() {
   const [subUsersDialogVisible, setSubUsersDialogVisible] = useState(false);
   const [subUsers, setSubUsers] = useState<any[]>([]);
   const [isLoadingSubUsers, setIsLoadingSubUsers] = useState(false);
+  const [selectedSubUserId, setSelectedSubUserId] = useState<string | null>(null);
+  const [isDeletingSubUser, setIsDeletingSubUser] = useState(false);
+  const [roleEditDialogVisible, setRoleEditDialogVisible] = useState(false);
+  const [editingSubUser, setEditingSubUser] = useState<any>(null);
+  const [isUpdatingRole, setIsUpdatingRole] = useState(false);
+  const [deleteSubUserDialogVisible, setDeleteSubUserDialogVisible] = useState(false);
+  const [subUserToDelete, setSubUserToDelete] = useState<{id: string, username: string} | null>(null);
+  const [logoutDialogVisible, setLogoutDialogVisible] = useState(false);
+  const [hasSubUsers, setHasSubUsers] = useState(false);
+  const [emailValidationDialogVisible, setEmailValidationDialogVisible] = useState(false);
+  const [emailValidationMessage, setEmailValidationMessage] = useState({ title: '', message: '' });
+  const [passwordValidationDialogVisible, setPasswordValidationDialogVisible] = useState(false);
+  const [passwordValidationMessage, setPasswordValidationMessage] = useState({ title: '', message: '' });
 
   // Stable style objects to prevent TextInput cursor jumping
   const inputSpacing = useMemo(() => ({ marginBottom: SPACING.md }), []);
@@ -39,6 +52,21 @@ export default function ProfileScreen() {
   const toggleConfirmPassword = useMemo(() => () => setShowConfirmPassword(prev => !prev), []);
   const toggleDeletePassword = useMemo(() => () => setShowDeletePassword(prev => !prev), []);
 
+  // Check if user has sub-users on mount
+  useEffect(() => {
+    const checkSubUsers = async () => {
+      try {
+        const result = await authService.getSubUsers();
+        if (result.success && result.data) {
+          setHasSubUsers(result.data.length > 0);
+        }
+      } catch (error) {
+        // Silently fail, button will remain hidden
+      }
+    };
+    checkSubUsers();
+  }, []);
+
   const handleChangeEmail = () => {
     setNewEmail(user?.email || '');
     setEmailDialogVisible(true);
@@ -46,19 +74,22 @@ export default function ProfileScreen() {
 
   const handleSaveEmail = async () => {
     if (!newEmail || !newEmail.trim()) {
-      Alert.alert('Virhe', 'Syötä uusi sähköpostiosoite');
+      setEmailValidationMessage({ title: 'Virhe', message: 'Syötä uusi sähköpostiosoite' });
+      setEmailValidationDialogVisible(true);
       return;
     }
 
     // Basic email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(newEmail)) {
-      Alert.alert('Virhe', 'Syötä kelvollinen sähköpostiosoite');
+      setEmailValidationMessage({ title: 'Virhe', message: 'Syötä kelvollinen sähköpostiosoite' });
+      setEmailValidationDialogVisible(true);
       return;
     }
 
     if (newEmail === user?.email) {
-      Alert.alert('Huomio', 'Uusi sähköposti on sama kuin nykyinen');
+      setEmailValidationMessage({ title: 'Huomio', message: 'Uusi sähköposti on sama kuin nykyinen' });
+      setEmailValidationDialogVisible(true);
       return;
     }
 
@@ -69,14 +100,17 @@ export default function ProfileScreen() {
         // Merge updated user with existing user to preserve fields like created_at
         const updatedUser = { ...user, ...result.user };
         updateUser(updatedUser);
-        Alert.alert('Onnistui', result.message);
+        setEmailValidationMessage({ title: 'Onnistui', message: result.message });
+        setEmailValidationDialogVisible(true);
         setEmailDialogVisible(false);
         setNewEmail('');
       } else {
-        Alert.alert('Virhe', result.message);
+        setEmailValidationMessage({ title: 'Virhe', message: result.message });
+        setEmailValidationDialogVisible(true);
       }
     } catch (error) {
-      Alert.alert('Virhe', 'Sähköpostin päivitys epäonnistui');
+      setEmailValidationMessage({ title: 'Virhe', message: 'Sähköpostin päivitys epäonnistui' });
+      setEmailValidationDialogVisible(true);
     } finally {
       setIsUpdatingEmail(false);
     }
@@ -94,27 +128,32 @@ export default function ProfileScreen() {
 
   const handleSavePassword = async () => {
     if (!oldPassword || !newPassword || !confirmPassword) {
-      Alert.alert('Virhe', 'Täytä kaikki kentät');
+      setPasswordValidationMessage({ title: 'Virhe', message: 'Täytä kaikki kentät' });
+      setPasswordValidationDialogVisible(true);
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      Alert.alert('Virhe', 'Uudet salasanat eivät täsmää');
+      setPasswordValidationMessage({ title: 'Virhe', message: 'Uudet salasanat eivät täsmää' });
+      setPasswordValidationDialogVisible(true);
       return;
     }
 
     if (newPassword.length < 8) {
-      Alert.alert('Virhe', 'Salasanan tulee olla vähintään 8 merkkiä');
+      setPasswordValidationMessage({ title: 'Virhe', message: 'Salasanan tulee olla vähintään 8 merkkiä' });
+      setPasswordValidationDialogVisible(true);
       return;
     }
 
     if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(newPassword)) {
-      Alert.alert('Virhe', 'Salasanan tulee sisältää iso kirjain, pieni kirjain ja numero');
+      setPasswordValidationMessage({ title: 'Virhe', message: 'Salasanan tulee sisältää iso kirjain, pieni kirjain ja numero' });
+      setPasswordValidationDialogVisible(true);
       return;
     }
 
     if (oldPassword === newPassword) {
-      Alert.alert('Huomio', 'Uusi salasana on sama kuin vanha');
+      setPasswordValidationMessage({ title: 'Huomio', message: 'Uusi salasana on sama kuin vanha' });
+      setPasswordValidationDialogVisible(true);
       return;
     }
 
@@ -122,16 +161,19 @@ export default function ProfileScreen() {
     try {
       const result = await authService.updatePassword(oldPassword, newPassword);
       if (result.success) {
-        Alert.alert('Onnistui', result.message);
+        setPasswordValidationMessage({ title: 'Onnistui', message: result.message });
+        setPasswordValidationDialogVisible(true);
         setPasswordDialogVisible(false);
         setOldPassword('');
         setNewPassword('');
         setConfirmPassword('');
       } else {
-        Alert.alert('Virhe', result.message);
+        setPasswordValidationMessage({ title: 'Virhe', message: result.message });
+        setPasswordValidationDialogVisible(true);
       }
     } catch (error) {
-      Alert.alert('Virhe', 'Salasanan päivitys epäonnistui');
+      setPasswordValidationMessage({ title: 'Virhe', message: 'Salasanan päivitys epäonnistui' });
+      setPasswordValidationDialogVisible(true);
     } finally {
       setIsUpdatingPassword(false);
     }
@@ -140,17 +182,87 @@ export default function ProfileScreen() {
   const handleViewSubUsers = async () => {
     setSubUsersDialogVisible(true);
     setIsLoadingSubUsers(true);
+    setSelectedSubUserId(null);
     try {
       const result = await authService.getSubUsers();
+      
       if (result.success && result.data) {
         setSubUsers(result.data);
+        setHasSubUsers(result.data.length > 0);
       } else {
         showSnackbar(result.message || 'Alikäyttäjien haku epäonnistui', 'error');
       }
     } catch (error) {
+      console.error('Sub-users fetch exception:', error);
       showSnackbar('Alikäyttäjien haku epäonnistui', 'error');
     } finally {
       setIsLoadingSubUsers(false);
+    }
+  };
+
+  const handleSelectSubUser = (subUserId: string) => {
+    setSelectedSubUserId(prev => prev === subUserId ? null : subUserId);
+  };
+
+  const handleEditSubUserRole = (subUser: any) => {
+    setEditingSubUser(subUser);
+    setRoleEditDialogVisible(true);
+  };
+
+  const handleUpdateRole = async (newRole: string) => {
+    if (!editingSubUser) return;
+
+    setIsUpdatingRole(true);
+    try {
+      const result = await authService.updateSubUserRole(editingSubUser.id, newRole);
+      if (result.success) {
+        showSnackbar(result.message, 'success');
+        setRoleEditDialogVisible(false);
+        setSelectedSubUserId(null);
+        // Refresh the sub-users list
+        const refreshResult = await authService.getSubUsers();
+        if (refreshResult.success && refreshResult.data) {
+          setSubUsers(refreshResult.data);
+        }
+      } else {
+        showSnackbar(result.message, 'error');
+      }
+    } catch (error) {
+      showSnackbar('Roolin päivitys epäonnistui', 'error');
+    } finally {
+      setIsUpdatingRole(false);
+    }
+  };
+
+  const handleDeleteSubUser = (subUserId: string, username: string) => {
+    setSubUserToDelete({ id: subUserId, username });
+    setDeleteSubUserDialogVisible(true);
+  };
+
+  const handleConfirmDeleteSubUser = async () => {
+    if (!subUserToDelete) return;
+
+    setIsDeletingSubUser(true);
+    try {
+      const result = await authService.deleteSubUser(subUserToDelete.id);
+      if (result.success) {
+        showSnackbar(result.message, 'success');
+        setSelectedSubUserId(null);
+        setDeleteSubUserDialogVisible(false);
+        // Refresh the sub-users list
+        const refreshResult = await authService.getSubUsers();
+        if (refreshResult.success && refreshResult.data) {
+          setSubUsers(refreshResult.data);
+          setHasSubUsers(refreshResult.data.length > 0);
+        }
+      } else {
+        showSnackbar(result.message, 'error');
+      }
+    } catch (error) {
+      showSnackbar('Alikäyttäjän poisto epäonnistui', 'error');
+    } finally {
+      setIsDeletingSubUser(false);
+      setSubUserToDelete(null);
     }
   };
 
@@ -190,17 +302,13 @@ export default function ProfileScreen() {
     }
   };
 
-  const handleLogout = async () => {
-    Alert.alert('Kirjaudu ulos', 'Haluatko varmasti kirjautua ulos?', [
-      { text: 'Peruuta', style: 'cancel' },
-      {
-        text: 'Kirjaudu ulos',
-        style: 'destructive',
-        onPress: async () => {
-          await logout();
-        },
-      },
-    ]);
+  const handleLogout = () => {
+    setLogoutDialogVisible(true);
+  };
+
+  const handleConfirmLogout = async () => {
+    setLogoutDialogVisible(false);
+    await logout();
   };
 
   // Format date to Finnish format
@@ -272,16 +380,18 @@ export default function ProfileScreen() {
 
       <Card style={styles.card}>
         <Card.Content>
-          <Button
-            mode="text"
-            onPress={handleViewSubUsers}
-            icon="account-group"
-            contentStyle={styles.buttonContent}
-            labelStyle={styles.buttonLabel}
-            style={styles.actionButton}
-          >
-            Näytä alikäyttäjät
-          </Button>
+          {hasSubUsers && (
+            <Button
+              mode="text"
+              onPress={handleViewSubUsers}
+              icon="account-group"
+              contentStyle={styles.buttonContent}
+              labelStyle={styles.buttonLabel}
+              style={styles.actionButton}
+            >
+              Näytä alikäyttäjät
+            </Button>
+          )}
 
           <Button
             mode="text"
@@ -334,11 +444,11 @@ export default function ProfileScreen() {
 
       <View style={styles.logoutContainer}>
         <Button
-          mode="contained"
+          mode="outlined"
           onPress={handleLogout}
           icon="logout"
-          buttonColor={COLORS.error}
-          style={styles.logoutButton}
+          textColor={COLORS.error}
+          style={{ borderColor: COLORS.error }}
         >
           Kirjaudu ulos
         </Button>
@@ -423,25 +533,61 @@ export default function ProfileScreen() {
               <View>
                 {subUsers.map((subUser, index) => (
                   <View 
-                    key={subUser.id || index} 
-                    style={{ 
-                      padding: SPACING.md, 
-                      backgroundColor: COLORS.surfaceVariant, 
-                      borderRadius: 8,
+                    key={subUser.id || index}
+                    style={{
                       marginBottom: index < subUsers.length - 1 ? SPACING.sm : 0
                     }}
                   >
-                    <Text variant="bodyLarge" style={{ fontWeight: 'bold', marginBottom: 4 }}>
-                      {subUser.name || subUser.username}
-                    </Text>
-                    <Text variant="bodyMedium" style={{ color: COLORS.onSurfaceVariant }}>
-                      {subUser.email}
-                    </Text>
-                    {subUser.username && subUser.name && (
-                      <Text variant="bodySmall" style={{ color: COLORS.onSurfaceVariant, marginTop: 4 }}>
-                        @{subUser.username}
-                      </Text>
-                    )}
+                    <Pressable
+                      onPress={() => handleSelectSubUser(subUser.id)}
+                      style={{ 
+                        padding: SPACING.md, 
+                        backgroundColor: COLORS.surfaceVariant, 
+                        borderRadius: 8,
+                        flexDirection: 'row',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        opacity: selectedSubUserId && selectedSubUserId !== subUser.id ? 0.4 : 1
+                      }}
+                    >
+                      <View style={{ flex: 1 }}>
+                        <Text variant="bodyLarge" style={{ fontWeight: 'bold', marginBottom: 8 }}>
+                          {subUser.username}
+                        </Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+                          <MaterialCommunityIcons name="email" size={16} color={COLORS.onSurfaceVariant} style={{ marginRight: 8 }} />
+                          <Text variant="bodyMedium" style={{ color: COLORS.onSurfaceVariant }}>
+                            {subUser.email}
+                          </Text>
+                        </View>
+                        {subUser.role && (
+                          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <MaterialCommunityIcons name="shield-account" size={16} color={COLORS.onSurfaceVariant} style={{ marginRight: 8 }} />
+                            <Text variant="bodySmall" style={{ color: COLORS.onSurfaceVariant, textTransform: 'capitalize' }}>
+                              {subUser.role}
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                      {selectedSubUserId === subUser.id && (
+                        <View style={{ flexDirection: 'column', gap: SPACING.sm }}>
+                          <Pressable
+                            onPress={() => handleEditSubUserRole(subUser)}
+                            disabled={isDeletingSubUser}
+                            style={{ padding: 8 }}
+                          >
+                            <MaterialCommunityIcons name="pencil" size={24} color={COLORS.primary} />
+                          </Pressable>
+                          <Pressable
+                            onPress={() => handleDeleteSubUser(subUser.id, subUser.username)}
+                            disabled={isDeletingSubUser}
+                            style={{ padding: 8 }}
+                          >
+                            <MaterialCommunityIcons name="delete" size={24} color={COLORS.error} />
+                          </Pressable>
+                        </View>
+                      )}
+                    </Pressable>
                   </View>
                 ))}
               </View>
@@ -456,6 +602,120 @@ export default function ProfileScreen() {
           <Dialog.Actions>
             <Button onPress={() => setSubUsersDialogVisible(false)}>
               Sulje
+            </Button>
+          </Dialog.Actions>
+        </Dialog>
+
+        <Dialog visible={roleEditDialogVisible} onDismiss={() => setRoleEditDialogVisible(false)}>
+          <Dialog.Title>Muuta roolia</Dialog.Title>
+          <Dialog.Content>
+            <View style={{ gap: SPACING.sm }}>
+              <Button
+                mode="contained"
+                onPress={() => handleUpdateRole('omistaja')}
+                disabled={isUpdatingRole}
+                loading={isUpdatingRole && editingSubUser?.role !== 'omistaja'}
+                icon="crown"
+                style={{ justifyContent: 'flex-start' }}
+              >
+                Omistaja
+              </Button>
+              <Button
+                mode="contained"
+                onPress={() => handleUpdateRole('hoitaja')}
+                disabled={isUpdatingRole}
+                loading={isUpdatingRole && editingSubUser?.role !== 'hoitaja'}
+                icon="account-heart"
+                style={{ justifyContent: 'flex-start' }}
+              >
+                Hoitaja
+              </Button>
+            </View>
+          </Dialog.Content>
+        </Dialog>
+
+        <Dialog 
+          visible={deleteSubUserDialogVisible} 
+          onDismiss={() => setDeleteSubUserDialogVisible(false)}
+          style={{ backgroundColor: 'rgba(255, 255, 255, 0.95)' }}
+        >
+          <Dialog.Title>Poista alikäyttäjä</Dialog.Title>
+          <Dialog.Content>
+            <Text variant="bodyMedium">
+              Haluatko varmasti poistaa alikäyttäjän "{subUserToDelete?.username}"?
+            </Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setDeleteSubUserDialogVisible(false)} disabled={isDeletingSubUser}>
+              Peruuta
+            </Button>
+            <Button 
+              onPress={handleConfirmDeleteSubUser} 
+              loading={isDeletingSubUser} 
+              disabled={isDeletingSubUser}
+              textColor={COLORS.error}
+            >
+              Poista
+            </Button>
+          </Dialog.Actions>
+        </Dialog>
+
+        <Dialog 
+          visible={passwordValidationDialogVisible} 
+          onDismiss={() => setPasswordValidationDialogVisible(false)}
+          style={{ backgroundColor: 'rgba(255, 255, 255, 0.95)' }}
+        >
+          <Dialog.Title>{passwordValidationMessage.title}</Dialog.Title>
+          <Dialog.Content>
+            <Text variant="bodyMedium">
+              {passwordValidationMessage.message}
+            </Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setPasswordValidationDialogVisible(false)}>
+              OK
+            </Button>
+          </Dialog.Actions>
+        </Dialog>
+
+        <Dialog 
+          visible={emailValidationDialogVisible} 
+          onDismiss={() => setEmailValidationDialogVisible(false)}
+          style={{ backgroundColor: 'rgba(255, 255, 255, 0.95)' }}
+        >
+          <Dialog.Title>{emailValidationMessage.title}</Dialog.Title>
+          <Dialog.Content>
+            <Text variant="bodyMedium">
+              {emailValidationMessage.message}
+            </Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setEmailValidationDialogVisible(false)}>
+              OK
+            </Button>
+          </Dialog.Actions>
+        </Dialog>
+
+        <Dialog 
+          visible={logoutDialogVisible} 
+          onDismiss={() => setLogoutDialogVisible(false)}
+          style={{ backgroundColor: 'rgba(255, 255, 255, 0.95)' }}
+        >
+          <Dialog.Title>Kirjaudu ulos</Dialog.Title>
+          <Dialog.Content>
+            <Text variant="bodyMedium">
+              Haluatko varmasti kirjautua ulos?
+            </Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setLogoutDialogVisible(false)}>
+              Peruuta
+            </Button>
+            <Button 
+              onPress={handleConfirmLogout}
+              textColor={COLORS.error}
+            >
+              Kirjaudu ulos
             </Button>
           </Dialog.Actions>
         </Dialog>

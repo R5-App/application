@@ -44,7 +44,7 @@ export const authService = {
   // Delete user account
   deleteAccount: async (userId: string, password: string): Promise<{ success: boolean; message: string }> => {
     try {
-      const response = await apiClient.delete(`/api/auth/account/${userId}`, {
+      await apiClient.delete(`/api/auth/account/${userId}`, {
         data: { password }
       });
       // Clear local data after successful deletion
@@ -55,7 +55,7 @@ export const authService = {
       console.error('Delete account error:', error);
       return {
         success: false,
-        message: error.response?.data?.message || 'Tilin poisto epäonnistui',
+        message: 'Tilin poisto epäonnistui',
       };
     }
   },
@@ -64,16 +64,63 @@ export const authService = {
   getSubUsers: async (): Promise<{ success: boolean; data?: any[]; message?: string }> => {
     try {
       const response = await apiClient.get('/api/auth/sub-users');
+      
+      // Handle different response formats
+      let subUsersData = [];
+      if (response.data.success && response.data.data?.subUsers) {
+        subUsersData = response.data.data.subUsers;
+      } else if (response.data.success && Array.isArray(response.data.data)) {
+        subUsersData = response.data.data;
+      } else if (Array.isArray(response.data)) {
+        subUsersData = response.data;
+      } else if (response.data.subUsers) {
+        subUsersData = response.data.subUsers;
+      }
+      
       return {
         success: true,
-        data: response.data.data || response.data || [],
+        data: subUsersData,
       };
     } catch (error: any) {
       console.error('Get sub-users error:', error);
       return {
         success: false,
         data: [],
-        message: error.response?.data?.message || 'Alikäyttäjien haku epäonnistui',
+        message: 'Alikäyttäjien haku epäonnistui',
+      };
+    }
+  },
+
+  // Remove/unlink a sub-user from the account
+  deleteSubUser: async (subUserId: string): Promise<{ success: boolean; message: string }> => {
+    try {
+      await apiClient.delete(`/api/auth/sub-user/${subUserId}`);
+      return {
+        success: true,
+        message: 'Alikäyttäjä poistettu onnistuneesti',
+      };
+    } catch (error: any) {
+      console.error('Delete sub-user error:', error);
+      return {
+        success: false,
+        message: 'Alikäyttäjän poisto epäonnistui',
+      };
+    }
+  },
+
+  // Update sub-user role
+  updateSubUserRole: async (subUserId: string, role: string): Promise<{ success: boolean; message: string }> => {
+    try {
+      await apiClient.put(`/api/auth/sub-user/${subUserId}/role`, { role });
+      return {
+        success: true,
+        message: 'Rooli päivitetty onnistuneesti',
+      };
+    } catch (error: any) {
+      console.error('Update sub-user role error:', error);
+      return {
+        success: false,
+        message: 'Roolin päivitys epäonnistui',
       };
     }
   },
@@ -95,13 +142,13 @@ export const authService = {
       }
       return {
         success: false,
-        message: response.data.message || 'Sähköpostin päivitys epäonnistui',
+        message: 'Sähköpostin päivitys epäonnistui',
       };
     } catch (error: any) {
       console.error('Update email error:', error);
       return {
         success: false,
-        message: error.response?.data?.message || 'Sähköpostin päivitys epäonnistui',
+        message: 'Sähköpostin päivitys epäonnistui',
       };
     }
   },
@@ -121,13 +168,13 @@ export const authService = {
       }
       return {
         success: false,
-        message: response.data.message || 'Salasanan päivitys epäonnistui',
+        message: 'Salasanan päivitys epäonnistui',
       };
     } catch (error: any) {
       console.error('Update password error:', error);
       return {
         success: false,
-        message: error.response?.data?.message || 'Salasanan päivitys epäonnistui',
+        message: 'Salasanan päivitys epäonnistui',
       };
     }
   },
