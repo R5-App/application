@@ -94,16 +94,16 @@ export const authService = {
   // Remove/unlink a sub-user from the account
   deleteSubUser: async (subUserId: string): Promise<{ success: boolean; message: string }> => {
     try {
-      const response = await apiClient.delete(`/api/auth/sub-user/${subUserId}`);
+      await apiClient.delete(`/api/auth/sub-user/${subUserId}`);
       return {
         success: true,
-        message: response.data.message || 'Alikäyttäjä poistettu onnistuneesti',
+        message: 'Alikäyttäjä poistettu onnistuneesti',
       };
     } catch (error: any) {
       console.error('Delete sub-user error:', error);
       return {
         success: false,
-        message: error.response?.data?.message || 'Alikäyttäjän poisto epäonnistui',
+        message: 'Alikäyttäjän poisto epäonnistui',
       };
     }
   },
