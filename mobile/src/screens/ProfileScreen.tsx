@@ -38,6 +38,10 @@ export default function ProfileScreen() {
   const [subUserToDelete, setSubUserToDelete] = useState<{id: string, username: string} | null>(null);
   const [logoutDialogVisible, setLogoutDialogVisible] = useState(false);
   const [hasSubUsers, setHasSubUsers] = useState(false);
+  const [emailValidationDialogVisible, setEmailValidationDialogVisible] = useState(false);
+  const [emailValidationMessage, setEmailValidationMessage] = useState({ title: '', message: '' });
+  const [passwordValidationDialogVisible, setPasswordValidationDialogVisible] = useState(false);
+  const [passwordValidationMessage, setPasswordValidationMessage] = useState({ title: '', message: '' });
 
   // Stable style objects to prevent TextInput cursor jumping
   const inputSpacing = useMemo(() => ({ marginBottom: SPACING.md }), []);
@@ -70,19 +74,22 @@ export default function ProfileScreen() {
 
   const handleSaveEmail = async () => {
     if (!newEmail || !newEmail.trim()) {
-      Alert.alert('Virhe', 'Syötä uusi sähköpostiosoite');
+      setEmailValidationMessage({ title: 'Virhe', message: 'Syötä uusi sähköpostiosoite' });
+      setEmailValidationDialogVisible(true);
       return;
     }
 
     // Basic email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(newEmail)) {
-      Alert.alert('Virhe', 'Syötä kelvollinen sähköpostiosoite');
+      setEmailValidationMessage({ title: 'Virhe', message: 'Syötä kelvollinen sähköpostiosoite' });
+      setEmailValidationDialogVisible(true);
       return;
     }
 
     if (newEmail === user?.email) {
-      Alert.alert('Huomio', 'Uusi sähköposti on sama kuin nykyinen');
+      setEmailValidationMessage({ title: 'Huomio', message: 'Uusi sähköposti on sama kuin nykyinen' });
+      setEmailValidationDialogVisible(true);
       return;
     }
 
@@ -93,14 +100,17 @@ export default function ProfileScreen() {
         // Merge updated user with existing user to preserve fields like created_at
         const updatedUser = { ...user, ...result.user };
         updateUser(updatedUser);
-        Alert.alert('Onnistui', result.message);
+        setEmailValidationMessage({ title: 'Onnistui', message: result.message });
+        setEmailValidationDialogVisible(true);
         setEmailDialogVisible(false);
         setNewEmail('');
       } else {
-        Alert.alert('Virhe', result.message);
+        setEmailValidationMessage({ title: 'Virhe', message: result.message });
+        setEmailValidationDialogVisible(true);
       }
     } catch (error) {
-      Alert.alert('Virhe', 'Sähköpostin päivitys epäonnistui');
+      setEmailValidationMessage({ title: 'Virhe', message: 'Sähköpostin päivitys epäonnistui' });
+      setEmailValidationDialogVisible(true);
     } finally {
       setIsUpdatingEmail(false);
     }
@@ -118,27 +128,32 @@ export default function ProfileScreen() {
 
   const handleSavePassword = async () => {
     if (!oldPassword || !newPassword || !confirmPassword) {
-      Alert.alert('Virhe', 'Täytä kaikki kentät');
+      setPasswordValidationMessage({ title: 'Virhe', message: 'Täytä kaikki kentät' });
+      setPasswordValidationDialogVisible(true);
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      Alert.alert('Virhe', 'Uudet salasanat eivät täsmää');
+      setPasswordValidationMessage({ title: 'Virhe', message: 'Uudet salasanat eivät täsmää' });
+      setPasswordValidationDialogVisible(true);
       return;
     }
 
     if (newPassword.length < 8) {
-      Alert.alert('Virhe', 'Salasanan tulee olla vähintään 8 merkkiä');
+      setPasswordValidationMessage({ title: 'Virhe', message: 'Salasanan tulee olla vähintään 8 merkkiä' });
+      setPasswordValidationDialogVisible(true);
       return;
     }
 
     if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(newPassword)) {
-      Alert.alert('Virhe', 'Salasanan tulee sisältää iso kirjain, pieni kirjain ja numero');
+      setPasswordValidationMessage({ title: 'Virhe', message: 'Salasanan tulee sisältää iso kirjain, pieni kirjain ja numero' });
+      setPasswordValidationDialogVisible(true);
       return;
     }
 
     if (oldPassword === newPassword) {
-      Alert.alert('Huomio', 'Uusi salasana on sama kuin vanha');
+      setPasswordValidationMessage({ title: 'Huomio', message: 'Uusi salasana on sama kuin vanha' });
+      setPasswordValidationDialogVisible(true);
       return;
     }
 
@@ -146,16 +161,19 @@ export default function ProfileScreen() {
     try {
       const result = await authService.updatePassword(oldPassword, newPassword);
       if (result.success) {
-        Alert.alert('Onnistui', result.message);
+        setPasswordValidationMessage({ title: 'Onnistui', message: result.message });
+        setPasswordValidationDialogVisible(true);
         setPasswordDialogVisible(false);
         setOldPassword('');
         setNewPassword('');
         setConfirmPassword('');
       } else {
-        Alert.alert('Virhe', result.message);
+        setPasswordValidationMessage({ title: 'Virhe', message: result.message });
+        setPasswordValidationDialogVisible(true);
       }
     } catch (error) {
-      Alert.alert('Virhe', 'Salasanan päivitys epäonnistui');
+      setPasswordValidationMessage({ title: 'Virhe', message: 'Salasanan päivitys epäonnistui' });
+      setPasswordValidationDialogVisible(true);
     } finally {
       setIsUpdatingPassword(false);
     }
@@ -638,6 +656,42 @@ export default function ProfileScreen() {
               textColor={COLORS.error}
             >
               Poista
+            </Button>
+          </Dialog.Actions>
+        </Dialog>
+
+        <Dialog 
+          visible={passwordValidationDialogVisible} 
+          onDismiss={() => setPasswordValidationDialogVisible(false)}
+          style={{ backgroundColor: 'rgba(255, 255, 255, 0.95)' }}
+        >
+          <Dialog.Title>{passwordValidationMessage.title}</Dialog.Title>
+          <Dialog.Content>
+            <Text variant="bodyMedium">
+              {passwordValidationMessage.message}
+            </Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setPasswordValidationDialogVisible(false)}>
+              OK
+            </Button>
+          </Dialog.Actions>
+        </Dialog>
+
+        <Dialog 
+          visible={emailValidationDialogVisible} 
+          onDismiss={() => setEmailValidationDialogVisible(false)}
+          style={{ backgroundColor: 'rgba(255, 255, 255, 0.95)' }}
+        >
+          <Dialog.Title>{emailValidationMessage.title}</Dialog.Title>
+          <Dialog.Content>
+            <Text variant="bodyMedium">
+              {emailValidationMessage.message}
+            </Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setEmailValidationDialogVisible(false)}>
+              OK
             </Button>
           </Dialog.Actions>
         </Dialog>
