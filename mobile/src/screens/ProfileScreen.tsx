@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { View, ScrollView, Alert, Pressable } from 'react-native';
 import { Text, Card, Button, Divider, Portal, Dialog, TextInput } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -37,6 +37,7 @@ export default function ProfileScreen() {
   const [deleteSubUserDialogVisible, setDeleteSubUserDialogVisible] = useState(false);
   const [subUserToDelete, setSubUserToDelete] = useState<{id: string, username: string} | null>(null);
   const [logoutDialogVisible, setLogoutDialogVisible] = useState(false);
+  const [hasSubUsers, setHasSubUsers] = useState(false);
 
   // Stable style objects to prevent TextInput cursor jumping
   const inputSpacing = useMemo(() => ({ marginBottom: SPACING.md }), []);
@@ -46,6 +47,21 @@ export default function ProfileScreen() {
   const toggleNewPassword = useMemo(() => () => setShowNewPassword(prev => !prev), []);
   const toggleConfirmPassword = useMemo(() => () => setShowConfirmPassword(prev => !prev), []);
   const toggleDeletePassword = useMemo(() => () => setShowDeletePassword(prev => !prev), []);
+
+  // Check if user has sub-users on mount
+  useEffect(() => {
+    const checkSubUsers = async () => {
+      try {
+        const result = await authService.getSubUsers();
+        if (result.success && result.data) {
+          setHasSubUsers(result.data.length > 0);
+        }
+      } catch (error) {
+        // Silently fail, button will remain hidden
+      }
+    };
+    checkSubUsers();
+  }, []);
 
   const handleChangeEmail = () => {
     setNewEmail(user?.email || '');
@@ -154,6 +170,7 @@ export default function ProfileScreen() {
       
       if (result.success && result.data) {
         setSubUsers(result.data);
+        setHasSubUsers(result.data.length > 0);
       } else {
         showSnackbar(result.message || 'Alikäyttäjien haku epäonnistui', 'error');
       }
@@ -218,6 +235,7 @@ export default function ProfileScreen() {
         const refreshResult = await authService.getSubUsers();
         if (refreshResult.success && refreshResult.data) {
           setSubUsers(refreshResult.data);
+          setHasSubUsers(refreshResult.data.length > 0);
         }
       } else {
         showSnackbar(result.message, 'error');
@@ -344,16 +362,18 @@ export default function ProfileScreen() {
 
       <Card style={styles.card}>
         <Card.Content>
-          <Button
-            mode="text"
-            onPress={handleViewSubUsers}
-            icon="account-group"
-            contentStyle={styles.buttonContent}
-            labelStyle={styles.buttonLabel}
-            style={styles.actionButton}
-          >
-            Näytä alikäyttäjät
-          </Button>
+          {hasSubUsers && (
+            <Button
+              mode="text"
+              onPress={handleViewSubUsers}
+              icon="account-group"
+              contentStyle={styles.buttonContent}
+              labelStyle={styles.buttonLabel}
+              style={styles.actionButton}
+            >
+              Näytä alikäyttäjät
+            </Button>
+          )}
 
           <Button
             mode="text"
