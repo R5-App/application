@@ -155,6 +155,8 @@ export default function ProfileScreen() {
       if (result.success) {
         setDeleteDialogVisible(false);
         setDeletePassword('');
+        // Show success message
+        Alert.alert('Tili poistettu onnistuneesti', result.message);
         // AuthContext deleteAccount updates state and triggers navigation
       } else {
         Alert.alert('Virhe', result.message);
