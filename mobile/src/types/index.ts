@@ -53,3 +53,36 @@ export interface HealthRecord {
   date: string;
   notes?: string;
 }
+
+// Walk tracking types
+export interface Coordinate {
+  latitude: number;
+  longitude: number;
+  altitude?: number;
+  timestamp: number;
+}
+
+export interface WalkStats {
+  distance: number; // meters
+  duration: number; // seconds
+  averageSpeed: number; // km/h
+  steps?: number;
+  calories?: number;
+}
+
+export interface Walk {
+  id: string;
+  startTime: number;
+  endTime: number;
+  coordinates: Coordinate[];
+  stats: WalkStats;
+  petId: string;
+  petName: string;
+  synced: boolean;
+}
+
+export interface WalkSettings {
+  enableSync: boolean;
+  autoStartOnMovement: boolean;
+  trackSteps: boolean;
+}

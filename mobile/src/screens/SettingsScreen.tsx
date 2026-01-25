@@ -2,11 +2,13 @@ import React from 'react';
 import { ScrollView, View } from 'react-native';
 import { Text, List, Switch, Button, Portal, Dialog } from 'react-native-paper';
 import { useAuth } from '@contexts/AuthContext';
+import { useWalk } from '@contexts/WalkContext';
 import { settingsStyles as styles } from '../styles/screenStyles';
 import { COLORS } from '../styles/theme';
 
 export default function SettingsScreen() {
   const { user, logout } = useAuth();
+  const { settings, updateSettings } = useWalk();
   const [notifications, setNotifications] = React.useState(true);
   const [darkMode, setDarkMode] = React.useState(false);
   const [logoutDialogVisible, setLogoutDialogVisible] = React.useState(false);
@@ -57,6 +59,36 @@ export default function SettingsScreen() {
             <Switch
               value={darkMode}
               onValueChange={setDarkMode}
+            />
+          )}
+        />
+      </View>
+
+      <View style={styles.section}>
+        <Text variant="titleMedium" style={styles.sectionTitle}>
+          Lenkkiasetukset
+        </Text>
+        <List.Item
+          title="Synkronoi lenkit pilvipalveluun"
+          description="Tallenna lenkit automaattisesti pilvipalveluun"
+          right={() => (
+            <Switch
+              value={settings.enableSync}
+              onValueChange={(value) => 
+                updateSettings({ ...settings, enableSync: value })
+              }
+            />
+          )}
+        />
+        <List.Item
+          title="Seuraa askelmäärää"
+          description="Käytä laitteen askelmittaria"
+          right={() => (
+            <Switch
+              value={settings.trackSteps}
+              onValueChange={(value) => 
+                updateSettings({ ...settings, trackSteps: value })
+              }
             />
           )}
         />

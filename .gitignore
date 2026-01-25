@@ -137,3 +137,16 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# Expo prebuild generated folders (älä commitoi)
+mobile/android/
+mobile/ios/
+
+# Signing files (turvallisuussyistä)
+*.keystore
+*.p12
+*.mobileprovision
+*.p8
+*.cer
+*.certSigningRequest
+*-base64.txt
