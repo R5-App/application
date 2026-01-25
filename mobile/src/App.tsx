@@ -4,6 +4,7 @@ import { PaperProvider } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider } from '@contexts/AuthContext';
 import { SnackbarProvider } from '@contexts/SnackbarContext';
+import { WalkProvider } from '@contexts/WalkContext';
 import Navigation from '@navigation/Navigation';
 import MD3Theme from './styles/theme';
 
@@ -14,7 +15,9 @@ export default function App() {
         <PaperProvider theme={MD3Theme}>
           <SnackbarProvider>
             <AuthProvider>
-              <Navigation />
+              <WalkProvider>
+                <Navigation />
+              </WalkProvider>
             </AuthProvider>
           </SnackbarProvider>
         </PaperProvider>

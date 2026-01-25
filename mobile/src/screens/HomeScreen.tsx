@@ -4,11 +4,13 @@ import { Text, Card, IconButton } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../contexts/AuthContext';
+import { useWalk } from '@contexts/WalkContext';
 import { homeStyles as styles } from '../styles/screenStyles';
 import { COLORS, SPACING } from '../styles/theme';
 
 export default function HomeScreen() {
   const { user } = useAuth();
+  const { walks } = useWalk();
   const navigation = useNavigation();
   const paw1 = useRef(new Animated.Value(0)).current;
   const paw2 = useRef(new Animated.Value(0)).current;
@@ -86,6 +88,16 @@ export default function HomeScreen() {
             <Text variant="titleLarge" style={{ marginTop: SPACING.md }}>Terveys</Text>
             <Text variant="bodyMedium" style={[styles.cardText, { textAlign: 'center' }]}>
               Rokotukset ja lääkitys
+            </Text>
+          </Card.Content>
+        </Card>
+
+        <Card style={styles.card} onPress={() => navigation.navigate('WalkHistory' as never)}>
+          <Card.Content style={{ alignItems: 'center' }}>
+            <MaterialCommunityIcons name="run" size={64} color={COLORS.primary} />
+            <Text variant="titleLarge" style={{ marginTop: SPACING.md }}>Lenkit</Text>
+            <Text variant="bodyMedium" style={[styles.cardText, { textAlign: 'center' }]}>
+              {walks.length} tallennettua lenkkiä
             </Text>
           </Card.Content>
         </Card>

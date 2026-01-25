@@ -15,5 +15,5 @@ export const COLORS = {
 };
 
 // API
-export const API_BASE_URL = 'http://77.42.94.212';
+export const API_BASE_URL = 'https://mypet.zroot.it';
 export const API_TIMEOUT = 30000;

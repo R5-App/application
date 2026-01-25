@@ -12,6 +12,9 @@ import SettingsScreen from '@screens/SettingsScreen';
 import ProfileScreen from '@screens/ProfileScreen';
 import LoginScreen from '@screens/LoginScreen';
 import RegisterScreen from '@screens/RegisterScreen';
+import MapScreen from '@screens/MapScreen';
+import WalkHistoryScreen from '@screens/WalkHistoryScreen';
+import WalkDetailScreen from '@screens/WalkDetailScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -73,6 +76,8 @@ function HomeTabs() {
             iconName = 'home';
           } else if (route.name === 'PetsTab') {
             iconName = 'paw';
+          } else if (route.name === 'MapTab') {
+            iconName = 'map-marker-path';
           } else if (route.name === 'SettingsTab') {
             iconName = 'cog';
           } else {
@@ -84,6 +89,13 @@ function HomeTabs() {
         tabBarActiveTintColor: COLORS.primary,
         tabBarInactiveTintColor: COLORS.onSurfaceVariant,
         headerShown: false,
+        tabBarStyle: route.name === 'MapTab' ? {
+          position: 'absolute',
+          backgroundColor: 'rgba(255, 255, 255, 0.35)',
+          borderTopColor: 'rgba(0, 0, 0, 0.1)',
+        } : {
+          backgroundColor: COLORS.surface,
+        },
       })}
     >
       <Tab.Screen
@@ -100,6 +112,14 @@ function HomeTabs() {
         options={{
           title: 'Lemmikki',
           tabBarLabel: 'Lemmikki',
+        }}
+      />
+      <Tab.Screen
+        name="MapTab"
+        component={MapScreen}
+        options={{
+          title: 'Kartta',
+          tabBarLabel: 'Kartta',
         }}
       />
       <Tab.Screen
@@ -130,6 +150,22 @@ export default function Navigation() {
               name="HomeTabs"
               component={HomeTabs}
               options={{ headerShown: false }}
+            />
+            <Stack.Screen
+              name="WalkHistory"
+              component={WalkHistoryScreen}
+              options={{
+                title: 'Lenkkihistoria',
+                headerBackTitle: 'Takaisin',
+              }}
+            />
+            <Stack.Screen
+              name="WalkDetail"
+              component={WalkDetailScreen}
+              options={{
+                title: 'Lenkin reitti',
+                headerShown: false,
+              }}
             />
             <Stack.Screen
               name="Profile"

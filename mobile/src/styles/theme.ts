@@ -198,6 +198,12 @@ export const LAYOUT = {
   iconMd: 24,
   iconLg: 32,
   iconXl: 48,
+  
+  // Border radius
+  radiusSm: BORDER_RADIUS.small,
+  radiusMd: BORDER_RADIUS.medium,
+  radiusLg: BORDER_RADIUS.large,
+  radiusXl: BORDER_RADIUS.extraLarge,
 };
 
 // ============================================
