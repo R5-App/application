@@ -15,6 +15,11 @@ import RegisterScreen from '@screens/RegisterScreen';
 import MapScreen from '@screens/MapScreen';
 import WalkHistoryScreen from '@screens/WalkHistoryScreen';
 import WalkDetailScreen from '@screens/WalkDetailScreen';
+import HealthScreen from '@screens/HealthScreen';
+import VisitsScreen from '@screens/VisitsScreen';
+import MedicationsScreen from '@screens/MedicationsScreen';
+import VaccinationsScreen from '@screens/VaccinationsScreen';
+import WeightManagementScreen from '@screens/WeightManagementScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -172,6 +177,46 @@ export default function Navigation() {
               component={ProfileScreen}
               options={{
                 title: 'Profiili',
+                headerBackTitle: 'Takaisin',
+              }}
+            />
+            <Stack.Screen
+              name="Health"
+              component={HealthScreen}
+              options={{
+                title: 'Terveys',
+                headerBackTitle: 'Takaisin',
+              }}
+            />
+            <Stack.Screen
+              name="Visits"
+              component={VisitsScreen}
+              options={{
+                title: 'Käynnit',
+                headerBackTitle: 'Takaisin',
+              }}
+            />
+            <Stack.Screen
+              name="Medications"
+              component={MedicationsScreen}
+              options={{
+                title: 'Lääkitykset',
+                headerBackTitle: 'Takaisin',
+              }}
+            />
+            <Stack.Screen
+              name="Vaccinations"
+              component={VaccinationsScreen}
+              options={{
+                title: 'Rokotukset',
+                headerBackTitle: 'Takaisin',
+              }}
+            />
+            <Stack.Screen
+              name="WeightManagement"
+              component={WeightManagementScreen}
+              options={{
+                title: 'Painonhallinta',
                 headerBackTitle: 'Takaisin',
               }}
             />
