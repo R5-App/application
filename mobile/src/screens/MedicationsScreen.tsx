@@ -1,15 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, ScrollView, StyleSheet } from 'react-native';
-import { Text, Card, FAB, Chip, Divider } from 'react-native-paper';
+import { Text, Card, FAB, Chip, Divider, ActivityIndicator } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLORS, SPACING } from '../styles/theme';
-
-interface Pet {
-  id: string;
-  name: string;
-  breed: string;
-  age: number;
-}
+import apiClient from '../services/api';
+import { Pet } from '../types';
 
 interface Medication {
   id: string;
@@ -26,12 +21,39 @@ interface Medication {
 }
 
 export default function MedicationsScreen() {
-  // Mock data - replace with actual data from context/API
-  const [pets] = useState<Pet[]>([]);
-
+  const [pets, setPets] = useState<Pet[]>([]);
   const [medications] = useState<Medication[]>([]);
+  const [selectedPetId, setSelectedPetId] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const [selectedPetId, setSelectedPetId] = useState<string>(pets[0]?.id || '');
+  // Fetch pets from the API
+  useEffect(() => {
+    const fetchPets = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await apiClient.get('/api/pets');
+        
+        if (response.data.success && response.data.data) {
+          const fetchedPets = response.data.data;
+          setPets(fetchedPets);
+          
+          // Set the first pet as selected by default
+          if (fetchedPets.length > 0) {
+            setSelectedPetId(fetchedPets[0].id);
+          }
+        }
+      } catch (err: any) {
+        console.error('Failed to fetch pets:', err);
+        setError('Lemmikit eivät latautuneet. Yritä uudelleen.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPets();
+  }, []);
 
   const selectedPetMedications = medications
     .filter(med => med.petId === selectedPetId)
@@ -136,6 +158,35 @@ export default function MedicationsScreen() {
       </Text>
     </View>
   );
+
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.emptyContainer}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+          <Text variant="bodyMedium" style={[styles.emptyText, { marginTop: SPACING.md }]}>
+            Ladataan lemmikkejä...
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.emptyContainer}>
+          <MaterialCommunityIcons name="alert-circle" size={64} color={COLORS.error} />
+          <Text variant="headlineSmall" style={styles.emptyTitle}>
+            Virhe
+          </Text>
+          <Text variant="bodyMedium" style={styles.emptyText}>
+            {error}
+          </Text>
+        </View>
+      </View>
+    );
+  }
 
   if (pets.length === 0) {
     return (

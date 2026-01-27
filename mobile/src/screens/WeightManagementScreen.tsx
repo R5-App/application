@@ -1,16 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, ScrollView, StyleSheet, Dimensions } from 'react-native';
-import { Text, Card, FAB, Chip, Divider } from 'react-native-paper';
+import { Text, Card, FAB, Chip, Divider, ActivityIndicator } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Svg, { Line, Circle } from 'react-native-svg';
 import { COLORS, SPACING } from '../styles/theme';
-
-interface Pet {
-  id: string;
-  name: string;
-  breed: string;
-  age: number;
-}
+import apiClient from '../services/api';
+import { Pet } from '../types';
 
 interface WeightRecord {
   id: string;
@@ -23,13 +18,40 @@ interface WeightRecord {
 }
 
 export default function WeightManagementScreen() {
-  // Mock data - replace with actual data from context/API
-  const [pets] = useState<Pet[]>([]);
-
+  const [pets, setPets] = useState<Pet[]>([]);
   const [weightRecords] = useState<WeightRecord[]>([]);
-
-  const [selectedPetId, setSelectedPetId] = useState<string>(pets[0]?.id || '');
+  const [selectedPetId, setSelectedPetId] = useState<string>('');
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch pets from the API
+  useEffect(() => {
+    const fetchPets = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await apiClient.get('/api/pets');
+        
+        if (response.data.success && response.data.data) {
+          const fetchedPets = response.data.data;
+          setPets(fetchedPets);
+          
+          // Set the first pet as selected by default
+          if (fetchedPets.length > 0) {
+            setSelectedPetId(fetchedPets[0].id);
+          }
+        }
+      } catch (err: any) {
+        console.error('Failed to fetch pets:', err);
+        setError('Lemmikit eivät latautuneet. Yritä uudelleen.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPets();
+  }, []);
   const selectedPetWeights = weightRecords
     .filter(record => record.petId === selectedPetId)
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -142,6 +164,35 @@ export default function WeightManagementScreen() {
       </Text>
     </View>
   );
+
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.emptyContainer}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+          <Text variant="bodyMedium" style={[styles.emptyText, { marginTop: SPACING.md }]}>
+            Ladataan lemmikkejä...
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.emptyContainer}>
+          <MaterialCommunityIcons name="alert-circle" size={64} color={COLORS.error} />
+          <Text variant="headlineSmall" style={styles.emptyTitle}>
+            Virhe
+          </Text>
+          <Text variant="bodyMedium" style={styles.emptyText}>
+            {error}
+          </Text>
+        </View>
+      </View>
+    );
+  }
 
   if (pets.length === 0) {
     return (
