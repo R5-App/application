@@ -7,35 +7,37 @@ import apiClient from '../services/api';
 import { Pet } from '../types';
 
 interface Vaccination {
-  id: string;
+  id: number;
   petId: number;
-  name: string;
-  date: string;
-  nextDueDate?: string;
-  batchNumber?: string;
-  veterinarian: string;
-  clinic: string;
+  vac_name: string;
+  vaccination_date: string;
+  expire_date?: string;
+  costs?: string;
   notes?: string;
-  isUpToDate: boolean;
 }
 
 export default function VaccinationsScreen() {
   const [pets, setPets] = useState<Pet[]>([]);
-  const [vaccinations] = useState<Vaccination[]>([]);
+  const [vaccinations, setVaccinations] = useState<Vaccination[]>([]);
   const [selectedPetId, setSelectedPetId] = useState<number | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch pets from the API
+  // Fetch pets and vaccinations from the API
   useEffect(() => {
-    const fetchPets = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
         setError(null);
-        const response = await apiClient.get('/api/pets');
         
-        if (response.data.success && response.data.data) {
-          const fetchedPets = response.data.data;
+        // Fetch both pets and vaccinations in parallel
+        const [petsResponse, vaccinationsResponse] = await Promise.all([
+          apiClient.get('/api/pets'),
+          apiClient.get('/api/vaccinations')
+        ]);
+        
+        if (petsResponse.data.success && petsResponse.data.data) {
+          const fetchedPets = petsResponse.data.data;
           setPets(fetchedPets);
           
           // Set the first pet as selected by default
@@ -43,20 +45,44 @@ export default function VaccinationsScreen() {
             setSelectedPetId(fetchedPets[0].id);
           }
         }
+
+        if (vaccinationsResponse.data.success && vaccinationsResponse.data.data) {
+          const vaccinationsData = vaccinationsResponse.data.data;
+          
+          // If nested structure (array of pet vaccination groups)
+          if (Array.isArray(vaccinationsData) && vaccinationsData.length > 0 && vaccinationsData[0].vaccinations) {
+            const flattenedVaccinations: Vaccination[] = [];
+            vaccinationsData.forEach((petVacGroup: any) => {
+              const petId = petVacGroup.pet_id;
+              if (petVacGroup.vaccinations && Array.isArray(petVacGroup.vaccinations)) {
+                petVacGroup.vaccinations.forEach((vac: any) => {
+                  flattenedVaccinations.push({
+                    ...vac,
+                    petId: petId
+                  });
+                });
+              }
+            });
+            setVaccinations(flattenedVaccinations);
+          } else {
+            // If flat structure
+            setVaccinations(vaccinationsData);
+          }
+        }
       } catch (err: any) {
-        console.error('Failed to fetch pets:', err);
-        setError('Lemmikit eivät latautuneet. Yritä uudelleen.');
+        console.error('Failed to fetch data:', err);
+        setError('Tietojen lataus epäonnistui. Yritä uudelleen.');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchPets();
+    fetchData();
   }, []);
 
   const selectedPetVaccinations = vaccinations
     .filter(vac => vac.petId === selectedPetId)
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    .sort((a, b) => new Date(b.vaccination_date).getTime() - new Date(a.vaccination_date).getTime());
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -67,49 +93,36 @@ export default function VaccinationsScreen() {
     });
   };
 
-  const isOverdue = (nextDueDate?: string) => {
-    if (!nextDueDate) return false;
-    return new Date(nextDueDate) < new Date();
+  const isOverdue = (expireDate?: string) => {
+    if (!expireDate) return false;
+    return new Date(expireDate) < new Date();
   };
 
   const renderVaccinationCard = (vaccination: Vaccination) => {
-    const overdue = isOverdue(vaccination.nextDueDate);
+    const overdue = isOverdue(vaccination.expire_date);
     
     return (
       <Card key={vaccination.id} style={styles.vaccinationCard}>
         <Card.Content>
           <View style={styles.vaccinationHeader}>
             <Text variant="titleLarge" style={styles.vaccinationName}>
-              {vaccination.name}
+              {vaccination.vac_name}
             </Text>
-            <Chip
-              icon={
-                overdue ? 'alert-circle' : 
-                vaccination.isUpToDate ? 'check-circle' : 'clock-outline'
-              }
-              compact
-              style={[
-                styles.statusChip,
-                overdue ? styles.overdueChip :
-                vaccination.isUpToDate ? styles.upToDateChip : styles.pendingChip
-              ]}
-              textStyle={
-                overdue ? styles.overdueChipText :
-                vaccination.isUpToDate ? styles.upToDateChipText : styles.pendingChipText
-              }
-            >
-              {overdue ? 'Myöhässä' : vaccination.isUpToDate ? 'Voimassa' : 'Odottaa'}
-            </Chip>
+            {vaccination.costs && (
+              <Chip icon="currency-eur" compact>
+                {vaccination.costs} €
+              </Chip>
+            )}
           </View>
 
           <View style={styles.dateContainer}>
             <MaterialCommunityIcons name="calendar-check" size={20} color={COLORS.primary} />
             <Text variant="titleMedium" style={styles.dateText}>
-              Annettu: {formatDate(vaccination.date)}
+              Annettu: {formatDate(vaccination.vaccination_date)}
             </Text>
           </View>
 
-          {vaccination.nextDueDate && (
+          {vaccination.expire_date && (
             <View style={[styles.dateContainer, { marginTop: SPACING.xs }]}>
               <MaterialCommunityIcons 
                 name="calendar-clock" 
@@ -120,26 +133,10 @@ export default function VaccinationsScreen() {
                 variant="bodyMedium" 
                 style={[styles.nextDueText, overdue && styles.overdueText]}
               >
-                Voimassa: {formatDate(vaccination.nextDueDate)}
+                Voimassa: {formatDate(vaccination.expire_date)}
               </Text>
             </View>
           )}
-
-          <Divider style={styles.divider} />
-
-          <View style={styles.vaccinationDetail}>
-            <MaterialCommunityIcons name="hospital-building" size={18} color={COLORS.onSurfaceVariant} />
-            <Text variant="bodyMedium" style={styles.detailText}>
-              {vaccination.clinic}
-            </Text>
-          </View>
-
-          <View style={styles.vaccinationDetail}>
-            <MaterialCommunityIcons name="doctor" size={18} color={COLORS.onSurfaceVariant} />
-            <Text variant="bodyMedium" style={styles.detailText}>
-              {vaccination.veterinarian}
-            </Text>
-          </View>
 
           {vaccination.notes && (
             <>
