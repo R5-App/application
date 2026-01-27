@@ -7,36 +7,37 @@ import apiClient from '../services/api';
 import { Pet } from '../types';
 
 interface Medication {
-  id: string;
+  id: number;
   petId: number;
-  name: string;
-  dosage: string;
-  frequency: string;
-  startDate: string;
-  endDate?: string;
-  purpose: string;
-  prescribedBy: string;
+  med_name: string;
+  medication_date: string;
+  expire_date?: string;
+  costs?: string;
   notes?: string;
-  isActive: boolean;
 }
 
 export default function MedicationsScreen() {
   const [pets, setPets] = useState<Pet[]>([]);
-  const [medications] = useState<Medication[]>([]);
+  const [medications, setMedications] = useState<Medication[]>([]);
   const [selectedPetId, setSelectedPetId] = useState<number | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch pets from the API
+  // Fetch pets and medications from the API
   useEffect(() => {
-    const fetchPets = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
         setError(null);
-        const response = await apiClient.get('/api/pets');
         
-        if (response.data.success && response.data.data) {
-          const fetchedPets = response.data.data;
+        // Fetch both pets and medications in parallel
+        const [petsResponse, medicationsResponse] = await Promise.all([
+          apiClient.get('/api/pets'),
+          apiClient.get('/api/medications')
+        ]);
+        
+        if (petsResponse.data.success && petsResponse.data.data) {
+          const fetchedPets = petsResponse.data.data;
           setPets(fetchedPets);
           
           // Set the first pet as selected by default
@@ -44,24 +45,48 @@ export default function MedicationsScreen() {
             setSelectedPetId(fetchedPets[0].id);
           }
         }
+
+        if (medicationsResponse.data.success && medicationsResponse.data.data) {
+          // Check if medications are nested like visits
+          const medicationsData = medicationsResponse.data.data;
+          console.log('Medications response:', medicationsData);
+          
+          // If nested structure (array of pet medication groups)
+          if (Array.isArray(medicationsData) && medicationsData.length > 0 && medicationsData[0].medications) {
+            const flattenedMedications: Medication[] = [];
+            medicationsData.forEach((petMedGroup: any) => {
+              const petId = petMedGroup.pet_id;
+              if (petMedGroup.medications && Array.isArray(petMedGroup.medications)) {
+                petMedGroup.medications.forEach((med: any) => {
+                  flattenedMedications.push({
+                    ...med,
+                    petId: petId
+                  });
+                });
+              }
+            });
+            setMedications(flattenedMedications);
+          } else {
+            // If flat structure
+            setMedications(medicationsData);
+          }
+        }
       } catch (err: any) {
-        console.error('Failed to fetch pets:', err);
-        setError('Lemmikit eivät latautuneet. Yritä uudelleen.');
+        console.error('Failed to fetch data:', err);
+        setError('Tietojen lataus epäonnistui. Yritä uudelleen.');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchPets();
+    fetchData();
   }, []);
 
   const selectedPetMedications = medications
     .filter(med => med.petId === selectedPetId)
     .sort((a, b) => {
-      if (a.isActive === b.isActive) {
-        return new Date(b.startDate).getTime() - new Date(a.startDate).getTime();
-      }
-      return a.isActive ? -1 : 1;
+      // Sort by medication date, newest first
+      return new Date(b.medication_date).getTime() - new Date(a.medication_date).getTime();
     });
 
   const formatDate = (dateString: string) => {
@@ -73,79 +98,64 @@ export default function MedicationsScreen() {
     });
   };
 
-  const renderMedicationCard = (medication: Medication) => (
-    <Card key={medication.id} style={styles.medicationCard}>
-      <Card.Content>
-        <View style={styles.medicationHeader}>
-          <Text variant="titleLarge" style={styles.medicationName}>
-            {medication.name}
-          </Text>
-          <Chip
-            icon={medication.isActive ? 'check-circle' : 'clock-outline'}
-            compact
-            style={[
-              styles.statusChip,
-              medication.isActive ? styles.activeChip : styles.inactiveChip
-            ]}
-            textStyle={medication.isActive ? styles.activeChipText : styles.inactiveChipText}
-          >
-            {medication.isActive ? 'Aktiivinen' : 'Päättynyt'}
-          </Chip>
-        </View>
+  const renderMedicationCard = (medication: Medication) => {
+    const isExpired = medication.expire_date ? new Date(medication.expire_date) < new Date() : false;
+    
+    return (
+      <Card key={medication.id} style={styles.medicationCard}>
+        <Card.Content>
+          <View style={styles.medicationHeader}>
+            <Text variant="titleLarge" style={styles.medicationName}>
+              {medication.med_name}
+            </Text>
+            {medication.costs && (
+              <Chip icon="currency-eur" compact>
+                {medication.costs} €
+              </Chip>
+            )}
+          </View>
 
-        <View style={styles.dosageContainer}>
-          <MaterialCommunityIcons name="pill" size={20} color={COLORS.primary} />
-          <Text variant="titleMedium" style={styles.dosage}>
-            {medication.dosage} - {medication.frequency}
-          </Text>
-        </View>
-
-        <Divider style={styles.divider} />
-
-        <View style={styles.medicationDetail}>
-          <MaterialCommunityIcons name="target" size={18} color={COLORS.onSurfaceVariant} />
-          <Text variant="bodyMedium" style={styles.detailText}>
-            {medication.purpose}
-          </Text>
-        </View>
-
-        <View style={styles.medicationDetail}>
-          <MaterialCommunityIcons name="doctor" size={18} color={COLORS.onSurfaceVariant} />
-          <Text variant="bodyMedium" style={styles.detailText}>
-            {medication.prescribedBy}
-          </Text>
-        </View>
-
-        <View style={styles.medicationDetail}>
-          <MaterialCommunityIcons name="calendar-start" size={18} color={COLORS.onSurfaceVariant} />
-          <Text variant="bodyMedium" style={styles.detailText}>
-            Aloitettu: {formatDate(medication.startDate)}
-          </Text>
-        </View>
-
-        {medication.endDate && (
-          <View style={styles.medicationDetail}>
-            <MaterialCommunityIcons name="calendar-end" size={18} color={COLORS.onSurfaceVariant} />
-            <Text variant="bodyMedium" style={styles.detailText}>
-              Päättynyt: {formatDate(medication.endDate)}
+          <View style={styles.dosageContainer}>
+            <MaterialCommunityIcons name="calendar-start" size={20} color={COLORS.primary} />
+            <Text variant="titleMedium" style={styles.dosage}>
+              Aloitettu: {formatDate(medication.medication_date)}
             </Text>
           </View>
-        )}
 
-        {medication.notes && (
-          <>
-            <Divider style={styles.divider} />
-            <View style={styles.notesContainer}>
-              <MaterialCommunityIcons name="note-text" size={18} color={COLORS.onSurfaceVariant} />
-              <Text variant="bodySmall" style={styles.notesText}>
-                {medication.notes}
+          {medication.expire_date && (
+            <View style={[styles.dosageContainer, { marginTop: SPACING.xs }]}>
+              <MaterialCommunityIcons 
+                name="calendar-end" 
+                size={20} 
+                color={isExpired ? '#D32F2F' : COLORS.onSurfaceVariant} 
+              />
+              <Text 
+                variant="bodyMedium" 
+                style={[
+                  styles.dosage,
+                  isExpired && { color: '#D32F2F', fontWeight: '600' }
+                ]}
+              >
+                Vanhenee: {formatDate(medication.expire_date)}
               </Text>
             </View>
-          </>
-        )}
-      </Card.Content>
-    </Card>
-  );
+          )}
+
+          {medication.notes && (
+            <>
+              <Divider style={styles.divider} />
+              <View style={styles.notesContainer}>
+                <MaterialCommunityIcons name="note-text" size={18} color={COLORS.onSurfaceVariant} />
+                <Text variant="bodySmall" style={styles.notesText}>
+                  {medication.notes}
+                </Text>
+              </View>
+            </>
+          )}
+        </Card.Content>
+      </Card>
+    );
+  };
 
   const renderEmptyState = () => (
     <View style={styles.emptyContainer}>
