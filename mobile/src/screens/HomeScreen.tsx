@@ -82,7 +82,7 @@ export default function HomeScreen() {
           </Card.Content>
         </Card>
 
-        <Card style={styles.card} onPress={() => console.log('Terveys')}>
+        <Card style={styles.card} onPress={() => navigation.navigate('Health' as never)}>
           <Card.Content style={{ alignItems: 'center' }}>
             <MaterialCommunityIcons name="medical-bag" size={64} color={COLORS.primary} />
             <Text variant="titleLarge" style={{ marginTop: SPACING.md }}>Terveys</Text>
