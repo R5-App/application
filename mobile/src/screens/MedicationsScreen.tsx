@@ -109,7 +109,7 @@ export default function MedicationsScreen() {
               {medication.med_name}
             </Text>
             {medication.costs && (
-              <Chip icon="currency-eur" compact>
+              <Chip compact>
                 {medication.costs} €
               </Chip>
             )}

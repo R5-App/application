@@ -109,7 +109,7 @@ export default function VaccinationsScreen() {
               {vaccination.vac_name}
             </Text>
             {vaccination.costs && (
-              <Chip icon="currency-eur" compact>
+              <Chip compact>
                 {vaccination.costs} €
               </Chip>
             )}

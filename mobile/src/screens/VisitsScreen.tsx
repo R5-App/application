@@ -97,7 +97,7 @@ export default function VisitsScreen() {
             </Text>
           </View>
           {visit.costs && (
-            <Chip icon="currency-eur" compact>
+            <Chip compact>
               {visit.costs} €
             </Chip>
           )}
