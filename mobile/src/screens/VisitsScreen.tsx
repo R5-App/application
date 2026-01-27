@@ -7,33 +7,38 @@ import apiClient from '../services/api';
 import { Pet } from '../types';
 
 interface Visit {
-  id: string;
-  petId: string;
-  date: string;
-  clinic: string;
-  veterinarian: string;
-  reason: string;
+  id: number;
+  pet_id: number;
+  visit_date: string;
+  location: string;
+  vet_name: string;
+  type_id: string;
   notes?: string;
-  cost?: number;
+  costs?: string;
 }
 
 export default function VisitsScreen() {
   const [pets, setPets] = useState<Pet[]>([]);
-  const [visits] = useState<Visit[]>([]);
-  const [selectedPetId, setSelectedPetId] = useState<string>('');
+  const [visits, setVisits] = useState<Visit[]>([]);
+  const [selectedPetId, setSelectedPetId] = useState<number | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch pets from the API
+  // Fetch pets and visits from the API
   useEffect(() => {
-    const fetchPets = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
         setError(null);
-        const response = await apiClient.get('/api/pets');
         
-        if (response.data.success && response.data.data) {
-          const fetchedPets = response.data.data;
+        // Fetch both pets and visits in parallel
+        const [petsResponse, visitsResponse] = await Promise.all([
+          apiClient.get('/api/pets'),
+          apiClient.get('/api/vet-visits')
+        ]);
+        
+        if (petsResponse.data.success && petsResponse.data.data) {
+          const fetchedPets = petsResponse.data.data;
           setPets(fetchedPets);
           
           // Set the first pet as selected by default
@@ -41,21 +46,37 @@ export default function VisitsScreen() {
             setSelectedPetId(fetchedPets[0].id);
           }
         }
+
+        if (visitsResponse.data.success && visitsResponse.data.data) {
+          // Flatten the nested structure: each pet has a vet_visits array
+          const flattenedVisits: Visit[] = [];
+          visitsResponse.data.data.forEach((petVisitGroup: any) => {
+            const petId = petVisitGroup.pet_id;
+            if (petVisitGroup.vet_visits && Array.isArray(petVisitGroup.vet_visits)) {
+              petVisitGroup.vet_visits.forEach((visit: any) => {
+                flattenedVisits.push({
+                  ...visit,
+                  pet_id: petId
+                });
+              });
+            }
+          });
+          setVisits(flattenedVisits);
+        }
       } catch (err: any) {
-        console.error('Failed to fetch pets:', err);
-        setError('Lemmikit eivät latautuneet. Yritä uudelleen.');
+        console.error('Failed to fetch data:', err);
+        setError('Tietojen lataus epäonnistui. Yritä uudelleen.');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchPets();
+    fetchData();
   }, []);
 
   const selectedPetVisits = visits
-    .filter(visit => visit.petId === selectedPetId)
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-
+    .filter(visit => visit.pet_id === selectedPetId)
+    .sort((a, b) => new Date(b.visit_date).getTime() - new Date(a.visit_date).getTime());
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('fi-FI', {
@@ -72,12 +93,12 @@ export default function VisitsScreen() {
           <View style={styles.dateContainer}>
             <MaterialCommunityIcons name="calendar" size={20} color={COLORS.primary} />
             <Text variant="titleMedium" style={styles.dateText}>
-              {formatDate(visit.date)}
+              {formatDate(visit.visit_date)}
             </Text>
           </View>
-          {visit.cost && (
+          {visit.costs && (
             <Chip icon="currency-eur" compact>
-              {visit.cost} €
+              {visit.costs} €
             </Chip>
           )}
         </View>
@@ -87,21 +108,21 @@ export default function VisitsScreen() {
         <View style={styles.visitDetail}>
           <MaterialCommunityIcons name="hospital-building" size={18} color={COLORS.onSurfaceVariant} />
           <Text variant="bodyMedium" style={styles.detailText}>
-            {visit.clinic}
+            {visit.location}
           </Text>
         </View>
 
         <View style={styles.visitDetail}>
           <MaterialCommunityIcons name="doctor" size={18} color={COLORS.onSurfaceVariant} />
           <Text variant="bodyMedium" style={styles.detailText}>
-            {visit.veterinarian}
+            {visit.vet_name}
           </Text>
         </View>
 
         <View style={styles.visitDetail}>
           <MaterialCommunityIcons name="stethoscope" size={18} color={COLORS.onSurfaceVariant} />
           <Text variant="bodyMedium" style={styles.detailText}>
-            {visit.reason}
+            {visit.type_id}
           </Text>
         </View>
 

@@ -8,7 +8,7 @@ import { Pet } from '../types';
 
 interface Medication {
   id: string;
-  petId: string;
+  petId: number;
   name: string;
   dosage: string;
   frequency: string;
@@ -23,7 +23,7 @@ interface Medication {
 export default function MedicationsScreen() {
   const [pets, setPets] = useState<Pet[]>([]);
   const [medications] = useState<Medication[]>([]);
-  const [selectedPetId, setSelectedPetId] = useState<string>('');
+  const [selectedPetId, setSelectedPetId] = useState<number | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
