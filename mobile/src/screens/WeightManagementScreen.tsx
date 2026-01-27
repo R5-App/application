@@ -8,33 +8,38 @@ import apiClient from '../services/api';
 import { Pet } from '../types';
 
 interface WeightRecord {
-  id: string;
-  petId: string;
+  id: number;
+  petId: number;
   date: string;
   weight: number;
-  unit: 'kg' | 'g';
+  created_at: string;
   notes?: string;
   measuredBy?: string;
 }
 
 export default function WeightManagementScreen() {
   const [pets, setPets] = useState<Pet[]>([]);
-  const [weightRecords] = useState<WeightRecord[]>([]);
-  const [selectedPetId, setSelectedPetId] = useState<string>('');
+  const [weightRecords, setWeightRecords] = useState<WeightRecord[]>([]);
+  const [selectedPetId, setSelectedPetId] = useState<number | null>(null);
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch pets from the API
+  // Fetch pets and weights from the API
   useEffect(() => {
-    const fetchPets = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
         setError(null);
-        const response = await apiClient.get('/api/pets');
         
-        if (response.data.success && response.data.data) {
-          const fetchedPets = response.data.data;
+        // Fetch both pets and weights in parallel
+        const [petsResponse, weightsResponse] = await Promise.all([
+          apiClient.get('/api/pets'),
+          apiClient.get('/api/weights')
+        ]);
+        
+        if (petsResponse.data.success && petsResponse.data.data) {
+          const fetchedPets = petsResponse.data.data;
           setPets(fetchedPets);
           
           // Set the first pet as selected by default
@@ -42,15 +47,44 @@ export default function WeightManagementScreen() {
             setSelectedPetId(fetchedPets[0].id);
           }
         }
+
+        if (weightsResponse.data.success && weightsResponse.data.data) {
+          const weightsData = weightsResponse.data.data;
+          console.log('Weights response:', weightsData);
+          
+          // If nested structure (array of pet weight groups)
+          if (Array.isArray(weightsData) && weightsData.length > 0 && weightsData[0].weights) {
+            const flattenedWeights: WeightRecord[] = [];
+            weightsData.forEach((petWeightGroup: any) => {
+              const petId = petWeightGroup.pet_id;
+              if (petWeightGroup.weights && Array.isArray(petWeightGroup.weights)) {
+                petWeightGroup.weights.forEach((weight: any) => {
+                  console.log('Raw weight data:', weight);
+                  flattenedWeights.push({
+                    ...weight,
+                    petId: petId,
+                    weight: parseFloat(weight.weight) // Convert string to number
+                  });
+                });
+              }
+            });
+            console.log('Flattened weights:', flattenedWeights);
+            setWeightRecords(flattenedWeights);
+          } else {
+            // If flat structure
+            console.log('Flat weights data:', weightsData);
+            setWeightRecords(weightsData);
+          }
+        }
       } catch (err: any) {
-        console.error('Failed to fetch pets:', err);
-        setError('Lemmikit eivät latautuneet. Yritä uudelleen.');
+        console.error('Failed to fetch data:', err);
+        setError('Tietojen lataus epäonnistui. Yritä uudelleen.');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchPets();
+    fetchData();
   }, []);
   const selectedPetWeights = weightRecords
     .filter(record => record.petId === selectedPetId)
@@ -86,7 +120,17 @@ export default function WeightManagementScreen() {
     return { change: change.toFixed(1), percentChange, isIncrease: change > 0 };
   };
 
+  const formatWeight = (weight: number | undefined): string => {
+    if (weight === undefined || weight === null) {
+      console.log('Warning: weight is undefined or null');
+      return '0';
+    }
+    return weight % 1 === 0 ? weight.toFixed(0) : weight.toFixed(2).replace(/\.?0+$/, '');
+  };
+
   const renderWeightCard = (record: WeightRecord, index: number) => {
+    console.log('Rendering weight record:', record);
+    
     const weightChange = calculateWeightChange(index);
     
     return (
@@ -95,10 +139,7 @@ export default function WeightManagementScreen() {
           <View style={styles.weightHeader}>
             <View style={styles.weightMainInfo}>
               <Text variant="displaySmall" style={styles.weightValue}>
-                {record.weight}
-              </Text>
-              <Text variant="titleLarge" style={styles.weightUnit}>
-                {record.unit}
+                {formatWeight(record.weight)} kg
               </Text>
             </View>
             {weightChange && (
