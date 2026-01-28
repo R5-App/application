@@ -374,15 +374,7 @@ export default function VisitsScreen() {
         <Modal
           visible={modalVisible}
           onDismiss={handleCloseModal}
-          contentContainerStyle={[
-            styles.modalContainer,
-            keyboardHeight > 0 && { 
-              marginTop: 10,
-              marginBottom: 10,
-              padding: SPACING.sm,
-              maxHeight: '45%'
-            }
-          ]}
+          contentContainerStyle={styles.modalContainer}
         >
           <ScrollView 
             ref={scrollViewRef}
@@ -492,7 +484,7 @@ export default function VisitsScreen() {
               style={styles.input}
               mode="outlined"
               keyboardType="decimal-pad"
-              placeholder="100.00"
+              placeholder=""
               placeholderTextColor="rgba(0, 0, 0, 0.3)"
               textColor={COLORS.onSurface}
               theme={{ colors: { onSurfaceVariant: 'rgba(0, 0, 0, 0.4)' } }}

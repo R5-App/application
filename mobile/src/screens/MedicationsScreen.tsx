@@ -1,14 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { View, ScrollView, StyleSheet } from 'react-native';
-import { Text, Card, FAB, Chip, Divider, ActivityIndicator } from 'react-native-paper';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import { Text, Card, FAB, Chip, Divider, ActivityIndicator, Portal, Modal, TextInput, Button } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLORS, SPACING } from '../styles/theme';
 import apiClient from '../services/api';
 import { Pet } from '../types';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 interface Medication {
   id: number;
-  petId: number;
+  pet_id: number;
   med_name: string;
   medication_date: string;
   expire_date?: string;
@@ -22,6 +23,19 @@ export default function MedicationsScreen() {
   const [selectedPetId, setSelectedPetId] = useState<number | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [modalVisible, setModalVisible] = useState<boolean>(false);
+  const [saving, setSaving] = useState<boolean>(false);
+  const [showMedicationDatePicker, setShowMedicationDatePicker] = useState<boolean>(false);
+  const [showExpireDatePicker, setShowExpireDatePicker] = useState<boolean>(false);
+  
+  const scrollViewRef = useRef<ScrollView>(null);
+
+  // Form state
+  const [medName, setMedName] = useState<string>('');
+  const [medicationDate, setMedicationDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [expireDate, setExpireDate] = useState<string>('');
+  const [costs, setCosts] = useState<string>('');
+  const [notes, setNotes] = useState<string>('');
 
   // Fetch pets and medications from the API
   useEffect(() => {
@@ -30,7 +44,6 @@ export default function MedicationsScreen() {
         setLoading(true);
         setError(null);
         
-        // Fetch both pets and medications in parallel
         const [petsResponse, medicationsResponse] = await Promise.all([
           apiClient.get('/api/pets'),
           apiClient.get('/api/medications')
@@ -40,17 +53,14 @@ export default function MedicationsScreen() {
           const fetchedPets = petsResponse.data.data;
           setPets(fetchedPets);
           
-          // Set the first pet as selected by default
           if (fetchedPets.length > 0) {
             setSelectedPetId(fetchedPets[0].id);
           }
         }
 
         if (medicationsResponse.data.success && medicationsResponse.data.data) {
-          // Check if medications are nested like visits
           const medicationsData = medicationsResponse.data.data;
           
-          // If nested structure (array of pet medication groups)
           if (Array.isArray(medicationsData) && medicationsData.length > 0 && medicationsData[0].medications) {
             const flattenedMedications: Medication[] = [];
             medicationsData.forEach((petMedGroup: any) => {
@@ -59,19 +69,17 @@ export default function MedicationsScreen() {
                 petMedGroup.medications.forEach((med: any) => {
                   flattenedMedications.push({
                     ...med,
-                    petId: petId
+                    pet_id: petId
                   });
                 });
               }
             });
             setMedications(flattenedMedications);
           } else {
-            // If flat structure
             setMedications(medicationsData);
           }
         }
       } catch (err: any) {
-        console.error('Failed to fetch data:', err);
         setError('Tietojen lataus epäonnistui. Yritä uudelleen.');
       } finally {
         setLoading(false);
@@ -82,11 +90,74 @@ export default function MedicationsScreen() {
   }, []);
 
   const selectedPetMedications = medications
-    .filter(med => med.petId === selectedPetId)
-    .sort((a, b) => {
-      // Sort by medication date, newest first
-      return new Date(b.medication_date).getTime() - new Date(a.medication_date).getTime();
-    });
+    .filter(med => med.pet_id === selectedPetId)
+    .sort((a, b) => new Date(b.medication_date).getTime() - new Date(a.medication_date).getTime());
+
+  const handleOpenModal = () => {
+    setMedName('');
+    setMedicationDate(new Date().toISOString().split('T')[0]);
+    setExpireDate('');
+    setCosts('');
+    setNotes('');
+    setModalVisible(true);
+  };
+
+  const handleCloseModal = () => {
+    setModalVisible(false);
+  };
+
+  const handleSaveMedication = async () => {
+    if (!selectedPetId || !medName) {
+      alert('Täytä kaikki pakolliset kentät');
+      return;
+    }
+
+    try {
+      setSaving(true);
+      
+      const medicationData = {
+        pet_id: selectedPetId,
+        med_name: medName,
+        medication_date: medicationDate,
+        expire_date: expireDate || undefined,
+        costs: costs ? parseFloat(costs) : undefined,
+        notes: notes || undefined
+      };
+
+      const response = await apiClient.post('/api/medications', medicationData);
+
+      if (response.data.success) {
+        const medicationsResponse = await apiClient.get('/api/medications');
+        if (medicationsResponse.data.success && medicationsResponse.data.data) {
+          const medicationsData = medicationsResponse.data.data;
+          
+          if (Array.isArray(medicationsData) && medicationsData.length > 0 && medicationsData[0].medications) {
+            const flattenedMedications: Medication[] = [];
+            medicationsData.forEach((petMedGroup: any) => {
+              const petId = petMedGroup.pet_id;
+              if (petMedGroup.medications && Array.isArray(petMedGroup.medications)) {
+                petMedGroup.medications.forEach((med: any) => {
+                  flattenedMedications.push({
+                    ...med,
+                    pet_id: petId
+                  });
+                });
+              }
+            });
+            setMedications(flattenedMedications);
+          } else {
+            setMedications(medicationsData);
+          }
+        }
+        
+        handleCloseModal();
+      }
+    } catch (err: any) {
+      alert('Lääkityksen tallentaminen epäonnistui. Yritä uudelleen.');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -258,9 +329,155 @@ export default function MedicationsScreen() {
       <FAB
         icon="plus"
         style={styles.fab}
-        onPress={() => console.log('Lisää lääkitys')}
+        onPress={handleOpenModal}
         label="Lisää lääkitys"
       />
+
+      <Portal>
+        <Modal
+          visible={modalVisible}
+          onDismiss={handleCloseModal}
+          contentContainerStyle={styles.modalContainer}
+        >
+          <ScrollView 
+            ref={scrollViewRef}
+            showsVerticalScrollIndicator={false} 
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={styles.scrollContentContainer}
+          >
+            <Text variant="headlineSmall" style={styles.modalTitle}>
+              Lisää lääkitys
+            </Text>
+
+            <TextInput
+              label="Lääkkeen nimi *"
+              value={medName}
+              onChangeText={setMedName}
+              style={styles.input}
+              mode="outlined"
+              placeholder="Esim. Antibiootit"
+              placeholderTextColor="rgba(0, 0, 0, 0.3)"
+              textColor={COLORS.onSurface}
+              theme={{ colors: { onSurfaceVariant: 'rgba(0, 0, 0, 0.4)' } }}
+            />
+
+            <TouchableOpacity onPress={() => setShowMedicationDatePicker(true)}>
+              <TextInput
+                label="Lääkityksen aloituspäivä *"
+                value={medicationDate.split('-').reverse().join('-')}
+                style={styles.input}
+                mode="outlined"
+                editable={false}
+                right={<TextInput.Icon icon="calendar" />}
+                placeholder="PP-KK-VVVV"
+                placeholderTextColor="rgba(0, 0, 0, 0.3)"
+                textColor={COLORS.onSurface}
+                theme={{ colors: { onSurfaceVariant: 'rgba(0, 0, 0, 0.4)' } }}
+              />
+            </TouchableOpacity>
+
+            {showMedicationDatePicker && (
+              <DateTimePicker
+                value={new Date(medicationDate)}
+                mode="date"
+                display="default"
+                onChange={(_, selectedDate) => {
+                  setShowMedicationDatePicker(false);
+                  if (selectedDate) {
+                    setMedicationDate(selectedDate.toISOString().split('T')[0]);
+                  }
+                }}
+              />
+            )}
+
+            <TouchableOpacity onPress={() => setShowExpireDatePicker(true)}>
+              <TextInput
+                label="Vanhenemispäivä"
+                value={expireDate ? expireDate.split('-').reverse().join('-') : ''}
+                style={styles.input}
+                mode="outlined"
+                editable={false}
+                right={<TextInput.Icon icon="calendar" />}
+                placeholder="PP-KK-VVVV (valinnainen)"
+                placeholderTextColor="rgba(0, 0, 0, 0.3)"
+                textColor={COLORS.onSurface}
+                theme={{ colors: { onSurfaceVariant: 'rgba(0, 0, 0, 0.4)' } }}
+              />
+            </TouchableOpacity>
+
+            {showExpireDatePicker && (
+              <DateTimePicker
+                value={expireDate ? new Date(expireDate) : new Date()}
+                mode="date"
+                display="default"
+                onChange={(_, selectedDate) => {
+                  setShowExpireDatePicker(false);
+                  if (selectedDate) {
+                    setExpireDate(selectedDate.toISOString().split('T')[0]);
+                  }
+                }}
+              />
+            )}
+
+            <TextInput
+              label="Kustannukset (€)"
+              value={costs}
+              onChangeText={setCosts}
+              style={styles.input}
+              mode="outlined"
+              keyboardType="decimal-pad"
+              placeholder=""
+              placeholderTextColor="rgba(0, 0, 0, 0.3)"
+              textColor={COLORS.onSurface}
+              theme={{ colors: { onSurfaceVariant: 'rgba(0, 0, 0, 0.4)' } }}
+              onFocus={() => {
+                setTimeout(() => {
+                  scrollViewRef.current?.scrollToEnd({ animated: true });
+                }, 200);
+              }}
+            />
+
+            <TextInput
+              label="Muistiinpanot"
+              value={notes}
+              onChangeText={setNotes}
+              style={styles.input}
+              mode="outlined"
+              multiline
+              numberOfLines={4}
+              placeholder="Anna ruoan kanssa kahdesti päivässä"
+              placeholderTextColor="rgba(0, 0, 0, 0.3)"
+              textColor={COLORS.onSurface}
+              theme={{ colors: { onSurfaceVariant: 'rgba(0, 0, 0, 0.4)' } }}
+              onFocus={() => {
+                setTimeout(() => {
+                  scrollViewRef.current?.scrollToEnd({ animated: true });
+                }, 200);
+              }}
+            />
+
+            <View style={styles.modalButtons}>
+              <Button
+                mode="outlined"
+                onPress={handleCloseModal}
+                style={styles.modalButton}
+                disabled={saving}
+              >
+                Peruuta
+              </Button>
+              <Button
+                mode="contained"
+                onPress={handleSaveMedication}
+                style={styles.modalButton}
+                loading={saving}
+                disabled={saving}
+              >
+                Tallenna
+              </Button>
+            </View>
+          </ScrollView>
+        </Modal>
+      </Portal>
     </View>
   );
 }
@@ -269,15 +486,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
-  },
-  header: {
-    paddingHorizontal: SPACING.lg,
-    paddingTop: SPACING.lg,
-    paddingBottom: SPACING.md,
-  },
-  title: {
-    fontWeight: 'bold',
-    color: COLORS.onBackground,
   },
   tabsContainer: {
     maxHeight: 70,
@@ -335,21 +543,6 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     flex: 1,
   },
-  statusChip: {
-    marginLeft: SPACING.sm,
-  },
-  activeChip: {
-    backgroundColor: '#E8F5E9',
-  },
-  inactiveChip: {
-    backgroundColor: COLORS.surfaceVariant,
-  },
-  activeChipText: {
-    color: '#2E7D32',
-  },
-  inactiveChipText: {
-    color: COLORS.onSurfaceVariant,
-  },
   dosageContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -362,16 +555,6 @@ const styles = StyleSheet.create({
   },
   divider: {
     marginVertical: SPACING.sm,
-  },
-  medicationDetail: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.sm,
-    marginBottom: SPACING.xs,
-  },
-  detailText: {
-    flex: 1,
-    color: COLORS.onSurface,
   },
   notesContainer: {
     flexDirection: 'row',
@@ -403,5 +586,32 @@ const styles = StyleSheet.create({
     right: SPACING.md,
     bottom: SPACING.md,
     backgroundColor: COLORS.primary,
+  },
+  modalContainer: {
+    backgroundColor: COLORS.surface,
+    margin: SPACING.lg,
+    padding: SPACING.lg,
+    borderRadius: 12,
+    maxHeight: '90%',
+  },
+  scrollContentContainer: {
+    paddingBottom: 0,
+  },
+  modalTitle: {
+    marginBottom: SPACING.lg,
+    fontWeight: 'bold',
+    color: COLORS.onSurface,
+  },
+  input: {
+    marginBottom: SPACING.md,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: SPACING.lg,
+    gap: SPACING.md,
+  },
+  modalButton: {
+    flex: 1,
   },
 });

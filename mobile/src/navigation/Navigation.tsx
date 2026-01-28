@@ -18,8 +18,8 @@ import WalkDetailScreen from '@screens/WalkDetailScreen';
 import HealthScreen from '@screens/HealthScreen';
 import VisitsScreen from '@screens/VisitsScreen';
 import MedicationsScreen from '@screens/MedicationsScreen';
-import VaccinationsScreen from '@screens/VaccinationsScreen';
-import WeightManagementScreen from '@screens/WeightManagementScreen';
+import VaccinationsScreen from '../screens/VaccinationsScreen';
+import WeightManagementScreen from '../screens/WeightManagementScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();

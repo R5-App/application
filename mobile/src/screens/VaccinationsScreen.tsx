@@ -1,14 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { View, ScrollView, StyleSheet } from 'react-native';
-import { Text, Card, FAB, Chip, Divider, ActivityIndicator } from 'react-native-paper';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import { Text, Card, FAB, Chip, Divider, ActivityIndicator, Portal, Modal, TextInput, Button } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLORS, SPACING } from '../styles/theme';
 import apiClient from '../services/api';
 import { Pet } from '../types';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 interface Vaccination {
   id: number;
-  petId: number;
+  pet_id: number;
   vac_name: string;
   vaccination_date: string;
   expire_date?: string;
@@ -22,6 +23,19 @@ export default function VaccinationsScreen() {
   const [selectedPetId, setSelectedPetId] = useState<number | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [modalVisible, setModalVisible] = useState<boolean>(false);
+  const [saving, setSaving] = useState<boolean>(false);
+  const [showVaccinationDatePicker, setShowVaccinationDatePicker] = useState<boolean>(false);
+  const [showExpireDatePicker, setShowExpireDatePicker] = useState<boolean>(false);
+  
+  const scrollViewRef = useRef<ScrollView>(null);
+
+  // Form state
+  const [vacName, setVacName] = useState<string>('');
+  const [vaccinationDate, setVaccinationDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [expireDate, setExpireDate] = useState<string>('');
+  const [costs, setCosts] = useState<string>('');
+  const [notes, setNotes] = useState<string>('');
 
   // Fetch pets and vaccinations from the API
   useEffect(() => {
@@ -30,7 +44,6 @@ export default function VaccinationsScreen() {
         setLoading(true);
         setError(null);
         
-        // Fetch both pets and vaccinations in parallel
         const [petsResponse, vaccinationsResponse] = await Promise.all([
           apiClient.get('/api/pets'),
           apiClient.get('/api/vaccinations')
@@ -40,7 +53,6 @@ export default function VaccinationsScreen() {
           const fetchedPets = petsResponse.data.data;
           setPets(fetchedPets);
           
-          // Set the first pet as selected by default
           if (fetchedPets.length > 0) {
             setSelectedPetId(fetchedPets[0].id);
           }
@@ -49,7 +61,6 @@ export default function VaccinationsScreen() {
         if (vaccinationsResponse.data.success && vaccinationsResponse.data.data) {
           const vaccinationsData = vaccinationsResponse.data.data;
           
-          // If nested structure (array of pet vaccination groups)
           if (Array.isArray(vaccinationsData) && vaccinationsData.length > 0 && vaccinationsData[0].vaccinations) {
             const flattenedVaccinations: Vaccination[] = [];
             vaccinationsData.forEach((petVacGroup: any) => {
@@ -58,19 +69,17 @@ export default function VaccinationsScreen() {
                 petVacGroup.vaccinations.forEach((vac: any) => {
                   flattenedVaccinations.push({
                     ...vac,
-                    petId: petId
+                    pet_id: petId
                   });
                 });
               }
             });
             setVaccinations(flattenedVaccinations);
           } else {
-            // If flat structure
             setVaccinations(vaccinationsData);
           }
         }
       } catch (err: any) {
-        console.error('Failed to fetch data:', err);
         setError('Tietojen lataus epäonnistui. Yritä uudelleen.');
       } finally {
         setLoading(false);
@@ -81,8 +90,74 @@ export default function VaccinationsScreen() {
   }, []);
 
   const selectedPetVaccinations = vaccinations
-    .filter(vac => vac.petId === selectedPetId)
+    .filter(vac => vac.pet_id === selectedPetId)
     .sort((a, b) => new Date(b.vaccination_date).getTime() - new Date(a.vaccination_date).getTime());
+
+  const handleOpenModal = () => {
+    setVacName('');
+    setVaccinationDate(new Date().toISOString().split('T')[0]);
+    setExpireDate('');
+    setCosts('');
+    setNotes('');
+    setModalVisible(true);
+  };
+
+  const handleCloseModal = () => {
+    setModalVisible(false);
+  };
+
+  const handleSaveVaccination = async () => {
+    if (!selectedPetId || !vacName) {
+      alert('Täytä kaikki pakolliset kentät');
+      return;
+    }
+
+    try {
+      setSaving(true);
+      
+      const vaccinationData = {
+        pet_id: selectedPetId,
+        vac_name: vacName,
+        vaccination_date: vaccinationDate,
+        expire_date: expireDate || undefined,
+        costs: costs ? parseFloat(costs) : undefined,
+        notes: notes || undefined
+      };
+
+      const response = await apiClient.post('/api/vaccinations', vaccinationData);
+
+      if (response.data.success) {
+        const vaccinationsResponse = await apiClient.get('/api/vaccinations');
+        if (vaccinationsResponse.data.success && vaccinationsResponse.data.data) {
+          const vaccinationsData = vaccinationsResponse.data.data;
+          
+          if (Array.isArray(vaccinationsData) && vaccinationsData.length > 0 && vaccinationsData[0].vaccinations) {
+            const flattenedVaccinations: Vaccination[] = [];
+            vaccinationsData.forEach((petVacGroup: any) => {
+              const petId = petVacGroup.pet_id;
+              if (petVacGroup.vaccinations && Array.isArray(petVacGroup.vaccinations)) {
+                petVacGroup.vaccinations.forEach((vac: any) => {
+                  flattenedVaccinations.push({
+                    ...vac,
+                    pet_id: petId
+                  });
+                });
+              }
+            });
+            setVaccinations(flattenedVaccinations);
+          } else {
+            setVaccinations(vaccinationsData);
+          }
+        }
+        
+        handleCloseModal();
+      }
+    } catch (err: any) {
+      alert('Rokotuksen tallentaminen epäonnistui. Yritä uudelleen.');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -93,13 +168,8 @@ export default function VaccinationsScreen() {
     });
   };
 
-  const isOverdue = (expireDate?: string) => {
-    if (!expireDate) return false;
-    return new Date(expireDate) < new Date();
-  };
-
   const renderVaccinationCard = (vaccination: Vaccination) => {
-    const overdue = isOverdue(vaccination.expire_date);
+    const isExpired = vaccination.expire_date ? new Date(vaccination.expire_date) < new Date() : false;
     
     return (
       <Card key={vaccination.id} style={styles.vaccinationCard}>
@@ -118,22 +188,25 @@ export default function VaccinationsScreen() {
           <View style={styles.dateContainer}>
             <MaterialCommunityIcons name="calendar-check" size={20} color={COLORS.primary} />
             <Text variant="titleMedium" style={styles.dateText}>
-              Annettu: {formatDate(vaccination.vaccination_date)}
+              Rokotettu: {formatDate(vaccination.vaccination_date)}
             </Text>
           </View>
 
           {vaccination.expire_date && (
             <View style={[styles.dateContainer, { marginTop: SPACING.xs }]}>
               <MaterialCommunityIcons 
-                name="calendar-clock" 
+                name={isExpired ? "calendar-alert" : "calendar-refresh"} 
                 size={20} 
-                color={overdue ? '#D32F2F' : COLORS.onSurfaceVariant} 
+                color={isExpired ? '#D32F2F' : COLORS.onSurfaceVariant} 
               />
               <Text 
                 variant="bodyMedium" 
-                style={[styles.nextDueText, overdue && styles.overdueText]}
+                style={[
+                  styles.dateText,
+                  isExpired && { color: '#D32F2F', fontWeight: '600' }
+                ]}
               >
-                Voimassa: {formatDate(vaccination.expire_date)}
+                {isExpired ? 'Vanhentunut' : 'Uusittava'}: {formatDate(vaccination.expire_date)}
               </Text>
             </View>
           )}
@@ -256,9 +329,155 @@ export default function VaccinationsScreen() {
       <FAB
         icon="plus"
         style={styles.fab}
-        onPress={() => console.log('Lisää rokotus')}
+        onPress={handleOpenModal}
         label="Lisää rokotus"
       />
+
+      <Portal>
+        <Modal
+          visible={modalVisible}
+          onDismiss={handleCloseModal}
+          contentContainerStyle={styles.modalContainer}
+        >
+          <ScrollView 
+            ref={scrollViewRef}
+            showsVerticalScrollIndicator={false} 
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={styles.scrollContentContainer}
+          >
+            <Text variant="headlineSmall" style={styles.modalTitle}>
+              Lisää rokotus
+            </Text>
+
+            <TextInput
+              label="Rokotteen nimi *"
+              value={vacName}
+              onChangeText={setVacName}
+              style={styles.input}
+              mode="outlined"
+              placeholder="Esim. Raivotautirokote"
+              placeholderTextColor="rgba(0, 0, 0, 0.3)"
+              textColor={COLORS.onSurface}
+              theme={{ colors: { onSurfaceVariant: 'rgba(0, 0, 0, 0.4)' } }}
+            />
+
+            <TouchableOpacity onPress={() => setShowVaccinationDatePicker(true)}>
+              <TextInput
+                label="Rokotuspäivä *"
+                value={vaccinationDate.split('-').reverse().join('-')}
+                style={styles.input}
+                mode="outlined"
+                editable={false}
+                right={<TextInput.Icon icon="calendar" />}
+                placeholder="PP-KK-VVVV"
+                placeholderTextColor="rgba(0, 0, 0, 0.3)"
+                textColor={COLORS.onSurface}
+                theme={{ colors: { onSurfaceVariant: 'rgba(0, 0, 0, 0.4)' } }}
+              />
+            </TouchableOpacity>
+
+            {showVaccinationDatePicker && (
+              <DateTimePicker
+                value={new Date(vaccinationDate)}
+                mode="date"
+                display="default"
+                onChange={(_, selectedDate) => {
+                  setShowVaccinationDatePicker(false);
+                  if (selectedDate) {
+                    setVaccinationDate(selectedDate.toISOString().split('T')[0]);
+                  }
+                }}
+              />
+            )}
+
+            <TouchableOpacity onPress={() => setShowExpireDatePicker(true)}>
+              <TextInput
+                label="Uusimispäivä"
+                value={expireDate ? expireDate.split('-').reverse().join('-') : ''}
+                style={styles.input}
+                mode="outlined"
+                editable={false}
+                right={<TextInput.Icon icon="calendar" />}
+                placeholder="PP-KK-VVVV (valinnainen)"
+                placeholderTextColor="rgba(0, 0, 0, 0.3)"
+                textColor={COLORS.onSurface}
+                theme={{ colors: { onSurfaceVariant: 'rgba(0, 0, 0, 0.4)' } }}
+              />
+            </TouchableOpacity>
+
+            {showExpireDatePicker && (
+              <DateTimePicker
+                value={expireDate ? new Date(expireDate) : new Date()}
+                mode="date"
+                display="default"
+                onChange={(_, selectedDate) => {
+                  setShowExpireDatePicker(false);
+                  if (selectedDate) {
+                    setExpireDate(selectedDate.toISOString().split('T')[0]);
+                  }
+                }}
+              />
+            )}
+
+            <TextInput
+              label="Kustannukset (€)"
+              value={costs}
+              onChangeText={setCosts}
+              style={styles.input}
+              mode="outlined"
+              keyboardType="decimal-pad"
+              placeholder=""
+              placeholderTextColor="rgba(0, 0, 0, 0.3)"
+              textColor={COLORS.onSurface}
+              theme={{ colors: { onSurfaceVariant: 'rgba(0, 0, 0, 0.4)' } }}
+              onFocus={() => {
+                setTimeout(() => {
+                  scrollViewRef.current?.scrollToEnd({ animated: true });
+                }, 200);
+              }}
+            />
+
+            <TextInput
+              label="Muistiinpanot"
+              value={notes}
+              onChangeText={setNotes}
+              style={styles.input}
+              mode="outlined"
+              multiline
+              numberOfLines={4}
+              placeholder="Vuosittainen tehoste"
+              placeholderTextColor="rgba(0, 0, 0, 0.3)"
+              textColor={COLORS.onSurface}
+              theme={{ colors: { onSurfaceVariant: 'rgba(0, 0, 0, 0.4)' } }}
+              onFocus={() => {
+                setTimeout(() => {
+                  scrollViewRef.current?.scrollToEnd({ animated: true });
+                }, 200);
+              }}
+            />
+
+            <View style={styles.modalButtons}>
+              <Button
+                mode="outlined"
+                onPress={handleCloseModal}
+                style={styles.modalButton}
+                disabled={saving}
+              >
+                Peruuta
+              </Button>
+              <Button
+                mode="contained"
+                onPress={handleSaveVaccination}
+                style={styles.modalButton}
+                loading={saving}
+                disabled={saving}
+              >
+                Tallenna
+              </Button>
+            </View>
+          </ScrollView>
+        </Modal>
+      </Portal>
     </View>
   );
 }
@@ -267,15 +486,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
-  },
-  header: {
-    paddingHorizontal: SPACING.lg,
-    paddingTop: SPACING.lg,
-    paddingBottom: SPACING.md,
-  },
-  title: {
-    fontWeight: 'bold',
-    color: COLORS.onBackground,
   },
   tabsContainer: {
     maxHeight: 70,
@@ -333,55 +543,18 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     flex: 1,
   },
-  statusChip: {
-    marginLeft: SPACING.sm,
-  },
-  upToDateChip: {
-    backgroundColor: '#E8F5E9',
-  },
-  pendingChip: {
-    backgroundColor: '#FFF8E1',
-  },
-  overdueChip: {
-    backgroundColor: '#FFEBEE',
-  },
-  upToDateChipText: {
-    color: '#2E7D32',
-  },
-  pendingChipText: {
-    color: '#F57C00',
-  },
-  overdueChipText: {
-    color: '#D32F2F',
-  },
   dateContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: SPACING.xs,
+    marginBottom: SPACING.sm,
   },
   dateText: {
     fontWeight: '600',
     color: COLORS.onSurface,
   },
-  nextDueText: {
-    color: COLORS.onSurfaceVariant,
-  },
-  overdueText: {
-    color: '#D32F2F',
-    fontWeight: '600',
-  },
   divider: {
     marginVertical: SPACING.sm,
-  },
-  vaccinationDetail: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.sm,
-    marginBottom: SPACING.xs,
-  },
-  detailText: {
-    flex: 1,
-    color: COLORS.onSurface,
   },
   notesContainer: {
     flexDirection: 'row',
@@ -413,5 +586,32 @@ const styles = StyleSheet.create({
     right: SPACING.md,
     bottom: SPACING.md,
     backgroundColor: COLORS.primary,
+  },
+  modalContainer: {
+    backgroundColor: COLORS.surface,
+    margin: SPACING.lg,
+    padding: SPACING.lg,
+    borderRadius: 12,
+    maxHeight: '90%',
+  },
+  scrollContentContainer: {
+    paddingBottom: 0,
+  },
+  modalTitle: {
+    marginBottom: SPACING.lg,
+    fontWeight: 'bold',
+    color: COLORS.onSurface,
+  },
+  input: {
+    marginBottom: SPACING.md,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: SPACING.lg,
+    gap: SPACING.md,
+  },
+  modalButton: {
+    flex: 1,
   },
 });
