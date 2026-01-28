@@ -1,35 +1,97 @@
-import React, { useState } from 'react';
-import { View, ScrollView, StyleSheet, Dimensions } from 'react-native';
-import { Text, Card, FAB, Chip, Divider } from 'react-native-paper';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, ScrollView, StyleSheet, Dimensions, TouchableOpacity } from 'react-native';
+import { Text, Card, FAB, Chip, Divider, ActivityIndicator, Portal, Modal, Button, TextInput } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Svg, { Line, Circle } from 'react-native-svg';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { COLORS, SPACING } from '../styles/theme';
-
-interface Pet {
-  id: string;
-  name: string;
-  breed: string;
-  age: number;
-}
+import apiClient from '../services/api';
+import { Pet } from '../types';
 
 interface WeightRecord {
-  id: string;
-  petId: string;
+  id: number;
+  petId: number;
   date: string;
   weight: number;
-  unit: 'kg' | 'g';
+  created_at: string;
   notes?: string;
   measuredBy?: string;
 }
 
 export default function WeightManagementScreen() {
-  // Mock data - replace with actual data from context/API
-  const [pets] = useState<Pet[]>([]);
-
-  const [weightRecords] = useState<WeightRecord[]>([]);
-
-  const [selectedPetId, setSelectedPetId] = useState<string>(pets[0]?.id || '');
+  const [pets, setPets] = useState<Pet[]>([]);
+  const [weightRecords, setWeightRecords] = useState<WeightRecord[]>([]);
+  const [selectedPetId, setSelectedPetId] = useState<number | null>(null);
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [modalVisible, setModalVisible] = useState<boolean>(false);
+  const [saving, setSaving] = useState<boolean>(false);
+  const [showDatePicker, setShowDatePicker] = useState<boolean>(false);
+  
+  const scrollViewRef = useRef<ScrollView>(null);
+
+  // Form state
+  const [weight, setWeight] = useState<string>('');
+  const [date, setDate] = useState<string>(new Date().toISOString().split('T')[0]);
+
+  // Fetch pets and weights from the API
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Fetch both pets and weights in parallel
+        const [petsResponse, weightsResponse] = await Promise.all([
+          apiClient.get('/api/pets'),
+          apiClient.get('/api/weights')
+        ]);
+        
+        if (petsResponse.data.success && petsResponse.data.data) {
+          const fetchedPets = petsResponse.data.data;
+          setPets(fetchedPets);
+          
+          // Set the first pet as selected by default
+          if (fetchedPets.length > 0) {
+            setSelectedPetId(fetchedPets[0].id);
+          }
+        }
+
+        if (weightsResponse.data.success && weightsResponse.data.data) {
+          const weightsData = weightsResponse.data.data;
+          
+          // If nested structure (array of pet weight groups)
+          if (Array.isArray(weightsData) && weightsData.length > 0 && weightsData[0].weights) {
+            const flattenedWeights: WeightRecord[] = [];
+            weightsData.forEach((petWeightGroup: any) => {
+              const petId = petWeightGroup.pet_id;
+              if (petWeightGroup.weights && Array.isArray(petWeightGroup.weights)) {
+                petWeightGroup.weights.forEach((weight: any) => {
+                  flattenedWeights.push({
+                    ...weight,
+                    petId: petId,
+                    weight: parseFloat(weight.weight) // Convert string to number
+                  });
+                });
+              }
+            });
+            setWeightRecords(flattenedWeights);
+          } else {
+            // If flat structure
+            setWeightRecords(weightsData);
+          }
+        }
+      } catch (err: any) {
+        console.error('Failed to fetch data:', err);
+        setError('Tietojen lataus epäonnistui. Yritä uudelleen.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
   const selectedPetWeights = weightRecords
     .filter(record => record.petId === selectedPetId)
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -43,6 +105,67 @@ export default function WeightManagementScreen() {
   const yearFilteredWeights = selectedPetWeights.filter(
     record => new Date(record.date).getFullYear() === selectedYear
   );
+
+  const handleOpenModal = () => {
+    setWeight('');
+    setDate(new Date().toISOString().split('T')[0]);
+    setModalVisible(true);
+  };
+
+  const handleCloseModal = () => {
+    setModalVisible(false);
+  };
+
+  const handleSaveWeight = async () => {
+    if (!selectedPetId || !weight) {
+      alert('Täytä kaikki pakolliset kentät');
+      return;
+    }
+
+    try {
+      setSaving(true);
+      
+      const weightData = {
+        pet_id: selectedPetId,
+        weight: parseFloat(weight),
+        date: date
+      };
+
+      const response = await apiClient.post('/api/weights', weightData);
+
+      if (response.data.success) {
+        const weightsResponse = await apiClient.get('/api/weights');
+        if (weightsResponse.data.success && weightsResponse.data.data) {
+          const weightsData = weightsResponse.data.data;
+          
+          if (Array.isArray(weightsData) && weightsData.length > 0 && weightsData[0].weights) {
+            const flattenedWeights: WeightRecord[] = [];
+            weightsData.forEach((petWeightGroup: any) => {
+              const petId = petWeightGroup.pet_id;
+              if (petWeightGroup.weights && Array.isArray(petWeightGroup.weights)) {
+                petWeightGroup.weights.forEach((weight: any) => {
+                  flattenedWeights.push({
+                    ...weight,
+                    petId: petId,
+                    weight: parseFloat(weight.weight)
+                  });
+                });
+              }
+            });
+            setWeightRecords(flattenedWeights);
+          } else {
+            setWeightRecords(weightsData);
+          }
+        }
+        
+        handleCloseModal();
+      }
+    } catch (err: any) {
+      alert('Painon tallentaminen epäonnistui. Yritä uudelleen.');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -64,6 +187,13 @@ export default function WeightManagementScreen() {
     return { change: change.toFixed(1), percentChange, isIncrease: change > 0 };
   };
 
+  const formatWeight = (weight: number | undefined): string => {
+    if (weight === undefined || weight === null) {
+      return '0';
+    }
+    return weight % 1 === 0 ? weight.toFixed(0) : weight.toFixed(2).replace(/\.?0+$/, '');
+  };
+
   const renderWeightCard = (record: WeightRecord, index: number) => {
     const weightChange = calculateWeightChange(index);
     
@@ -73,10 +203,7 @@ export default function WeightManagementScreen() {
           <View style={styles.weightHeader}>
             <View style={styles.weightMainInfo}>
               <Text variant="displaySmall" style={styles.weightValue}>
-                {record.weight}
-              </Text>
-              <Text variant="titleLarge" style={styles.weightUnit}>
-                {record.unit}
+                {formatWeight(record.weight)} kg
               </Text>
             </View>
             {weightChange && (
@@ -143,6 +270,35 @@ export default function WeightManagementScreen() {
     </View>
   );
 
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.emptyContainer}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+          <Text variant="bodyMedium" style={[styles.emptyText, { marginTop: SPACING.md }]}>
+            Ladataan lemmikkejä...
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.emptyContainer}>
+          <MaterialCommunityIcons name="alert-circle" size={64} color={COLORS.error} />
+          <Text variant="headlineSmall" style={styles.emptyTitle}>
+            Virhe
+          </Text>
+          <Text variant="bodyMedium" style={styles.emptyText}>
+            {error}
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
   if (pets.length === 0) {
     return (
       <View style={styles.container}>
@@ -199,7 +355,6 @@ export default function WeightManagementScreen() {
     // Add 10% padding to top and bottom for better visibility
     const paddedMax = maxWeight + (weightRange * 0.1);
     const paddedMin = minWeight - (weightRange * 0.1);
-    const paddedRange = paddedMax - paddedMin;
     const svgHeight = 220;
     // Make graph slightly wider for better readability
     const screenWidth = Dimensions.get('window').width;
@@ -474,9 +629,95 @@ export default function WeightManagementScreen() {
       <FAB
         icon="plus"
         style={styles.fab}
-        onPress={() => console.log('Lisää painomittaus')}
+        onPress={handleOpenModal}
         label="Lisää mittaus"
       />
+
+      <Portal>
+        <Modal
+          visible={modalVisible}
+          onDismiss={handleCloseModal}
+          contentContainerStyle={styles.modalContainer}
+        >
+          <ScrollView 
+            ref={scrollViewRef}
+            showsVerticalScrollIndicator={false} 
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={styles.scrollContentContainer}
+          >
+            <Text variant="headlineSmall" style={styles.modalTitle}>
+              Lisää painomittaus
+            </Text>
+
+            <TextInput
+              label="Paino (kg) *"
+              value={weight}
+              onChangeText={setWeight}
+              style={styles.input}
+              mode="outlined"
+              keyboardType="decimal-pad"
+              placeholder=""
+              placeholderTextColor="rgba(0, 0, 0, 0.3)"
+              textColor={COLORS.onSurface}
+              theme={{ colors: { onSurfaceVariant: 'rgba(0, 0, 0, 0.4)' } }}
+              onFocus={() => {
+                setTimeout(() => {
+                  scrollViewRef.current?.scrollToEnd({ animated: true });
+                }, 200);
+              }}
+            />
+
+            <TouchableOpacity onPress={() => setShowDatePicker(true)}>
+              <TextInput
+                label="Päivämäärä *"
+                value={date.split('-').reverse().join('-')}
+                style={styles.input}
+                mode="outlined"
+                editable={false}
+                right={<TextInput.Icon icon="calendar" />}
+                placeholder="PP-KK-VVVV"
+                placeholderTextColor="rgba(0, 0, 0, 0.3)"
+                textColor={COLORS.onSurface}
+                theme={{ colors: { onSurfaceVariant: 'rgba(0, 0, 0, 0.4)' } }}
+              />
+            </TouchableOpacity>
+
+            {showDatePicker && (
+              <DateTimePicker
+                value={new Date(date)}
+                mode="date"
+                display="default"
+                onChange={(_, selectedDate) => {
+                  setShowDatePicker(false);
+                  if (selectedDate) {
+                    setDate(selectedDate.toISOString().split('T')[0]);
+                  }
+                }}
+              />
+            )}
+
+            <View style={styles.modalButtons}>
+              <Button
+                mode="outlined"
+                onPress={handleCloseModal}
+                style={styles.modalButton}
+                disabled={saving}
+              >
+                Peruuta
+              </Button>
+              <Button
+                mode="contained"
+                onPress={handleSaveWeight}
+                style={styles.modalButton}
+                loading={saving}
+                disabled={saving}
+              >
+                Tallenna
+              </Button>
+            </View>
+          </ScrollView>
+        </Modal>
+      </Portal>
     </View>
   );
 }
@@ -745,5 +986,32 @@ const styles = StyleSheet.create({
   },
   graphScrollView: {
     width: '100%',
+  },
+  modalContainer: {
+    backgroundColor: COLORS.surface,
+    margin: SPACING.lg,
+    padding: SPACING.lg,
+    borderRadius: 12,
+    maxHeight: '90%',
+  },
+  scrollContentContainer: {
+    paddingBottom: 0,
+  },
+  modalTitle: {
+    marginBottom: SPACING.lg,
+    fontWeight: 'bold',
+    color: COLORS.onSurface,
+  },
+  input: {
+    marginBottom: SPACING.md,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: SPACING.lg,
+    gap: SPACING.md,
+  },
+  modalButton: {
+    flex: 1,
   },
 });
