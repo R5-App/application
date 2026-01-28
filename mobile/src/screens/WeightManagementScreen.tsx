@@ -50,7 +50,6 @@ export default function WeightManagementScreen() {
 
         if (weightsResponse.data.success && weightsResponse.data.data) {
           const weightsData = weightsResponse.data.data;
-          console.log('Weights response:', weightsData);
           
           // If nested structure (array of pet weight groups)
           if (Array.isArray(weightsData) && weightsData.length > 0 && weightsData[0].weights) {
@@ -59,7 +58,6 @@ export default function WeightManagementScreen() {
               const petId = petWeightGroup.pet_id;
               if (petWeightGroup.weights && Array.isArray(petWeightGroup.weights)) {
                 petWeightGroup.weights.forEach((weight: any) => {
-                  console.log('Raw weight data:', weight);
                   flattenedWeights.push({
                     ...weight,
                     petId: petId,
@@ -68,11 +66,9 @@ export default function WeightManagementScreen() {
                 });
               }
             });
-            console.log('Flattened weights:', flattenedWeights);
             setWeightRecords(flattenedWeights);
           } else {
             // If flat structure
-            console.log('Flat weights data:', weightsData);
             setWeightRecords(weightsData);
           }
         }
@@ -122,15 +118,12 @@ export default function WeightManagementScreen() {
 
   const formatWeight = (weight: number | undefined): string => {
     if (weight === undefined || weight === null) {
-      console.log('Warning: weight is undefined or null');
       return '0';
     }
     return weight % 1 === 0 ? weight.toFixed(0) : weight.toFixed(2).replace(/\.?0+$/, '');
   };
 
   const renderWeightCard = (record: WeightRecord, index: number) => {
-    console.log('Rendering weight record:', record);
-    
     const weightChange = calculateWeightChange(index);
     
     return (

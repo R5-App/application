@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { View, ScrollView, StyleSheet } from 'react-native';
-import { Text, Card, FAB, Chip, Divider, ActivityIndicator } from 'react-native-paper';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, ScrollView, StyleSheet, TouchableOpacity, Keyboard } from 'react-native';
+import { Text, Card, FAB, Chip, Divider, ActivityIndicator, Portal, Modal, TextInput, Button } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLORS, SPACING } from '../styles/theme';
 import apiClient from '../services/api';
 import { Pet } from '../types';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 interface Visit {
   id: number;
@@ -17,12 +18,55 @@ interface Visit {
   costs?: string;
 }
 
+interface VisitType {
+  id: number;
+  name: string;
+}
+
 export default function VisitsScreen() {
   const [pets, setPets] = useState<Pet[]>([]);
   const [visits, setVisits] = useState<Visit[]>([]);
+  const [visitTypes, setVisitTypes] = useState<VisitType[]>([]);
   const [selectedPetId, setSelectedPetId] = useState<number | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [modalVisible, setModalVisible] = useState<boolean>(false);
+  const [saving, setSaving] = useState<boolean>(false);
+  const [showDatePicker, setShowDatePicker] = useState<boolean>(false);
+  const [keyboardHeight, setKeyboardHeight] = useState<number>(0);
+  
+  const scrollViewRef = useRef<ScrollView>(null);
+  const costsInputRef = useRef<any>(null);
+  const notesInputRef = useRef<any>(null);
+
+  // Handle keyboard events
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener(
+      'keyboardDidShow',
+      (e) => {
+        setKeyboardHeight(e.endCoordinates.height);
+      }
+    );
+    const keyboardDidHideListener = Keyboard.addListener(
+      'keyboardDidHide',
+      () => {
+        setKeyboardHeight(0);
+      }
+    );
+
+    return () => {
+      keyboardDidShowListener.remove();
+      keyboardDidHideListener.remove();
+    };
+  }, []);
+  
+  // Form state
+  const [visitDate, setVisitDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [vetName, setVetName] = useState<string>('');
+  const [location, setLocation] = useState<string>('');
+  const [selectedTypeId, setSelectedTypeId] = useState<number | null>(null);
+  const [notes, setNotes] = useState<string>('');
+  const [costs, setCosts] = useState<string>('');
 
   // Fetch pets and visits from the API
   useEffect(() => {
@@ -31,7 +75,7 @@ export default function VisitsScreen() {
         setLoading(true);
         setError(null);
         
-        // Fetch both pets and visits in parallel
+        // Fetch pets and visits in parallel
         const [petsResponse, visitsResponse] = await Promise.all([
           apiClient.get('/api/pets'),
           apiClient.get('/api/vet-visits')
@@ -77,6 +121,85 @@ export default function VisitsScreen() {
   const selectedPetVisits = visits
     .filter(visit => visit.pet_id === selectedPetId)
     .sort((a, b) => new Date(b.visit_date).getTime() - new Date(a.visit_date).getTime());
+
+  const handleOpenModal = async () => {
+    // Reset form
+    setVisitDate(new Date().toISOString().split('T')[0]);
+    setVetName('');
+    setLocation('');
+    setSelectedTypeId(null);
+    setNotes('');
+    setCosts('');
+    setModalVisible(true);
+    
+    // Fetch visit types if not already loaded
+    if (visitTypes.length === 0) {
+      try {
+        const typesResponse = await apiClient.get('/api/vet-visits/types');
+        if (typesResponse.data.success && typesResponse.data.data) {
+          console.log('Visit types response:', typesResponse.data.data);
+          setVisitTypes(typesResponse.data.data);
+        }
+      } catch (err: any) {
+        console.error('Failed to fetch visit types:', err);
+      }
+    }
+  };
+
+  const handleCloseModal = () => {
+    setModalVisible(false);
+  };
+
+  const handleSaveVisit = async () => {
+    if (!selectedPetId || !vetName || !location || !selectedTypeId) {
+      alert('Täytä kaikki pakolliset kentät');
+      return;
+    }
+
+    try {
+      setSaving(true);
+      
+      const visitData = {
+        pet_id: selectedPetId,
+        visit_date: visitDate,
+        vet_name: vetName,
+        location: location,
+        type_id: selectedTypeId,
+        notes: notes || undefined,
+        costs: costs ? parseFloat(costs) : undefined
+      };
+
+      const response = await apiClient.post('/api/vet-visits', visitData);
+
+      if (response.data.success) {
+        // Refresh visits
+        const visitsResponse = await apiClient.get('/api/vet-visits');
+        if (visitsResponse.data.success && visitsResponse.data.data) {
+          const flattenedVisits: Visit[] = [];
+          visitsResponse.data.data.forEach((petVisitGroup: any) => {
+            const petId = petVisitGroup.pet_id;
+            if (petVisitGroup.vet_visits && Array.isArray(petVisitGroup.vet_visits)) {
+              petVisitGroup.vet_visits.forEach((visit: any) => {
+                flattenedVisits.push({
+                  ...visit,
+                  pet_id: petId
+                });
+              });
+            }
+          });
+          setVisits(flattenedVisits);
+        }
+        
+        handleCloseModal();
+      }
+    } catch (err: any) {
+      console.error('Failed to save visit:', err);
+      alert('Käynnin tallentaminen epäonnistui. Yritä uudelleen.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('fi-FI', {
@@ -243,9 +366,185 @@ export default function VisitsScreen() {
       <FAB
         icon="plus"
         style={styles.fab}
-        onPress={() => console.log('Lisää käynti')}
+        onPress={handleOpenModal}
         label="Lisää käynti"
       />
+
+      <Portal>
+        <Modal
+          visible={modalVisible}
+          onDismiss={handleCloseModal}
+          contentContainerStyle={[
+            styles.modalContainer,
+            keyboardHeight > 0 && { 
+              marginTop: 10,
+              marginBottom: 10,
+              padding: SPACING.sm,
+              maxHeight: '45%'
+            }
+          ]}
+        >
+          <ScrollView 
+            ref={scrollViewRef}
+            showsVerticalScrollIndicator={false} 
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={styles.scrollContentContainer}
+          >
+            <Text variant="headlineSmall" style={styles.modalTitle}>
+              Lisää käynti
+            </Text>
+
+            <TouchableOpacity onPress={() => setShowDatePicker(true)}>
+              <TextInput
+                label="Päivämäärä"
+                value={visitDate.split('-').reverse().join('-')}
+                style={styles.input}
+                mode="outlined"
+                editable={false}
+                right={<TextInput.Icon icon="calendar" />}
+                placeholder="PP-KK-VVVV"
+                placeholderTextColor="rgba(0, 0, 0, 0.3)"
+                textColor={COLORS.onSurface}
+                theme={{ colors: { onSurfaceVariant: 'rgba(0, 0, 0, 0.4)' } }}
+              />
+            </TouchableOpacity>
+
+            {showDatePicker && (
+              <DateTimePicker
+                value={new Date(visitDate)}
+                mode="date"
+                display="default"
+                onChange={(_, selectedDate) => {
+                  setShowDatePicker(false);
+                  if (selectedDate) {
+                    setVisitDate(selectedDate.toISOString().split('T')[0]);
+                  }
+                }}
+              />
+            )}
+
+            <TextInput
+              label="Eläinlääkäri *"
+              value={vetName}
+              onChangeText={setVetName}
+              style={styles.input}
+              mode="outlined"
+              placeholder="Ell. Virtanen"
+              placeholderTextColor="rgba(0, 0, 0, 0.3)"
+              textColor={COLORS.onSurface}
+              theme={{ colors: { onSurfaceVariant: 'rgba(0, 0, 0, 0.4)' } }}
+            />
+
+            <TextInput
+              label="Paikka *"
+              value={location}
+              onChangeText={setLocation}
+              style={styles.input}
+              mode="outlined"
+              placeholder="Eläinklinikka Keskusta"
+              placeholderTextColor="rgba(0, 0, 0, 0.3)"
+              textColor={COLORS.onSurface}
+              theme={{ colors: { onSurfaceVariant: 'rgba(0, 0, 0, 0.4)' } }}
+            />
+
+
+            <Text style={{ marginBottom: 8, color: COLORS.onSurfaceVariant }}>
+              Käynnin tyyppi *
+            </Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ flexDirection: 'row', marginBottom: SPACING.md }}
+            >
+              {visitTypes.length > 0 ? (
+                visitTypes.map((type) => (
+                  <Button
+                    key={type.id}
+                    mode={selectedTypeId === type.id ? 'contained' : 'outlined'}
+                    onPress={() => setSelectedTypeId(type.id)}
+                    style={{
+                      marginRight: SPACING.sm,
+                      borderColor: COLORS.primary,
+                      backgroundColor: selectedTypeId === type.id ? COLORS.primary : COLORS.surface,
+                      minWidth: 100,
+                      borderRadius: 20,
+                      elevation: selectedTypeId === type.id ? 2 : 0,
+                    }}
+                    labelStyle={{
+                      color: selectedTypeId === type.id ? COLORS.onPrimary : COLORS.primary,
+                      fontWeight: selectedTypeId === type.id ? 'bold' : 'normal',
+                      textTransform: 'none',
+                    }}
+                  >
+                    {type.name}
+                  </Button>
+                ))
+              ) : (
+                <Button disabled mode="outlined">Ladataan...</Button>
+              )}
+            </ScrollView>
+
+            <TextInput
+              ref={costsInputRef}
+              label="Kustannukset (€)"
+              value={costs}
+              onChangeText={setCosts}
+              style={styles.input}
+              mode="outlined"
+              keyboardType="decimal-pad"
+              placeholder="100.00"
+              placeholderTextColor="rgba(0, 0, 0, 0.3)"
+              textColor={COLORS.onSurface}
+              theme={{ colors: { onSurfaceVariant: 'rgba(0, 0, 0, 0.4)' } }}
+              onFocus={() => {
+                setTimeout(() => {
+                  scrollViewRef.current?.scrollToEnd({ animated: true });
+                }, 200);
+              }}
+            />
+
+            <TextInput
+              ref={notesInputRef}
+              label="Muistiinpanot"
+              value={notes}
+              onChangeText={setNotes}
+              style={styles.input}
+              mode="outlined"
+              multiline
+              numberOfLines={4}
+              placeholder="Lisää muistiinpanoja..."
+              placeholderTextColor="rgba(0, 0, 0, 0.3)"
+              textColor={COLORS.onSurface}
+              theme={{ colors: { onSurfaceVariant: 'rgba(0, 0, 0, 0.4)' } }}
+              onFocus={() => {
+                setTimeout(() => {
+                  scrollViewRef.current?.scrollToEnd({ animated: true });
+                }, 200);
+              }}
+            />
+
+            <View style={styles.modalButtons}>
+              <Button
+                mode="outlined"
+                onPress={handleCloseModal}
+                style={styles.modalButton}
+                disabled={saving}
+              >
+                Peruuta
+              </Button>
+              <Button
+                mode="contained"
+                onPress={handleSaveVisit}
+                style={styles.modalButton}
+                loading={saving}
+                disabled={saving}
+              >
+                Tallenna
+              </Button>
+            </View>
+          </ScrollView>
+        </Modal>
+      </Portal>
     </View>
   );
 }
@@ -367,5 +666,35 @@ const styles = StyleSheet.create({
     right: SPACING.md,
     bottom: SPACING.md,
     backgroundColor: COLORS.primary,
+  },
+  modalContainer: {
+    backgroundColor: COLORS.surface,
+    margin: SPACING.lg,
+    padding: SPACING.lg,
+    borderRadius: 12,
+    maxHeight: '90%',
+  },
+  keyboardAvoid: {
+    width: '100%',
+  },
+  scrollContentContainer: {
+    paddingBottom: 0,
+  },
+  modalTitle: {
+    marginBottom: SPACING.lg,
+    fontWeight: 'bold',
+    color: COLORS.onSurface,
+  },
+  input: {
+    marginBottom: SPACING.md,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: SPACING.lg,
+    gap: SPACING.md,
+  },
+  modalButton: {
+    flex: 1,
   },
 });

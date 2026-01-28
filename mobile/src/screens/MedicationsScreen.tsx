@@ -49,7 +49,6 @@ export default function MedicationsScreen() {
         if (medicationsResponse.data.success && medicationsResponse.data.data) {
           // Check if medications are nested like visits
           const medicationsData = medicationsResponse.data.data;
-          console.log('Medications response:', medicationsData);
           
           // If nested structure (array of pet medication groups)
           if (Array.isArray(medicationsData) && medicationsData.length > 0 && medicationsData[0].medications) {
