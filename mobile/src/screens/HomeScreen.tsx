@@ -52,7 +52,7 @@ export default function HomeScreen() {
       </View>
 
       <View style={styles.content}>
-        <Card style={styles.card} onPress={() => console.log('Lemmikki')}>
+        <Card style={styles.card} onPress={() => navigation.navigate('Pets' as never)}>
           <Card.Content style={{ alignItems: 'center' }}>
             <MaterialCommunityIcons name="paw" size={64} color={COLORS.primary} />
             <Text variant="titleLarge" style={{ marginTop: SPACING.md }}>Lemmikki</Text>
