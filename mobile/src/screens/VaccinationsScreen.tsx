@@ -538,9 +538,7 @@ export default function VaccinationsScreen() {
           </Dialog.Content>
           <Dialog.Actions>
             <Button onPress={() => setDeleteDialogVisible(false)}>Peruuta</Button>
-            <Button onPress={confirmDeleteVaccination} mode="contained" buttonColor={COLORS.error}>
-              Poista
-            </Button>
+            <Button onPress={confirmDeleteVaccination} textColor={COLORS.error}>Poista</Button>
           </Dialog.Actions>
         </Dialog>
       </Portal>

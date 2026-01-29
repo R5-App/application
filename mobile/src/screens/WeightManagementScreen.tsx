@@ -748,7 +748,7 @@ export default function WeightManagementScreen() {
           </Dialog.Content>
           <Dialog.Actions>
             <Button onPress={() => setDeleteDialogVisible(false)}>Peruuta</Button>
-            <Button onPress={confirmDeleteWeightRecord} buttonColor={COLORS.error}>Poista</Button>
+            <Button onPress={confirmDeleteWeightRecord} textColor={COLORS.error}>Poista</Button>
           </Dialog.Actions>
         </Dialog>
       </Portal>
