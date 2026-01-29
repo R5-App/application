@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
-import { Text, Card, FAB, Chip, Divider, ActivityIndicator, Portal, Modal, TextInput, Button } from 'react-native-paper';
+import { View, ScrollView, TouchableOpacity } from 'react-native';
+import { Text, Card, FAB, Chip, Divider, ActivityIndicator, Portal, Modal, TextInput, Button, Dialog } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { vaccinationsStyles as styles } from '../styles/screenStyles';
 import { COLORS, SPACING } from '../styles/theme';
 import apiClient from '../services/api';
+import { vaccinationsService } from '../services/vaccinationsService';
 import { Pet } from '../types';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
@@ -27,6 +29,10 @@ export default function VaccinationsScreen() {
   const [saving, setSaving] = useState<boolean>(false);
   const [showVaccinationDatePicker, setShowVaccinationDatePicker] = useState<boolean>(false);
   const [showExpireDatePicker, setShowExpireDatePicker] = useState<boolean>(false);
+  const [editingVaccinationId, setEditingVaccinationId] = useState<number | null>(null);
+  const [isEditMode, setIsEditMode] = useState<boolean>(false);
+  const [deleteDialogVisible, setDeleteDialogVisible] = useState<boolean>(false);
+  const [vaccinationToDelete, setVaccinationToDelete] = useState<Vaccination | null>(null);
   
   const scrollViewRef = useRef<ScrollView>(null);
 
@@ -44,9 +50,9 @@ export default function VaccinationsScreen() {
         setLoading(true);
         setError(null);
         
-        const [petsResponse, vaccinationsResponse] = await Promise.all([
+        const [petsResponse, fetchedVaccinations] = await Promise.all([
           apiClient.get('/api/pets'),
-          apiClient.get('/api/vaccinations')
+          vaccinationsService.getAllVaccinations()
         ]);
         
         if (petsResponse.data.success && petsResponse.data.data) {
@@ -58,27 +64,7 @@ export default function VaccinationsScreen() {
           }
         }
 
-        if (vaccinationsResponse.data.success && vaccinationsResponse.data.data) {
-          const vaccinationsData = vaccinationsResponse.data.data;
-          
-          if (Array.isArray(vaccinationsData) && vaccinationsData.length > 0 && vaccinationsData[0].vaccinations) {
-            const flattenedVaccinations: Vaccination[] = [];
-            vaccinationsData.forEach((petVacGroup: any) => {
-              const petId = petVacGroup.pet_id;
-              if (petVacGroup.vaccinations && Array.isArray(petVacGroup.vaccinations)) {
-                petVacGroup.vaccinations.forEach((vac: any) => {
-                  flattenedVaccinations.push({
-                    ...vac,
-                    pet_id: petId
-                  });
-                });
-              }
-            });
-            setVaccinations(flattenedVaccinations);
-          } else {
-            setVaccinations(vaccinationsData);
-          }
-        }
+        setVaccinations(fetchedVaccinations);
       } catch (err: any) {
         setError('Tietojen lataus epäonnistui. Yritä uudelleen.');
       } finally {
@@ -94,6 +80,9 @@ export default function VaccinationsScreen() {
     .sort((a, b) => new Date(b.vaccination_date).getTime() - new Date(a.vaccination_date).getTime());
 
   const handleOpenModal = () => {
+    // Reset form for create mode
+    setIsEditMode(false);
+    setEditingVaccinationId(null);
     setVacName('');
     setVaccinationDate(new Date().toISOString().split('T')[0]);
     setExpireDate('');
@@ -104,58 +93,108 @@ export default function VaccinationsScreen() {
 
   const handleCloseModal = () => {
     setModalVisible(false);
+    setIsEditMode(false);
+    setEditingVaccinationId(null);
   };
 
   const handleSaveVaccination = async () => {
-    if (!selectedPetId || !vacName) {
+    if (!vacName) {
       alert('Täytä kaikki pakolliset kentät');
       return;
     }
 
     try {
       setSaving(true);
+
+      if (isEditMode && editingVaccinationId) {
       
-      const vaccinationData = {
-        pet_id: selectedPetId,
-        vac_name: vacName,
-        vaccination_date: vaccinationDate,
-        expire_date: expireDate || undefined,
-        costs: costs ? parseFloat(costs) : undefined,
-        notes: notes || undefined
-      };
+        const vaccinationData = {
+          pet_id: selectedPetId,
+          vac_name: vacName,
+          vaccination_date: vaccinationDate,
+          expire_date: expireDate || undefined,
+          costs: costs ? parseFloat(costs) : undefined,
+          notes: notes || undefined
+        };
 
-      const response = await apiClient.post('/api/vaccinations', vaccinationData);
+        const updatedVaccination = await vaccinationsService.updateVaccination(editingVaccinationId, vaccinationData);
 
-      if (response.data.success) {
-        const vaccinationsResponse = await apiClient.get('/api/vaccinations');
-        if (vaccinationsResponse.data.success && vaccinationsResponse.data.data) {
-          const vaccinationsData = vaccinationsResponse.data.data;
+        if (updatedVaccination) {
+          // Refresh vaccinations
+          const refreshedVaccinations = await vaccinationsService.getAllVaccinations();
+          setVaccinations(refreshedVaccinations);
           
-          if (Array.isArray(vaccinationsData) && vaccinationsData.length > 0 && vaccinationsData[0].vaccinations) {
-            const flattenedVaccinations: Vaccination[] = [];
-            vaccinationsData.forEach((petVacGroup: any) => {
-              const petId = petVacGroup.pet_id;
-              if (petVacGroup.vaccinations && Array.isArray(petVacGroup.vaccinations)) {
-                petVacGroup.vaccinations.forEach((vac: any) => {
-                  flattenedVaccinations.push({
-                    ...vac,
-                    pet_id: petId
-                  });
-                });
-              }
-            });
-            setVaccinations(flattenedVaccinations);
-          } else {
-            setVaccinations(vaccinationsData);
-          }
+          handleCloseModal();
         }
-        
-        handleCloseModal();
+      } else {
+        if (!selectedPetId) {
+          alert('Valitse lemmikki ennen tallentamista.');
+          return;
+        }
+
+        const vaccinationData = {
+          pet_id: selectedPetId,
+          vac_name: vacName,
+          vaccination_date: vaccinationDate,
+          expire_date: expireDate || undefined,
+          costs: costs ? parseFloat(costs) : undefined,
+          notes: notes || undefined
+        };
+
+        const newVaccination = await vaccinationsService.createVaccination(vaccinationData);
+
+        if (newVaccination) {
+          // Refresh vaccinations
+          const refreshedVaccinations = await vaccinationsService.getAllVaccinations();
+          setVaccinations(refreshedVaccinations);
+          
+          handleCloseModal();
+        }
       }
     } catch (err: any) {
       alert('Rokotuksen tallentaminen epäonnistui. Yritä uudelleen.');
     } finally {
       setSaving(false);
+    }
+  };
+
+    const handleEditVaccination = (vaccination: Vaccination) => {
+      setIsEditMode(true);
+      setEditingVaccinationId(vaccination.id);
+
+      const dateOnly = vaccination.vaccination_date.split('T')[0];
+      setVacName(vaccination.vac_name);
+      setVaccinationDate(dateOnly);
+      const expireDateOnly = vaccination.expire_date ? vaccination.expire_date.split('T')[0] : '';
+      setExpireDate(expireDateOnly);
+      setCosts(vaccination.costs ? vaccination.costs.toString() : '');
+      setNotes(vaccination.notes || '');
+      setModalVisible(true);
+  };
+
+  const handleDeleteVaccination = async (vaccination: Vaccination) => {
+    setVaccinationToDelete(vaccination);
+    setDeleteDialogVisible(true);
+  };
+
+  const confirmDeleteVaccination = async () => {
+    if (!vaccinationToDelete) return;
+
+    try {
+      const success = await vaccinationsService.deleteVaccination(vaccinationToDelete.id);
+
+      if (success) {
+        // Refresh vaccinations
+        const refreshedVaccinations = await vaccinationsService.getAllVaccinations();
+        setVaccinations(refreshedVaccinations);
+        setDeleteDialogVisible(false);
+        setVaccinationToDelete(null);
+      } else {
+        alert('Rokotuksen poistaminen epäonnistui. Yritä uudelleen.');
+      }
+    } catch (err: any) {
+      console.error("Failed to delete vaccination:", err);
+      alert('Rokotuksen poistaminen epäonnistui. Yritä uudelleen.');
     }
   };
 
@@ -211,17 +250,29 @@ export default function VaccinationsScreen() {
             </View>
           )}
 
-          {vaccination.notes && (
-            <>
-              <Divider style={styles.divider} />
+          <Divider style={styles.divider} />
+
+          <View style={styles.bottomSection}>
+            {vaccination.notes ? (
               <View style={styles.notesContainer}>
                 <MaterialCommunityIcons name="note-text" size={18} color={COLORS.onSurfaceVariant} />
                 <Text variant="bodySmall" style={styles.notesText}>
                   {vaccination.notes}
                 </Text>
               </View>
-            </>
-          )}
+            ) : (
+              <View style={{ flex: 1 }} />
+            )}
+
+            <View style={styles.actionButtons}>
+              <TouchableOpacity onPress={() => handleEditVaccination(vaccination)} style={styles.actionButton}>
+                <MaterialCommunityIcons name="pencil" size={25} color={COLORS.primary} />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => handleDeleteVaccination(vaccination)} style={styles.actionButton}>
+                <MaterialCommunityIcons name="delete" size={25} color={COLORS.error} />
+              </TouchableOpacity>
+            </View>
+          </View>
         </Card.Content>
       </Card>
     );
@@ -346,7 +397,7 @@ export default function VaccinationsScreen() {
             contentContainerStyle={styles.scrollContentContainer}
           >
             <Text variant="headlineSmall" style={styles.modalTitle}>
-              Lisää rokotus
+              {isEditMode ? 'Muokkaa rokotusta' : 'Lisää rokotus'}
             </Text>
 
             <TextInput
@@ -477,141 +528,21 @@ export default function VaccinationsScreen() {
             </View>
           </ScrollView>
         </Modal>
+        <Dialog
+          visible={deleteDialogVisible}
+          onDismiss={() => setDeleteDialogVisible(false)}
+        >
+          <Dialog.Title>Vahvista poisto</Dialog.Title>
+          <Dialog.Content>
+            <Text>Haluatko varmasti poistaa tämän rokotuksen?</Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setDeleteDialogVisible(false)}>Peruuta</Button>
+            <Button onPress={confirmDeleteVaccination} textColor={COLORS.error}>Poista</Button>
+          </Dialog.Actions>
+        </Dialog>
       </Portal>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  tabsContainer: {
-    maxHeight: 70,
-    backgroundColor: COLORS.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.surfaceVariant,
-  },
-  tabsContent: {
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.md,
-    gap: SPACING.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexGrow: 1,
-  },
-  tab: {
-    marginHorizontal: SPACING.xs,
-    paddingHorizontal: SPACING.md,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  selectedTab: {
-    backgroundColor: COLORS.primary,
-    elevation: 3,
-  },
-  selectedTabText: {
-    color: '#FFFFFF',
-    fontWeight: '700',
-    fontSize: 15,
-    lineHeight: 20,
-  },
-  unselectedTabText: {
-    fontSize: 15,
-    lineHeight: 20,
-  },
-  content: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: SPACING.md,
-  },
-  vaccinationCard: {
-    marginBottom: SPACING.md,
-    elevation: 2,
-  },
-  vaccinationHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: SPACING.sm,
-  },
-  vaccinationName: {
-    fontWeight: '700',
-    color: COLORS.primary,
-    flex: 1,
-  },
-  dateContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.xs,
-    marginBottom: SPACING.sm,
-  },
-  dateText: {
-    fontWeight: '600',
-    color: COLORS.onSurface,
-  },
-  divider: {
-    marginVertical: SPACING.sm,
-  },
-  notesContainer: {
-    flexDirection: 'row',
-    gap: SPACING.sm,
-    marginTop: SPACING.xs,
-  },
-  notesText: {
-    flex: 1,
-    color: COLORS.onSurfaceVariant,
-    fontStyle: 'italic',
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: SPACING.xl * 2,
-  },
-  emptyTitle: {
-    marginTop: SPACING.md,
-    color: COLORS.onSurfaceVariant,
-  },
-  emptyText: {
-    marginTop: SPACING.xs,
-    color: COLORS.onSurfaceVariant,
-    textAlign: 'center',
-  },
-  fab: {
-    position: 'absolute',
-    right: SPACING.md,
-    bottom: SPACING.md,
-    backgroundColor: COLORS.primary,
-  },
-  modalContainer: {
-    backgroundColor: COLORS.surface,
-    margin: SPACING.lg,
-    padding: SPACING.lg,
-    borderRadius: 12,
-    maxHeight: '90%',
-  },
-  scrollContentContainer: {
-    paddingBottom: 0,
-  },
-  modalTitle: {
-    marginBottom: SPACING.lg,
-    fontWeight: 'bold',
-    color: COLORS.onSurface,
-  },
-  input: {
-    marginBottom: SPACING.md,
-  },
-  modalButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: SPACING.lg,
-    gap: SPACING.md,
-  },
-  modalButton: {
-    flex: 1,
-  },
-});

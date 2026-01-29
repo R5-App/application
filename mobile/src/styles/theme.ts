@@ -285,8 +285,8 @@ export const COMMON_STYLES = {
   logoContainer: {
     width: 120,
     height: 120,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
     backgroundColor: COLORS.surfaceVariant,
     borderRadius: BORDER_RADIUS.large,
   },

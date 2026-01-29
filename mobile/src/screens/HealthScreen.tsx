@@ -37,41 +37,29 @@ export default function HealthScreen() {
       <View style={styles.content}>
         <Card style={styles.card} onPress={() => navigation.navigate('Visits' as never)}>
           <Card.Content style={{ alignItems: 'center' }}>
-            <MaterialCommunityIcons name="hospital-building" size={64} color={COLORS.primary} />
-            <Text variant="titleLarge" style={{ marginTop: SPACING.md }}>Käynnit</Text>
-            <Text variant="bodyMedium" style={[styles.cardText, { textAlign: 'center' }]}>
-              Eläinlääkäri- ja klinikkakäynnit
-            </Text>
+            <MaterialCommunityIcons name="hospital-building" size={86} color={COLORS.primary} />
+            <Text variant="titleMedium" style={{ marginTop: SPACING.md }}>Käynnit</Text>
           </Card.Content>
         </Card>
 
         <Card style={styles.card} onPress={() => navigation.navigate('Medications' as never)}>
           <Card.Content style={{ alignItems: 'center' }}>
-            <MaterialCommunityIcons name="pill" size={64} color={COLORS.primary} />
-            <Text variant="titleLarge" style={{ marginTop: SPACING.md }}>Lääkitykset</Text>
-            <Text variant="bodyMedium" style={[styles.cardText, { textAlign: 'center' }]}>
-              Lääkkeet ja hoito-ohjelmat
-            </Text>
+            <MaterialCommunityIcons name="pill" size={86} color={COLORS.primary} />
+            <Text variant="titleMedium" style={{ marginTop: SPACING.md }}>Lääkitykset</Text>
           </Card.Content>
         </Card>
 
         <Card style={styles.card} onPress={() => navigation.navigate('Vaccinations' as never)}>
           <Card.Content style={{ alignItems: 'center' }}>
-            <MaterialCommunityIcons name="needle" size={64} color={COLORS.primary} />
-            <Text variant="titleLarge" style={{ marginTop: SPACING.md }}>Rokotukset</Text>
-            <Text variant="bodyMedium" style={[styles.cardText, { textAlign: 'center' }]}>
-              Rokotushistoria ja muistutukset
-            </Text>
+            <MaterialCommunityIcons name="needle" size={86} color={COLORS.primary} />
+            <Text variant="titleMedium" style={{ marginTop: SPACING.md }}>Rokotukset</Text>
           </Card.Content>
         </Card>
 
         <Card style={styles.card} onPress={() => navigation.navigate('WeightManagement' as never)}>
           <Card.Content style={{ alignItems: 'center' }}>
-            <MaterialCommunityIcons name="scale-bathroom" size={64} color={COLORS.primary} />
-            <Text variant="titleLarge" style={{ marginTop: SPACING.md }}>Painonhallinta</Text>
-            <Text variant="bodyMedium" style={[styles.cardText, { textAlign: 'center' }]}>
-              Seuraa painoa ja kasvua
-            </Text>
+            <MaterialCommunityIcons name="scale-bathroom" size={86} color={COLORS.primary} />
+            <Text variant="titleMedium" style={{ marginTop: SPACING.md }}>Paino</Text>
           </Card.Content>
         </Card>
       </View>
