@@ -167,6 +167,16 @@ export default function WeightManagementScreen() {
     }
   };
 
+      const handleEditWeightRecord = (weightRecord: WeightRecord) => {
+    // TODO: Implement edit functionality
+    console.log('Edit weight record:', weightRecord.id);
+  };
+
+  const handleDeleteWeightRecord = async (weightRecord: WeightRecord) => {
+    // TODO: Implement delete functionality
+    console.log('Delete weight record:', weightRecord.id);
+  }
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('fi-FI', {
@@ -223,36 +233,29 @@ export default function WeightManagementScreen() {
             )}
           </View>
 
-          <View style={styles.dateContainer}>
-            <MaterialCommunityIcons name="calendar" size={18} color={COLORS.onSurfaceVariant} />
-            <Text variant="bodyMedium" style={styles.dateText}>
-              {formatDate(record.date)}
-            </Text>
+          <Divider style={styles.divider} />
+
+          <View style={styles.bottomSection}>
+            {record.date ? (
+              <View style={styles.dateContainer}>
+                <MaterialCommunityIcons name="calendar" size={18} color={COLORS.onSurfaceVariant} />
+                <Text variant="bodyMedium" style={styles.dateText}>
+                  {formatDate(record.date)}
+                </Text>
+              </View>
+              ) : (  
+                <View style={{  flex: 1}} />
+              )}
+
+              <View style={styles.actionButtons}>
+                <TouchableOpacity onPress={() => handleEditWeightRecord(record)} style={styles.actionButton}>
+                  <MaterialCommunityIcons name="pencil" size={25} color={COLORS.primary} />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => handleDeleteWeightRecord(record)} style={styles.actionButton}>
+                  <MaterialCommunityIcons name="delete" size={25} color={COLORS.error} />
+                </TouchableOpacity>
+              </View>
           </View>
-
-          {record.measuredBy && (
-            <>
-              <Divider style={styles.divider} />
-              <View style={styles.weightDetail}>
-                <MaterialCommunityIcons name="account" size={18} color={COLORS.onSurfaceVariant} />
-                <Text variant="bodyMedium" style={styles.detailText}>
-                  {record.measuredBy}
-                </Text>
-              </View>
-            </>
-          )}
-
-          {record.notes && (
-            <>
-              <Divider style={styles.divider} />
-              <View style={styles.notesContainer}>
-                <MaterialCommunityIcons name="note-text" size={18} color={COLORS.onSurfaceVariant} />
-                <Text variant="bodySmall" style={styles.notesText}>
-                  {record.notes}
-                </Text>
-              </View>
-            </>
-          )}
         </Card.Content>
       </Card>
     );
@@ -933,7 +936,8 @@ const styles = StyleSheet.create({
   },
   dateContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
+    flex: 1,
+    alignItems: 'flex-start',
     gap: SPACING.xs,
     marginTop: SPACING.xs,
   },
@@ -953,15 +957,37 @@ const styles = StyleSheet.create({
     flex: 1,
     color: COLORS.onSurface,
   },
+    bottomSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: SPACING.sm,
+  },
   notesContainer: {
     flexDirection: 'row',
     gap: SPACING.sm,
-    marginTop: SPACING.xs,
+    flex: 1,
+    alignItems: 'flex-start',
   },
   notesText: {
     flex: 1,
     color: COLORS.onSurfaceVariant,
     fontStyle: 'italic',
+  },
+     cardActions: {
+    marginTop: SPACING.md,
+    alignItems: 'flex-end',
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    gap: SPACING.sm,
+  },
+  actionButton: {
+    padding: SPACING.xs,
+    borderRadius: 8,
+    backgroundColor: COLORS.surfaceVariant,
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
   },
   emptyContainer: {
     flex: 1,

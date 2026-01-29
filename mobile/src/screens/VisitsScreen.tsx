@@ -200,6 +200,7 @@ export default function VisitsScreen() {
     }
   };
 
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('fi-FI', {
@@ -207,6 +208,16 @@ export default function VisitsScreen() {
       month: 'long',
       year: 'numeric',
     });
+  };
+
+  const handleEditVisit = (visit: Visit) => {
+    // TODO: Implement edit functionality
+    console.log('Edit visit:', visit.id);
+  };
+
+  const handleDeleteVisit = async (visit: Visit) => {
+    // TODO: Implement delete functionality
+    console.log('Delete visit:', visit.id);
   };
 
   const renderVisitCard = (visit: Visit) => (
@@ -249,17 +260,29 @@ export default function VisitsScreen() {
           </Text>
         </View>
 
-        {visit.notes && (
-          <>
-            <Divider style={styles.divider} />
+        <Divider style={styles.divider} />
+        
+        <View style={styles.bottomSection}>
+          {visit.notes ? (
             <View style={styles.notesContainer}>
               <MaterialCommunityIcons name="note-text" size={18} color={COLORS.onSurfaceVariant} />
               <Text variant="bodySmall" style={styles.notesText}>
                 {visit.notes}
               </Text>
             </View>
-          </>
-        )}
+          ) : (
+            <View style={{ flex: 1 }} />
+          )}
+          
+          <View style={styles.actionButtons}>
+            <TouchableOpacity onPress={() => handleEditVisit(visit)} style={styles.actionButton}>
+              <MaterialCommunityIcons name="pencil" size={25} color={COLORS.primary} />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => handleDeleteVisit(visit)} style={styles.actionButton}>
+              <MaterialCommunityIcons name="delete" size={25} color={COLORS.error} />
+            </TouchableOpacity>
+          </View>
+        </View>
       </Card.Content>
     </Card>
   );
@@ -628,15 +651,37 @@ const styles = StyleSheet.create({
     flex: 1,
     color: COLORS.onSurface,
   },
+  bottomSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: SPACING.sm,
+  },
   notesContainer: {
     flexDirection: 'row',
     gap: SPACING.sm,
-    marginTop: SPACING.xs,
+    flex: 1,
+    alignItems: 'flex-start',
   },
   notesText: {
     flex: 1,
     color: COLORS.onSurfaceVariant,
     fontStyle: 'italic',
+  },
+  cardActions: {
+    marginTop: SPACING.md,
+    alignItems: 'flex-end',
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    gap: SPACING.sm,
+  },
+  actionButton: {
+    padding: SPACING.xs,
+    borderRadius: 8,
+    backgroundColor: COLORS.surfaceVariant,
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
   },
   emptyContainer: {
     flex: 1,

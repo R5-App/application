@@ -220,6 +220,14 @@ export default function Navigation() {
                 headerBackTitle: 'Takaisin',
               }}
             />
+            <Stack.Screen
+              name="Settings"
+              component={SettingsScreen}
+              options={{
+                title: 'Asetukset',
+                headerBackTitle: 'Takaisin',
+              }}
+            />
           </>
         ) : (
           <>

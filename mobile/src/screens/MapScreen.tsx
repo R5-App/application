@@ -33,8 +33,8 @@ export default function MapScreen() {
     // TODO: Hae lemmikit backendistä
     // Väliaikaisesti kovakoodatut lemmikit
     setPets([
-      { id: '1', name: 'Macho', breed: 'Akita', age: 12, weight: 44, dateOfBirth: '2013-10-01' },
-      { id: '2', name: 'Mirri', breed: 'Sekarotuinen', age: 2, weight: 15, dateOfBirth: '2022-06-15' },
+      { id: 1, name: 'Macho', breed: 'Akita', age: 12, weight: 44, dateOfBirth: '2013-10-01' },
+      { id: 2, name: 'Mirri', breed: 'Sekarotuinen', age: 2, weight: 15, dateOfBirth: '2022-06-15' },
     ]);
     
     // Hae käyttäjän sijainti heti

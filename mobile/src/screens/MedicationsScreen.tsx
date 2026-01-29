@@ -6,6 +6,7 @@ import { COLORS, SPACING } from '../styles/theme';
 import apiClient from '../services/api';
 import { Pet } from '../types';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import CardActions from 'react-native-paper/lib/typescript/components/Card/CardActions';
 
 interface Medication {
   id: number;
@@ -159,6 +160,16 @@ export default function MedicationsScreen() {
     }
   };
 
+    const handleEditMedication = (medication: Medication) => {
+    // TODO: Implement edit functionality
+    console.log('Edit medication:', medication.id);
+  };
+
+  const handleDeleteMedication = async (medication: Medication) => {
+    // TODO: Implement delete functionality
+    console.log('Delete medication:', medication.id);
+  }
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('fi-FI', {
@@ -211,17 +222,29 @@ export default function MedicationsScreen() {
             </View>
           )}
 
-          {medication.notes && (
-            <>
-              <Divider style={styles.divider} />
+          <Divider style={styles.divider} />
+
+          <View style={styles.bottomSection}>
+            {medication.notes ? (
               <View style={styles.notesContainer}>
                 <MaterialCommunityIcons name="note-text" size={18} color={COLORS.onSurfaceVariant} />
                 <Text variant="bodySmall" style={styles.notesText}>
                   {medication.notes}
                 </Text>
               </View>
-            </>
-          )}
+            ) : (
+              <View style={{ flex: 1 }} />
+            )}
+
+            <View style={styles.actionButtons}>
+              <TouchableOpacity onPress={() => handleEditMedication(medication)} style={styles.actionButton}>
+                <MaterialCommunityIcons name="pencil" size={25} color={COLORS.primary} />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => handleDeleteMedication(medication)} style={styles.actionButton}>
+                <MaterialCommunityIcons name="delete" size={25} color={COLORS.error} />
+              </TouchableOpacity>
+            </View>
+          </View>
         </Card.Content>
       </Card>
     );
@@ -556,15 +579,37 @@ const styles = StyleSheet.create({
   divider: {
     marginVertical: SPACING.sm,
   },
+  bottomSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: SPACING.sm,
+  },
   notesContainer: {
     flexDirection: 'row',
     gap: SPACING.sm,
-    marginTop: SPACING.xs,
+    flex: 1,
+    alignItems: 'flex-start',
   },
   notesText: {
     flex: 1,
     color: COLORS.onSurfaceVariant,
     fontStyle: 'italic',
+  },
+   cardActions: {
+    marginTop: SPACING.md,
+    alignItems: 'flex-end',
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    gap: SPACING.sm,
+  },
+  actionButton: {
+    padding: SPACING.xs,
+    borderRadius: 8,
+    backgroundColor: COLORS.surfaceVariant,
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
   },
   emptyContainer: {
     flex: 1,

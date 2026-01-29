@@ -159,6 +159,16 @@ export default function VaccinationsScreen() {
     }
   };
 
+    const handleEditVaccination = (vaccination: Vaccination) => {
+    // TODO: Implement edit functionality
+    console.log('Edit vaccination:', vaccination.id);
+  };
+
+  const handleDeleteVaccination = async (vaccination: Vaccination) => {
+    // TODO: Implement delete functionality
+    console.log('Delete vaccination:', vaccination.id);
+  }
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('fi-FI', {
@@ -211,17 +221,29 @@ export default function VaccinationsScreen() {
             </View>
           )}
 
-          {vaccination.notes && (
-            <>
-              <Divider style={styles.divider} />
+          <Divider style={styles.divider} />
+
+          <View style={styles.bottomSection}>
+            {vaccination.notes ? (
               <View style={styles.notesContainer}>
                 <MaterialCommunityIcons name="note-text" size={18} color={COLORS.onSurfaceVariant} />
                 <Text variant="bodySmall" style={styles.notesText}>
                   {vaccination.notes}
                 </Text>
               </View>
-            </>
-          )}
+            ) : (
+              <View style={{ flex: 1 }} />
+            )}
+
+            <View style={styles.actionButtons}>
+              <TouchableOpacity onPress={() => handleEditVaccination(vaccination)} style={styles.actionButton}>
+                <MaterialCommunityIcons name="pencil" size={25} color={COLORS.primary} />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => handleDeleteVaccination(vaccination)} style={styles.actionButton}>
+                <MaterialCommunityIcons name="delete" size={25} color={COLORS.error} />
+              </TouchableOpacity>
+            </View>
+          </View>
         </Card.Content>
       </Card>
     );
@@ -556,15 +578,37 @@ const styles = StyleSheet.create({
   divider: {
     marginVertical: SPACING.sm,
   },
+  bottomSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: SPACING.sm,
+  },
   notesContainer: {
     flexDirection: 'row',
     gap: SPACING.sm,
-    marginTop: SPACING.xs,
+    flex: 1,
+    alignItems: 'flex-start',
   },
   notesText: {
     flex: 1,
     color: COLORS.onSurfaceVariant,
     fontStyle: 'italic',
+  },
+  cardActions: {
+    marginTop: SPACING.md,
+    alignItems: 'flex-end',
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    gap: SPACING.sm,
+  },
+  actionButton: {
+    padding: SPACING.xs,
+    borderRadius: 8,
+    backgroundColor: COLORS.surfaceVariant,
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
   },
   emptyContainer: {
     flex: 1,
