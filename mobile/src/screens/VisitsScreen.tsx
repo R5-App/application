@@ -218,25 +218,35 @@ export default function VisitsScreen() {
     setIsEditMode(true);
     setEditingVisitId(visit.id);
     
+    // Fetch visit types first if not already loaded
+    let types = visitTypes;
+    if (types.length === 0) {
+      try {
+        types = await visitsService.getVisitTypes();
+        setVisitTypes(types);
+      } catch (err: any) {
+        console.error('Failed to fetch visit types:', err);
+      }
+    }
+    
     // Pre-fill form with visit data
     // Extract date only (remove timestamp if present)
     const dateOnly = visit.visit_date.split('T')[0];
     setVisitDate(dateOnly);
     setVetName(visit.vet_name);
     setLocation(visit.location);
-    setSelectedTypeId(parseInt(visit.type_id));
+    
+    // Find the type by name (since type_id stores the name, not ID)
+    const matchingType = types.find(t => t.name.toLowerCase() === visit.type_id.toLowerCase());
+    if (matchingType) {
+      console.log('Found matching type:', matchingType);
+      setSelectedTypeId(matchingType.id);
+    } else {
+      console.log('No matching type found for:', visit.type_id);
+    }
+    
     setNotes(visit.notes || '');
     setCosts(visit.costs || '');
-    
-    // Fetch visit types if not already loaded
-    if (visitTypes.length === 0) {
-      try {
-        const types = await visitsService.getVisitTypes();
-        setVisitTypes(types);
-      } catch (err: any) {
-        console.error('Failed to fetch visit types:', err);
-      }
-    }
     
     setModalVisible(true);
   };
