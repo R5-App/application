@@ -5,6 +5,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { medicationsStyles as styles } from '../styles/screenStyles';
 import { COLORS, SPACING } from '../styles/theme';
 import apiClient from '../services/api';
+import { medicationsService } from '../services/medicationsService';
 import { Pet } from '../types';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
@@ -17,7 +18,7 @@ interface Medication {
   costs?: string;
   notes?: string;
 }
-
+  
 export default function MedicationsScreen() {
   const [pets, setPets] = useState<Pet[]>([]);
   const [medications, setMedications] = useState<Medication[]>([]);
@@ -45,9 +46,9 @@ export default function MedicationsScreen() {
         setLoading(true);
         setError(null);
         
-        const [petsResponse, medicationsResponse] = await Promise.all([
+        const [petsResponse, fetchedMedications] = await Promise.all([
           apiClient.get('/api/pets'),
-          apiClient.get('/api/medications')
+          medicationsService.getAllMedications()
         ]);
         
         if (petsResponse.data.success && petsResponse.data.data) {
@@ -59,27 +60,7 @@ export default function MedicationsScreen() {
           }
         }
 
-        if (medicationsResponse.data.success && medicationsResponse.data.data) {
-          const medicationsData = medicationsResponse.data.data;
-          
-          if (Array.isArray(medicationsData) && medicationsData.length > 0 && medicationsData[0].medications) {
-            const flattenedMedications: Medication[] = [];
-            medicationsData.forEach((petMedGroup: any) => {
-              const petId = petMedGroup.pet_id;
-              if (petMedGroup.medications && Array.isArray(petMedGroup.medications)) {
-                petMedGroup.medications.forEach((med: any) => {
-                  flattenedMedications.push({
-                    ...med,
-                    pet_id: petId
-                  });
-                });
-              }
-            });
-            setMedications(flattenedMedications);
-          } else {
-            setMedications(medicationsData);
-          }
-        }
+        setMedications(fetchedMedications);
       } catch (err: any) {
         setError('Tietojen lataus epäonnistui. Yritä uudelleen.');
       } finally {
@@ -125,31 +106,12 @@ export default function MedicationsScreen() {
         notes: notes || undefined
       };
 
-      const response = await apiClient.post('/api/medications', medicationData);
+      const newMedication = await medicationsService.createMedication(medicationData);
 
-      if (response.data.success) {
-        const medicationsResponse = await apiClient.get('/api/medications');
-        if (medicationsResponse.data.success && medicationsResponse.data.data) {
-          const medicationsData = medicationsResponse.data.data;
-          
-          if (Array.isArray(medicationsData) && medicationsData.length > 0 && medicationsData[0].medications) {
-            const flattenedMedications: Medication[] = [];
-            medicationsData.forEach((petMedGroup: any) => {
-              const petId = petMedGroup.pet_id;
-              if (petMedGroup.medications && Array.isArray(petMedGroup.medications)) {
-                petMedGroup.medications.forEach((med: any) => {
-                  flattenedMedications.push({
-                    ...med,
-                    pet_id: petId
-                  });
-                });
-              }
-            });
-            setMedications(flattenedMedications);
-          } else {
-            setMedications(medicationsData);
-          }
-        }
+      if (newMedication) {
+        // Refresh medications
+        const refreshedMedications = await medicationsService.getAllMedications();
+        setMedications(refreshedMedications);
         
         handleCloseModal();
       }

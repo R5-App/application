@@ -5,6 +5,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { vaccinationsStyles as styles } from '../styles/screenStyles';
 import { COLORS, SPACING } from '../styles/theme';
 import apiClient from '../services/api';
+import { vaccinationsService } from '../services/vaccinationsService';
 import { Pet } from '../types';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
@@ -45,9 +46,9 @@ export default function VaccinationsScreen() {
         setLoading(true);
         setError(null);
         
-        const [petsResponse, vaccinationsResponse] = await Promise.all([
+        const [petsResponse, fetchedVaccinations] = await Promise.all([
           apiClient.get('/api/pets'),
-          apiClient.get('/api/vaccinations')
+          vaccinationsService.getAllVaccinations()
         ]);
         
         if (petsResponse.data.success && petsResponse.data.data) {
@@ -59,27 +60,7 @@ export default function VaccinationsScreen() {
           }
         }
 
-        if (vaccinationsResponse.data.success && vaccinationsResponse.data.data) {
-          const vaccinationsData = vaccinationsResponse.data.data;
-          
-          if (Array.isArray(vaccinationsData) && vaccinationsData.length > 0 && vaccinationsData[0].vaccinations) {
-            const flattenedVaccinations: Vaccination[] = [];
-            vaccinationsData.forEach((petVacGroup: any) => {
-              const petId = petVacGroup.pet_id;
-              if (petVacGroup.vaccinations && Array.isArray(petVacGroup.vaccinations)) {
-                petVacGroup.vaccinations.forEach((vac: any) => {
-                  flattenedVaccinations.push({
-                    ...vac,
-                    pet_id: petId
-                  });
-                });
-              }
-            });
-            setVaccinations(flattenedVaccinations);
-          } else {
-            setVaccinations(vaccinationsData);
-          }
-        }
+        setVaccinations(fetchedVaccinations);
       } catch (err: any) {
         setError('Tietojen lataus epäonnistui. Yritä uudelleen.');
       } finally {
@@ -125,31 +106,12 @@ export default function VaccinationsScreen() {
         notes: notes || undefined
       };
 
-      const response = await apiClient.post('/api/vaccinations', vaccinationData);
+      const newVaccination = await vaccinationsService.createVaccination(vaccinationData);
 
-      if (response.data.success) {
-        const vaccinationsResponse = await apiClient.get('/api/vaccinations');
-        if (vaccinationsResponse.data.success && vaccinationsResponse.data.data) {
-          const vaccinationsData = vaccinationsResponse.data.data;
-          
-          if (Array.isArray(vaccinationsData) && vaccinationsData.length > 0 && vaccinationsData[0].vaccinations) {
-            const flattenedVaccinations: Vaccination[] = [];
-            vaccinationsData.forEach((petVacGroup: any) => {
-              const petId = petVacGroup.pet_id;
-              if (petVacGroup.vaccinations && Array.isArray(petVacGroup.vaccinations)) {
-                petVacGroup.vaccinations.forEach((vac: any) => {
-                  flattenedVaccinations.push({
-                    ...vac,
-                    pet_id: petId
-                  });
-                });
-              }
-            });
-            setVaccinations(flattenedVaccinations);
-          } else {
-            setVaccinations(vaccinationsData);
-          }
-        }
+      if (newVaccination) {
+        // Refresh vaccinations
+        const refreshedVaccinations = await vaccinationsService.getAllVaccinations();
+        setVaccinations(refreshedVaccinations);
         
         handleCloseModal();
       }

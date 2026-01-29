@@ -5,6 +5,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { visitsStyles as styles } from '../styles/screenStyles';
 import { COLORS, SPACING } from '../styles/theme';
 import apiClient from '../services/api';
+import { visitsService } from '../services/visitsService';
 import { Pet } from '../types';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
@@ -77,9 +78,9 @@ export default function VisitsScreen() {
         setError(null);
         
         // Fetch pets and visits in parallel
-        const [petsResponse, visitsResponse] = await Promise.all([
+        const [petsResponse, fetchedVisits] = await Promise.all([
           apiClient.get('/api/pets'),
-          apiClient.get('/api/vet-visits')
+          visitsService.getAllVisits()
         ]);
         
         if (petsResponse.data.success && petsResponse.data.data) {
@@ -92,22 +93,7 @@ export default function VisitsScreen() {
           }
         }
 
-        if (visitsResponse.data.success && visitsResponse.data.data) {
-          // Flatten the nested structure: each pet has a vet_visits array
-          const flattenedVisits: Visit[] = [];
-          visitsResponse.data.data.forEach((petVisitGroup: any) => {
-            const petId = petVisitGroup.pet_id;
-            if (petVisitGroup.vet_visits && Array.isArray(petVisitGroup.vet_visits)) {
-              petVisitGroup.vet_visits.forEach((visit: any) => {
-                flattenedVisits.push({
-                  ...visit,
-                  pet_id: petId
-                });
-              });
-            }
-          });
-          setVisits(flattenedVisits);
-        }
+        setVisits(fetchedVisits);
       } catch (err: any) {
         console.error('Failed to fetch data:', err);
         setError('Tietojen lataus epäonnistui. Yritä uudelleen.');
@@ -136,11 +122,9 @@ export default function VisitsScreen() {
     // Fetch visit types if not already loaded
     if (visitTypes.length === 0) {
       try {
-        const typesResponse = await apiClient.get('/api/vet-visits/types');
-        if (typesResponse.data.success && typesResponse.data.data) {
-          console.log('Visit types response:', typesResponse.data.data);
-          setVisitTypes(typesResponse.data.data);
-        }
+        const types = await visitsService.getVisitTypes();
+        console.log('Visit types response:', types);
+        setVisitTypes(types);
       } catch (err: any) {
         console.error('Failed to fetch visit types:', err);
       }
@@ -170,26 +154,12 @@ export default function VisitsScreen() {
         costs: costs ? parseFloat(costs) : undefined
       };
 
-      const response = await apiClient.post('/api/vet-visits', visitData);
+      const newVisit = await visitsService.createVisit(visitData);
 
-      if (response.data.success) {
+      if (newVisit) {
         // Refresh visits
-        const visitsResponse = await apiClient.get('/api/vet-visits');
-        if (visitsResponse.data.success && visitsResponse.data.data) {
-          const flattenedVisits: Visit[] = [];
-          visitsResponse.data.data.forEach((petVisitGroup: any) => {
-            const petId = petVisitGroup.pet_id;
-            if (petVisitGroup.vet_visits && Array.isArray(petVisitGroup.vet_visits)) {
-              petVisitGroup.vet_visits.forEach((visit: any) => {
-                flattenedVisits.push({
-                  ...visit,
-                  pet_id: petId
-                });
-              });
-            }
-          });
-          setVisits(flattenedVisits);
-        }
+        const refreshedVisits = await visitsService.getAllVisits();
+        setVisits(refreshedVisits);
         
         handleCloseModal();
       }

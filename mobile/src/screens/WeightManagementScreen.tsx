@@ -7,6 +7,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { weightsStyles as styles } from '../styles/screenStyles';
 import { COLORS, SPACING } from '../styles/theme';
 import apiClient from '../services/api';
+import { weightsService } from '../services/weightsService';
 import { Pet } from '../types';
 
 interface WeightRecord {
@@ -44,9 +45,9 @@ export default function WeightManagementScreen() {
         setError(null);
         
         // Fetch both pets and weights in parallel
-        const [petsResponse, weightsResponse] = await Promise.all([
+        const [petsResponse, fetchedWeights] = await Promise.all([
           apiClient.get('/api/pets'),
-          apiClient.get('/api/weights')
+          weightsService.getAllWeights()
         ]);
         
         if (petsResponse.data.success && petsResponse.data.data) {
@@ -59,30 +60,7 @@ export default function WeightManagementScreen() {
           }
         }
 
-        if (weightsResponse.data.success && weightsResponse.data.data) {
-          const weightsData = weightsResponse.data.data;
-          
-          // If nested structure (array of pet weight groups)
-          if (Array.isArray(weightsData) && weightsData.length > 0 && weightsData[0].weights) {
-            const flattenedWeights: WeightRecord[] = [];
-            weightsData.forEach((petWeightGroup: any) => {
-              const petId = petWeightGroup.pet_id;
-              if (petWeightGroup.weights && Array.isArray(petWeightGroup.weights)) {
-                petWeightGroup.weights.forEach((weight: any) => {
-                  flattenedWeights.push({
-                    ...weight,
-                    petId: petId,
-                    weight: parseFloat(weight.weight) // Convert string to number
-                  });
-                });
-              }
-            });
-            setWeightRecords(flattenedWeights);
-          } else {
-            // If flat structure
-            setWeightRecords(weightsData);
-          }
-        }
+        setWeightRecords(fetchedWeights);
       } catch (err: any) {
         console.error('Failed to fetch data:', err);
         setError('Tietojen lataus epäonnistui. Yritä uudelleen.');
@@ -132,32 +110,12 @@ export default function WeightManagementScreen() {
         date: date
       };
 
-      const response = await apiClient.post('/api/weights', weightData);
+      const newWeight = await weightsService.createWeight(weightData);
 
-      if (response.data.success) {
-        const weightsResponse = await apiClient.get('/api/weights');
-        if (weightsResponse.data.success && weightsResponse.data.data) {
-          const weightsData = weightsResponse.data.data;
-          
-          if (Array.isArray(weightsData) && weightsData.length > 0 && weightsData[0].weights) {
-            const flattenedWeights: WeightRecord[] = [];
-            weightsData.forEach((petWeightGroup: any) => {
-              const petId = petWeightGroup.pet_id;
-              if (petWeightGroup.weights && Array.isArray(petWeightGroup.weights)) {
-                petWeightGroup.weights.forEach((weight: any) => {
-                  flattenedWeights.push({
-                    ...weight,
-                    petId: petId,
-                    weight: parseFloat(weight.weight)
-                  });
-                });
-              }
-            });
-            setWeightRecords(flattenedWeights);
-          } else {
-            setWeightRecords(weightsData);
-          }
-        }
+      if (newWeight) {
+        // Refresh weights
+        const refreshedWeights = await weightsService.getAllWeights();
+        setWeightRecords(refreshedWeights);
         
         handleCloseModal();
       }
