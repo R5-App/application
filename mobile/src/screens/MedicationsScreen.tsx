@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, ScrollView, TouchableOpacity } from 'react-native';
-import { Text, Card, FAB, Chip, Divider, ActivityIndicator, Portal, Modal, TextInput, Button } from 'react-native-paper';
+import { Text, Card, FAB, Chip, Divider, ActivityIndicator, Portal, Modal, TextInput, Button, Dialog } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { medicationsStyles as styles } from '../styles/screenStyles';
 import { COLORS, SPACING } from '../styles/theme';
@@ -32,6 +32,8 @@ export default function MedicationsScreen() {
   const [showExpireDatePicker, setShowExpireDatePicker] = useState<boolean>(false);
   const [editingMedicationId, setEditingMedicationId] = useState<number | null>(null);
   const [isEditMode, setIsEditMode] = useState<boolean>(false);
+  const [deleteDialogVisible, setDeleteDialogVisible] = useState<boolean>(false);
+  const [medicationToDelete, setMedicationToDelete] = useState<Medication | null>(null);
   
   const scrollViewRef = useRef<ScrollView>(null);
 
@@ -170,22 +172,29 @@ export default function MedicationsScreen() {
     setModalVisible(true);
   };
 
-  const handleDeleteMedication = async (medication: Medication) => {
-    if (window.confirm('Haluatko varmasti poistaa tämän lääkityksen?')) {
-      try {
-        const success = await medicationsService.deleteMedication(medication.id);
+  const handleDeleteMedication = (medication: Medication) => {
+    setMedicationToDelete(medication);
+    setDeleteDialogVisible(true);
+  };
 
-        if (success) {
-          // Refresh medications
-          const refreshedMedications = await medicationsService.getAllMedications();
-          setMedications(refreshedMedications);
-        } else {
-          alert('Lääkityksen poistaminen epäonnistui. Yritä uudelleen.');
-        }
-      } catch (err: any) {
-        console.error("Failed to delete medication:", err);
+  const confirmDeleteMedication = async () => {
+    if (!medicationToDelete) return;
+
+    try {
+      const success = await medicationsService.deleteMedication(medicationToDelete.id);
+
+      if (success) {
+        // Refresh medications
+        const refreshedMedications = await medicationsService.getAllMedications();
+        setMedications(refreshedMedications);
+        setDeleteDialogVisible(false);
+        setMedicationToDelete(null);
+      } else {
         alert('Lääkityksen poistaminen epäonnistui. Yritä uudelleen.');
       }
+    } catch (err: any) {
+      console.error("Failed to delete medication:", err);
+      alert('Lääkityksen poistaminen epäonnistui. Yritä uudelleen.');
     }
   };
 
@@ -519,6 +528,21 @@ export default function MedicationsScreen() {
             </View>
           </ScrollView>
         </Modal>
+        <Dialog
+          visible={deleteDialogVisible}
+          onDismiss={() => setDeleteDialogVisible(false)}
+        >
+          <Dialog.Title>Vahvista poisto</Dialog.Title>
+          <Dialog.Content>
+            <Text variant="bodyMedium">
+              Haluatko varmasti poistaa tämän lääkityksen?
+            </Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setDeleteDialogVisible(false)}>Peruuta</Button>
+            <Button onPress={confirmDeleteMedication}>Poista</Button>
+          </Dialog.Actions>
+        </Dialog>
       </Portal>
     </View>
   );

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, ScrollView, Dimensions, TouchableOpacity } from 'react-native';
-import { Text, Card, FAB, Chip, Divider, ActivityIndicator, Portal, Modal, Button, TextInput } from 'react-native-paper';
+import { Text, Card, FAB, Chip, Divider, ActivityIndicator, Portal, Modal, Button, TextInput, Dialog } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Svg, { Line, Circle } from 'react-native-svg';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -32,6 +32,8 @@ export default function WeightManagementScreen() {
   const [showDatePicker, setShowDatePicker] = useState<boolean>(false);
   const [editingWeightId, setEditingWeightId] = useState<number | null>(null);
   const [isEditMode, setIsEditMode] = useState<boolean>(false);
+  const [deleteDialogVisible, setDeleteDialogVisible] = useState<boolean>(false);
+  const [weightToDelete, setWeightToDelete] = useState<WeightRecord | null>(null);  
   
   const scrollViewRef = useRef<ScrollView>(null);
 
@@ -168,21 +170,28 @@ export default function WeightManagementScreen() {
   };
 
   const handleDeleteWeightRecord = async (weightRecord: WeightRecord) => {
-    if (!confirm('Haluatko varmasti poistaa tämän painomittauksen?')) {
-      try {
-        const response = await weightsService.deleteWeight(weightRecord.id);
+    setWeightToDelete(weightRecord);
+    setDeleteDialogVisible(true);
+  };
 
-        if (response) {
-          // Refresh weights
-          const refreshedWeights = await weightsService.getAllWeights();
-          setWeightRecords(refreshedWeights);
-        } else {
-          alert('Painomittauksen poistaminen epäonnistui. Yritä uudelleen.');
-        }
-      } catch (err: any) {
-        console.error("Failed to delete weight record:", err);
+  const confirmDeleteWeightRecord = async () => {   
+    if (!weightToDelete) return;
+
+    try {
+      const success = await weightsService.deleteWeight(weightToDelete.id);
+
+      if (success) {
+        // Refresh weights
+        const refreshedWeights = await weightsService.getAllWeights();
+        setWeightRecords(refreshedWeights);
+        setDeleteDialogVisible(false);
+        setWeightToDelete(null);
+      } else {
         alert('Painomittauksen poistaminen epäonnistui. Yritä uudelleen.');
       }
+    } catch (err: any) {
+      console.error("Failed to delete weight record:", err);
+      alert('Painomittauksen poistaminen epäonnistui. Yritä uudelleen.');
     }
   };
 
@@ -729,6 +738,19 @@ export default function WeightManagementScreen() {
             </View>
           </ScrollView>
         </Modal>
+        <Dialog
+          visible={deleteDialogVisible}
+          onDismiss={() => setDeleteDialogVisible(false)}
+        >
+          <Dialog.Title>Poista painomittaus</Dialog.Title>
+          <Dialog.Content>
+            <Text variant="bodyMedium">Haluatko varmasti poistaa tämän painomittauksen?</Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setDeleteDialogVisible(false)}>Peruuta</Button>
+            <Button onPress={confirmDeleteWeightRecord} buttonColor={COLORS.error}>Poista</Button>
+          </Dialog.Actions>
+        </Dialog>
       </Portal>
     </View>
   );

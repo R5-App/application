@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, ScrollView, TouchableOpacity } from 'react-native';
-import { Text, Card, FAB, Chip, Divider, ActivityIndicator, Portal, Modal, TextInput, Button } from 'react-native-paper';
+import { Text, Card, FAB, Chip, Divider, ActivityIndicator, Portal, Modal, TextInput, Button, Dialog } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { vaccinationsStyles as styles } from '../styles/screenStyles';
 import { COLORS, SPACING } from '../styles/theme';
@@ -31,6 +31,8 @@ export default function VaccinationsScreen() {
   const [showExpireDatePicker, setShowExpireDatePicker] = useState<boolean>(false);
   const [editingVaccinationId, setEditingVaccinationId] = useState<number | null>(null);
   const [isEditMode, setIsEditMode] = useState<boolean>(false);
+  const [deleteDialogVisible, setDeleteDialogVisible] = useState<boolean>(false);
+  const [vaccinationToDelete, setVaccinationToDelete] = useState<Vaccination | null>(null);
   
   const scrollViewRef = useRef<ScrollView>(null);
 
@@ -171,21 +173,28 @@ export default function VaccinationsScreen() {
   };
 
   const handleDeleteVaccination = async (vaccination: Vaccination) => {
-    if (confirm('Haluatko varmasti poistaa tämän rokotuksen?')) {
-      try {
-        const response = await vaccinationsService.deleteVaccination(vaccination.id);
+    setVaccinationToDelete(vaccination);
+    setDeleteDialogVisible(true);
+  };
 
-        if (response) {
-          // Refresh vaccinations
-          const refreshedVaccinations = await vaccinationsService.getAllVaccinations();
-          setVaccinations(refreshedVaccinations);
-        } else {
-          alert('Rokotuksen poistaminen epäonnistui. Yritä uudelleen.');
-        }
-      } catch (err: any) {
-        console.error("Failed to delete vaccination:", err);
+  const confirmDeleteVaccination = async () => {
+    if (!vaccinationToDelete) return;
+
+    try {
+      const success = await vaccinationsService.deleteVaccination(vaccinationToDelete.id);
+
+      if (success) {
+        // Refresh vaccinations
+        const refreshedVaccinations = await vaccinationsService.getAllVaccinations();
+        setVaccinations(refreshedVaccinations);
+        setDeleteDialogVisible(false);
+        setVaccinationToDelete(null);
+      } else {
         alert('Rokotuksen poistaminen epäonnistui. Yritä uudelleen.');
       }
+    } catch (err: any) {
+      console.error("Failed to delete vaccination:", err);
+      alert('Rokotuksen poistaminen epäonnistui. Yritä uudelleen.');
     }
   };
 
@@ -519,6 +528,21 @@ export default function VaccinationsScreen() {
             </View>
           </ScrollView>
         </Modal>
+        <Dialog
+          visible={deleteDialogVisible}
+          onDismiss={() => setDeleteDialogVisible(false)}
+        >
+          <Dialog.Title>Vahvista poisto</Dialog.Title>
+          <Dialog.Content>
+            <Text>Haluatko varmasti poistaa tämän rokotuksen?</Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setDeleteDialogVisible(false)}>Peruuta</Button>
+            <Button onPress={confirmDeleteVaccination} mode="contained" buttonColor={COLORS.error}>
+              Poista
+            </Button>
+          </Dialog.Actions>
+        </Dialog>
       </Portal>
     </View>
   );

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, ScrollView, TouchableOpacity, Keyboard } from 'react-native';
-import { Text, Card, FAB, Chip, Divider, ActivityIndicator, Portal, Modal, TextInput, Button } from 'react-native-paper';
+import { Text, Card, FAB, Chip, Divider, ActivityIndicator, Portal, Modal, TextInput, Button, Dialog } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { visitsStyles as styles } from '../styles/screenStyles';
 import { COLORS, SPACING } from '../styles/theme';
@@ -38,6 +38,8 @@ export default function VisitsScreen() {
   const [keyboardHeight, setKeyboardHeight] = useState<number>(0);
   const [editingVisitId, setEditingVisitId] = useState<number | null>(null);
   const [isEditMode, setIsEditMode] = useState<boolean>(false);
+  const [deleteDialogVisible, setDeleteDialogVisible] = useState<boolean>(false);
+  const [visitToDelete, setVisitToDelete] = useState<Visit | null>(null);
   
   const scrollViewRef = useRef<ScrollView>(null);
   const costsInputRef = useRef<any>(null);
@@ -239,10 +241,7 @@ export default function VisitsScreen() {
     // Find the type by name (since type_id stores the name, not ID)
     const matchingType = types.find(t => t.name.toLowerCase() === visit.type_id.toLowerCase());
     if (matchingType) {
-      console.log('Found matching type:', matchingType);
       setSelectedTypeId(matchingType.id);
-    } else {
-      console.log('No matching type found for:', visit.type_id);
     }
     
     setNotes(visit.notes || '');
@@ -251,23 +250,29 @@ export default function VisitsScreen() {
     setModalVisible(true);
   };
 
-  const handleDeleteVisit = async (visit: Visit) => {
-    // Show confirmation dialog
-    if (window.confirm(`Haluatko varmasti poistaa käynnin ${formatDate(visit.visit_date)}?`)) {
-      try {
-        const success = await visitsService.deleteVisit(visit.id);
-        
-        if (success) {
-          // Refresh visits
-          const refreshedVisits = await visitsService.getAllVisits();
-          setVisits(refreshedVisits);
-        } else {
-          alert('Käynnin poistaminen epäonnistui.');
-        }
-      } catch (err: any) {
-        console.error('Failed to delete visit:', err);
-        alert('Käynnin poistaminen epäonnistui. Yritä uudelleen.');
+  const handleDeleteVisit = (visit: Visit) => {
+    setVisitToDelete(visit);
+    setDeleteDialogVisible(true);
+  };
+
+  const confirmDeleteVisit = async () => {
+    if (!visitToDelete) return;
+
+    try {
+      const success = await visitsService.deleteVisit(visitToDelete.id);
+      
+      if (success) {
+        // Refresh visits
+        const refreshedVisits = await visitsService.getAllVisits();
+        setVisits(refreshedVisits);
+        setDeleteDialogVisible(false);
+        setVisitToDelete(null);
+      } else {
+        alert('Käynnin poistaminen epäonnistui.');
       }
+    } catch (err: any) {
+      console.error('Failed to delete visit:', err);
+      alert('Käynnin poistaminen epäonnistui. Yritä uudelleen.');
     }
   };
 
@@ -610,6 +615,22 @@ export default function VisitsScreen() {
             </View>
           </ScrollView>
         </Modal>
+
+        <Dialog
+          visible={deleteDialogVisible}
+          onDismiss={() => setDeleteDialogVisible(false)}
+        >
+          <Dialog.Title>Poista käynti</Dialog.Title>
+          <Dialog.Content>
+            <Text variant="bodyMedium">
+              {visitToDelete && `Haluatko varmasti poistaa käynnin ${formatDate(visitToDelete.visit_date)}?`}
+            </Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setDeleteDialogVisible(false)}>Peruuta</Button>
+            <Button onPress={confirmDeleteVisit} textColor={COLORS.error}>Poista</Button>
+          </Dialog.Actions>
+        </Dialog>
       </Portal>
     </View>
   );
