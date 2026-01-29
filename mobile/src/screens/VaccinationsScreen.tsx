@@ -29,6 +29,8 @@ export default function VaccinationsScreen() {
   const [saving, setSaving] = useState<boolean>(false);
   const [showVaccinationDatePicker, setShowVaccinationDatePicker] = useState<boolean>(false);
   const [showExpireDatePicker, setShowExpireDatePicker] = useState<boolean>(false);
+  const [editingVaccinationId, setEditingVaccinationId] = useState<number | null>(null);
+  const [isEditMode, setIsEditMode] = useState<boolean>(false);
   
   const scrollViewRef = useRef<ScrollView>(null);
 
@@ -76,6 +78,9 @@ export default function VaccinationsScreen() {
     .sort((a, b) => new Date(b.vaccination_date).getTime() - new Date(a.vaccination_date).getTime());
 
   const handleOpenModal = () => {
+    // Reset form for create mode
+    setIsEditMode(false);
+    setEditingVaccinationId(null);
     setVacName('');
     setVaccinationDate(new Date().toISOString().split('T')[0]);
     setExpireDate('');
@@ -86,34 +91,63 @@ export default function VaccinationsScreen() {
 
   const handleCloseModal = () => {
     setModalVisible(false);
+    setIsEditMode(false);
+    setEditingVaccinationId(null);
   };
 
   const handleSaveVaccination = async () => {
-    if (!selectedPetId || !vacName) {
+    if (!vacName) {
       alert('Täytä kaikki pakolliset kentät');
       return;
     }
 
     try {
       setSaving(true);
+
+      if (isEditMode && editingVaccinationId) {
       
-      const vaccinationData = {
-        pet_id: selectedPetId,
-        vac_name: vacName,
-        vaccination_date: vaccinationDate,
-        expire_date: expireDate || undefined,
-        costs: costs ? parseFloat(costs) : undefined,
-        notes: notes || undefined
-      };
+        const vaccinationData = {
+          pet_id: selectedPetId,
+          vac_name: vacName,
+          vaccination_date: vaccinationDate,
+          expire_date: expireDate || undefined,
+          costs: costs ? parseFloat(costs) : undefined,
+          notes: notes || undefined
+        };
 
-      const newVaccination = await vaccinationsService.createVaccination(vaccinationData);
+        const updatedVaccination = await vaccinationsService.updateVaccination(editingVaccinationId, vaccinationData);
 
-      if (newVaccination) {
-        // Refresh vaccinations
-        const refreshedVaccinations = await vaccinationsService.getAllVaccinations();
-        setVaccinations(refreshedVaccinations);
-        
-        handleCloseModal();
+        if (updatedVaccination) {
+          // Refresh vaccinations
+          const refreshedVaccinations = await vaccinationsService.getAllVaccinations();
+          setVaccinations(refreshedVaccinations);
+          
+          handleCloseModal();
+        }
+      } else {
+        if (!selectedPetId) {
+          alert('Valitse lemmikki ennen tallentamista.');
+          return;
+        }
+
+        const vaccinationData = {
+          pet_id: selectedPetId,
+          vac_name: vacName,
+          vaccination_date: vaccinationDate,
+          expire_date: expireDate || undefined,
+          costs: costs ? parseFloat(costs) : undefined,
+          notes: notes || undefined
+        };
+
+        const newVaccination = await vaccinationsService.createVaccination(vaccinationData);
+
+        if (newVaccination) {
+          // Refresh vaccinations
+          const refreshedVaccinations = await vaccinationsService.getAllVaccinations();
+          setVaccinations(refreshedVaccinations);
+          
+          handleCloseModal();
+        }
       }
     } catch (err: any) {
       alert('Rokotuksen tallentaminen epäonnistui. Yritä uudelleen.');
@@ -123,14 +157,37 @@ export default function VaccinationsScreen() {
   };
 
     const handleEditVaccination = (vaccination: Vaccination) => {
-    // TODO: Implement edit functionality
-    console.log('Edit vaccination:', vaccination.id);
+      setIsEditMode(true);
+      setEditingVaccinationId(vaccination.id);
+
+      const dateOnly = vaccination.vaccination_date.split('T')[0];
+      setVacName(vaccination.vac_name);
+      setVaccinationDate(dateOnly);
+      const expireDateOnly = vaccination.expire_date ? vaccination.expire_date.split('T')[0] : '';
+      setExpireDate(expireDateOnly);
+      setCosts(vaccination.costs ? vaccination.costs.toString() : '');
+      setNotes(vaccination.notes || '');
+      setModalVisible(true);
   };
 
   const handleDeleteVaccination = async (vaccination: Vaccination) => {
-    // TODO: Implement delete functionality
-    console.log('Delete vaccination:', vaccination.id);
-  }
+    if (confirm('Haluatko varmasti poistaa tämän rokotuksen?')) {
+      try {
+        const response = await vaccinationsService.deleteVaccination(vaccination.id);
+
+        if (response) {
+          // Refresh vaccinations
+          const refreshedVaccinations = await vaccinationsService.getAllVaccinations();
+          setVaccinations(refreshedVaccinations);
+        } else {
+          alert('Rokotuksen poistaminen epäonnistui. Yritä uudelleen.');
+        }
+      } catch (err: any) {
+        console.error("Failed to delete vaccination:", err);
+        alert('Rokotuksen poistaminen epäonnistui. Yritä uudelleen.');
+      }
+    }
+  };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -331,7 +388,7 @@ export default function VaccinationsScreen() {
             contentContainerStyle={styles.scrollContentContainer}
           >
             <Text variant="headlineSmall" style={styles.modalTitle}>
-              Lisää rokotus
+              {isEditMode ? 'Muokkaa rokotusta' : 'Lisää rokotus'}
             </Text>
 
             <TextInput

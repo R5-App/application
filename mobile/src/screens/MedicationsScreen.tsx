@@ -9,6 +9,7 @@ import { medicationsService } from '../services/medicationsService';
 import { Pet } from '../types';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
+
 interface Medication {
   id: number;
   pet_id: number;
@@ -29,6 +30,8 @@ export default function MedicationsScreen() {
   const [saving, setSaving] = useState<boolean>(false);
   const [showMedicationDatePicker, setShowMedicationDatePicker] = useState<boolean>(false);
   const [showExpireDatePicker, setShowExpireDatePicker] = useState<boolean>(false);
+  const [editingMedicationId, setEditingMedicationId] = useState<number | null>(null);
+  const [isEditMode, setIsEditMode] = useState<boolean>(false);
   
   const scrollViewRef = useRef<ScrollView>(null);
 
@@ -76,6 +79,8 @@ export default function MedicationsScreen() {
     .sort((a, b) => new Date(b.medication_date).getTime() - new Date(a.medication_date).getTime());
 
   const handleOpenModal = () => {
+    setIsEditMode(false);
+    setEditingMedicationId(null);
     setMedName('');
     setMedicationDate(new Date().toISOString().split('T')[0]);
     setExpireDate('');
@@ -86,34 +91,62 @@ export default function MedicationsScreen() {
 
   const handleCloseModal = () => {
     setModalVisible(false);
+    setIsEditMode(false);
+    setEditingMedicationId(null);
   };
 
   const handleSaveMedication = async () => {
-    if (!selectedPetId || !medName) {
+    if (!medName) {
       alert('Täytä kaikki pakolliset kentät');
       return;
     }
 
     try {
       setSaving(true);
+
+      if (isEditMode && editingMedicationId) {
+
+        const medicationData = {
+          med_name: medName,
+          medication_date: medicationDate,
+          expire_date: expireDate || undefined,
+          costs: costs ? parseFloat(costs) : undefined,
+          notes: notes || undefined
+        };
+
+        const updatedMedication = await medicationsService.updateMedication(editingMedicationId, medicationData);
+
+        if (updatedMedication) {
+          // Refresh medications
+          const refreshedMedications = await medicationsService.getAllMedications();
+          setMedications(refreshedMedications);
+          
+          handleCloseModal();
+        }
+      } else { 
+        if (!selectedPetId) {
+          alert('Valitse lemmikki ennen tallentamista.');
+          return;
+        }
       
-      const medicationData = {
-        pet_id: selectedPetId,
-        med_name: medName,
-        medication_date: medicationDate,
-        expire_date: expireDate || undefined,
-        costs: costs ? parseFloat(costs) : undefined,
-        notes: notes || undefined
-      };
+        const medicationData = {
+          pet_id: selectedPetId,
+          med_name: medName,
+          medication_date: medicationDate,
+          expire_date: expireDate || undefined,
+          costs: costs ? parseFloat(costs) : undefined,
+          notes: notes || undefined
+        };
 
-      const newMedication = await medicationsService.createMedication(medicationData);
+        const newMedication = await medicationsService.createMedication(medicationData);
 
-      if (newMedication) {
-        // Refresh medications
-        const refreshedMedications = await medicationsService.getAllMedications();
-        setMedications(refreshedMedications);
-        
-        handleCloseModal();
+        if (newMedication) {
+          // Refresh medications
+          const refreshedMedications = await medicationsService.getAllMedications();
+          setMedications(refreshedMedications);
+          
+          handleCloseModal();
+        }
       }
     } catch (err: any) {
       alert('Lääkityksen tallentaminen epäonnistui. Yritä uudelleen.');
@@ -122,15 +155,39 @@ export default function MedicationsScreen() {
     }
   };
 
-    const handleEditMedication = (medication: Medication) => {
-    // TODO: Implement edit functionality
-    console.log('Edit medication:', medication.id);
+  const handleEditMedication = (medication: Medication) => {
+    
+    setIsEditMode(true);
+    setEditingMedicationId(medication.id);
+
+    const dateOnly = medication.medication_date.split('T')[0];
+    setMedName(medication.med_name);
+    setMedicationDate(dateOnly);
+    const expireDateOnly = medication.expire_date ? medication.expire_date.split('T')[0] : '';
+    setExpireDate(expireDateOnly);
+    setCosts(medication.costs || '');
+    setNotes(medication.notes || '');
+    setModalVisible(true);
   };
 
   const handleDeleteMedication = async (medication: Medication) => {
-    // TODO: Implement delete functionality
-    console.log('Delete medication:', medication.id);
-  }
+    if (window.confirm('Haluatko varmasti poistaa tämän lääkityksen?')) {
+      try {
+        const success = await medicationsService.deleteMedication(medication.id);
+
+        if (success) {
+          // Refresh medications
+          const refreshedMedications = await medicationsService.getAllMedications();
+          setMedications(refreshedMedications);
+        } else {
+          alert('Lääkityksen poistaminen epäonnistui. Yritä uudelleen.');
+        }
+      } catch (err: any) {
+        console.error("Failed to delete medication:", err);
+        alert('Lääkityksen poistaminen epäonnistui. Yritä uudelleen.');
+      }
+    }
+  };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -331,7 +388,7 @@ export default function MedicationsScreen() {
             contentContainerStyle={styles.scrollContentContainer}
           >
             <Text variant="headlineSmall" style={styles.modalTitle}>
-              Lisää lääkitys
+              {isEditMode ? 'Muokkaa lääkitystä' : 'Lisää lääkitys'}
             </Text>
 
             <TextInput

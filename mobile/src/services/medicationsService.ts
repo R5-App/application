@@ -5,16 +5,16 @@ interface Medication {
     pet_id: number;
     med_name: string;
     medication_date: string;
-    expire_date: string;
+    expire_date?: string;
     notes?: string;
-    costs?: number;
+    costs?: string;
 }
 
 interface CreateMedicationData {    
     pet_id: number;
     med_name: string;
     medication_date: string;
-    expire_date: string;
+    expire_date?: string;
     notes?: string;
     costs?: number;
 }

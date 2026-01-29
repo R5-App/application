@@ -30,6 +30,8 @@ export default function WeightManagementScreen() {
   const [modalVisible, setModalVisible] = useState<boolean>(false);
   const [saving, setSaving] = useState<boolean>(false);
   const [showDatePicker, setShowDatePicker] = useState<boolean>(false);
+  const [editingWeightId, setEditingWeightId] = useState<number | null>(null);
+  const [isEditMode, setIsEditMode] = useState<boolean>(false);
   
   const scrollViewRef = useRef<ScrollView>(null);
 
@@ -86,6 +88,8 @@ export default function WeightManagementScreen() {
   );
 
   const handleOpenModal = () => {
+    setIsEditMode(false);
+    setEditingWeightId(null);
     setWeight('');
     setDate(new Date().toISOString().split('T')[0]);
     setModalVisible(true);
@@ -93,31 +97,57 @@ export default function WeightManagementScreen() {
 
   const handleCloseModal = () => {
     setModalVisible(false);
+    setIsEditMode(false);
+    setEditingWeightId(null);
   };
 
   const handleSaveWeight = async () => {
-    if (!selectedPetId || !weight) {
+    if (!weight) {
       alert('Täytä kaikki pakolliset kentät');
       return;
     }
 
     try {
       setSaving(true);
+
+      if (isEditMode && editingWeightId) {
+
+        const weightData = {
+          pet_id: selectedPetId,
+          weight: parseFloat(weight),
+          date: date
+        };
+
+        const updatedWeight = await weightsService.updateWeight(editingWeightId, weightData);
+
+        if (updatedWeight) {
+          // Refresh weights
+          const refreshedWeights = await weightsService.getAllWeights();
+          setWeightRecords(refreshedWeights);
+
+          handleCloseModal();
+        }
+      } else {
+        if (!selectedPetId) {
+          alert('Valitse lemmikki ennen tallentamista.');
+          return;
+        }
       
-      const weightData = {
-        pet_id: selectedPetId,
-        weight: parseFloat(weight),
-        date: date
-      };
+        const weightData = {
+          pet_id: selectedPetId,
+          weight: parseFloat(weight),
+          date: date
+        };
 
-      const newWeight = await weightsService.createWeight(weightData);
+        const newWeight = await weightsService.createWeight(weightData);
 
-      if (newWeight) {
-        // Refresh weights
-        const refreshedWeights = await weightsService.getAllWeights();
-        setWeightRecords(refreshedWeights);
-        
-        handleCloseModal();
+        if (newWeight) {
+          // Refresh weights
+          const refreshedWeights = await weightsService.getAllWeights();
+          setWeightRecords(refreshedWeights);
+          
+          handleCloseModal();
+        }
       }
     } catch (err: any) {
       alert('Painon tallentaminen epäonnistui. Yritä uudelleen.');
@@ -126,15 +156,35 @@ export default function WeightManagementScreen() {
     }
   };
 
-      const handleEditWeightRecord = (weightRecord: WeightRecord) => {
-    // TODO: Implement edit functionality
-    console.log('Edit weight record:', weightRecord.id);
+    const handleEditWeightRecord = (weightRecord: WeightRecord) => {
+      setIsEditMode(true);
+      setEditingWeightId(weightRecord.id);
+
+      // Pre-fill form with weight data
+      const dateOnly = weightRecord.date.split('T')[0];
+      setWeight(weightRecord.weight.toString());
+      setDate(dateOnly);
+      setModalVisible(true);
   };
 
   const handleDeleteWeightRecord = async (weightRecord: WeightRecord) => {
-    // TODO: Implement delete functionality
-    console.log('Delete weight record:', weightRecord.id);
-  }
+    if (!confirm('Haluatko varmasti poistaa tämän painomittauksen?')) {
+      try {
+        const response = await weightsService.deleteWeight(weightRecord.id);
+
+        if (response) {
+          // Refresh weights
+          const refreshedWeights = await weightsService.getAllWeights();
+          setWeightRecords(refreshedWeights);
+        } else {
+          alert('Painomittauksen poistaminen epäonnistui. Yritä uudelleen.');
+        }
+      } catch (err: any) {
+        console.error("Failed to delete weight record:", err);
+        alert('Painomittauksen poistaminen epäonnistui. Yritä uudelleen.');
+      }
+    }
+  };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -608,7 +658,7 @@ export default function WeightManagementScreen() {
             contentContainerStyle={styles.scrollContentContainer}
           >
             <Text variant="headlineSmall" style={styles.modalTitle}>
-              Lisää painomittaus
+              {isEditMode ? 'Muokkaa painomittausta' : 'Lisää painomittaus'}
             </Text>
 
             <TextInput

@@ -36,6 +36,8 @@ export default function VisitsScreen() {
   const [saving, setSaving] = useState<boolean>(false);
   const [showDatePicker, setShowDatePicker] = useState<boolean>(false);
   const [keyboardHeight, setKeyboardHeight] = useState<number>(0);
+  const [editingVisitId, setEditingVisitId] = useState<number | null>(null);
+  const [isEditMode, setIsEditMode] = useState<boolean>(false);
   
   const scrollViewRef = useRef<ScrollView>(null);
   const costsInputRef = useRef<any>(null);
@@ -110,7 +112,9 @@ export default function VisitsScreen() {
     .sort((a, b) => new Date(b.visit_date).getTime() - new Date(a.visit_date).getTime());
 
   const handleOpenModal = async () => {
-    // Reset form
+    // Reset form for create mode
+    setIsEditMode(false);
+    setEditingVisitId(null);
     setVisitDate(new Date().toISOString().split('T')[0]);
     setVetName('');
     setLocation('');
@@ -133,10 +137,12 @@ export default function VisitsScreen() {
 
   const handleCloseModal = () => {
     setModalVisible(false);
+    setIsEditMode(false);
+    setEditingVisitId(null);
   };
 
   const handleSaveVisit = async () => {
-    if (!selectedPetId || !vetName || !location || !selectedTypeId) {
+    if (!vetName || !location || !selectedTypeId) {
       alert('Täytä kaikki pakolliset kentät');
       return;
     }
@@ -144,24 +150,50 @@ export default function VisitsScreen() {
     try {
       setSaving(true);
       
-      const visitData = {
-        pet_id: selectedPetId,
-        visit_date: visitDate,
-        vet_name: vetName,
-        location: location,
-        type_id: selectedTypeId,
-        notes: notes || undefined,
-        costs: costs ? parseFloat(costs) : undefined
-      };
-
-      const newVisit = await visitsService.createVisit(visitData);
-
-      if (newVisit) {
-        // Refresh visits
-        const refreshedVisits = await visitsService.getAllVisits();
-        setVisits(refreshedVisits);
+      if (isEditMode && editingVisitId) {
         
-        handleCloseModal();
+        const visitData = {
+          visit_date: visitDate,
+          vet_name: vetName,
+          location: location,
+          type_id: selectedTypeId,
+          notes: notes || undefined,
+          costs: costs ? parseFloat(costs) : undefined
+        };
+
+        const updatedVisit = await visitsService.updateVisit(editingVisitId, visitData);
+
+        if (updatedVisit) {
+          // Refresh visits
+          const refreshedVisits = await visitsService.getAllVisits();
+          setVisits(refreshedVisits);
+          handleCloseModal();
+        }
+      } else {
+        // Create new visit
+        if (!selectedPetId) {
+          alert('Valitse lemmikki');
+          return;
+        }
+        
+        const visitData = {
+          pet_id: selectedPetId,
+          visit_date: visitDate,
+          vet_name: vetName,
+          location: location,
+          type_id: selectedTypeId,
+          notes: notes || undefined,
+          costs: costs ? parseFloat(costs) : undefined
+        };
+
+        const newVisit = await visitsService.createVisit(visitData);
+
+        if (newVisit) {
+          // Refresh visits
+          const refreshedVisits = await visitsService.getAllVisits();
+          setVisits(refreshedVisits);
+          handleCloseModal();
+        }
       }
     } catch (err: any) {
       console.error('Failed to save visit:', err);
@@ -181,14 +213,52 @@ export default function VisitsScreen() {
     });
   };
 
-  const handleEditVisit = (visit: Visit) => {
-    // TODO: Implement edit functionality
-    console.log('Edit visit:', visit.id);
+  const handleEditVisit = async (visit: Visit) => {
+    // Set edit mode
+    setIsEditMode(true);
+    setEditingVisitId(visit.id);
+    
+    // Pre-fill form with visit data
+    // Extract date only (remove timestamp if present)
+    const dateOnly = visit.visit_date.split('T')[0];
+    setVisitDate(dateOnly);
+    setVetName(visit.vet_name);
+    setLocation(visit.location);
+    setSelectedTypeId(parseInt(visit.type_id));
+    setNotes(visit.notes || '');
+    setCosts(visit.costs || '');
+    
+    // Fetch visit types if not already loaded
+    if (visitTypes.length === 0) {
+      try {
+        const types = await visitsService.getVisitTypes();
+        setVisitTypes(types);
+      } catch (err: any) {
+        console.error('Failed to fetch visit types:', err);
+      }
+    }
+    
+    setModalVisible(true);
   };
 
   const handleDeleteVisit = async (visit: Visit) => {
-    // TODO: Implement delete functionality
-    console.log('Delete visit:', visit.id);
+    // Show confirmation dialog
+    if (window.confirm(`Haluatko varmasti poistaa käynnin ${formatDate(visit.visit_date)}?`)) {
+      try {
+        const success = await visitsService.deleteVisit(visit.id);
+        
+        if (success) {
+          // Refresh visits
+          const refreshedVisits = await visitsService.getAllVisits();
+          setVisits(refreshedVisits);
+        } else {
+          alert('Käynnin poistaminen epäonnistui.');
+        }
+      } catch (err: any) {
+        console.error('Failed to delete visit:', err);
+        alert('Käynnin poistaminen epäonnistui. Yritä uudelleen.');
+      }
+    }
   };
 
   const renderVisitCard = (visit: Visit) => (
@@ -377,7 +447,7 @@ export default function VisitsScreen() {
             contentContainerStyle={styles.scrollContentContainer}
           >
             <Text variant="headlineSmall" style={styles.modalTitle}>
-              Lisää käynti
+              {isEditMode ? 'Muokkaa käyntiä' : 'Lisää käynti'}
             </Text>
 
             <TouchableOpacity onPress={() => setShowDatePicker(true)}>
