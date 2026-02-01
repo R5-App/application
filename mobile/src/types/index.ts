@@ -1,12 +1,17 @@
 // Type definitions for the application
 export interface Pet {
-  id: number;
+  id: string;
+  owner_id: string;
   name: string;
+  type: string;
   breed: string;
-  age: number;
-  weight: number;
+  sex: string;
+  birthdate: string;
+//  dateOfBirth: string;
+//  age: number;
+  weight?: number;
   image?: string;
-  dateOfBirth: string;
+  notes?: string;
 }
 
 export interface User {
