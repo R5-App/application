@@ -78,6 +78,7 @@ export const authStyles = StyleSheet.create({
     ...COMMON_STYLES.buttonContent,
   },
   
+  
   // Links
   forgotPassword: {
     ...TYPOGRAPHY.bodyMedium,
