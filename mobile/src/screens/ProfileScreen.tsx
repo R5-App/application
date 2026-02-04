@@ -630,6 +630,16 @@ export default function ProfileScreen() {
               >
                 Hoitaja
               </Button>
+              <Button
+                mode="contained"
+                onPress={() => handleUpdateRole('lääkäri')}
+                disabled={isUpdatingRole}
+                loading={isUpdatingRole && editingSubUser?.role !== 'lääkäri'}
+                icon="stethoscope"
+                style={{ justifyContent: 'flex-start' }}
+              >
+                Lääkäri
+              </Button>
             </View>
           </Dialog.Content>
         </Dialog>

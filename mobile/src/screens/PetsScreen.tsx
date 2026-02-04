@@ -45,6 +45,7 @@ export default function PetsScreen() {
         icon="plus"
         style={styles.fab}
         onPress={() => console.log('Lisää lemmikki')}
+        label="Lisää lemmikki"
       />
     </View>
   );
