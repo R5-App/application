@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { View, ScrollView, Alert } from 'react-native';
+import { View, ScrollView } from 'react-native';
 import { Text, Card, Button, Dialog, Portal, TextInput } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import apiClient from '../services/api'; // petapp api
 import { Pet } from '../types';
-import { COLORS, SPACING } from '../styles/theme';
+import { COLORS } from '../styles/theme';
 import { calculateAge, formatDate } from '../helpers';
+import { petsStyles } from '../styles/screenStyles';
+
 
 export default function PetDetailsScreen() {
 
@@ -17,6 +19,8 @@ export default function PetDetailsScreen() {
   const [pet, setPet] = useState<Pet | null>(null);  // Storing pet object that we got from API (null until loaded)
   const [loading, setLoading] = useState(true);   // Tracks whether data is still being fetched from the API
   const [editDialogVisible, setEditDialogVisible] = useState(false); // modal popip visibility
+  const [error, setError] = useState<string | null>(null);
+  const [deleteDialogVisible, setDeleteDialogVisible] = useState(false);
 
   // For editing pet name, breed,age etc:
   const [editName, setEditName] = useState('');
@@ -28,9 +32,13 @@ export default function PetDetailsScreen() {
   
   const [isSaving, setIsSaving] = useState(false); // track saving (prevent double clicks)
   const [isDeleting, setIsDeleting] = useState(false); // same as above but for deleting
+  const [validationDialogVisible, setValidationDialogVisible] = useState(false);
+  const [validationMessage, setValidationMessage] = useState('');
+  const [saveSuccessDialogVisible, setSaveSuccessDialogVisible] = useState(false);
 
   useEffect(() => {
     fetchPetDetails();
+    setError(null);
   }, []);
 
 
@@ -43,7 +51,7 @@ export default function PetDetailsScreen() {
         setPet(response.data.data); // store pet data in state
       }
     } catch (error) {
-      Alert.alert('Virhe', 'Lemmikin tietojen lataus epäonnistui');
+      setError('Virhe. Lemmikin tietojen lataus epäonnistui');
     } finally {
       setLoading(false); // mark loading as complete
     }
@@ -66,13 +74,14 @@ export default function PetDetailsScreen() {
   // Save edited pet data
   const handleSavePet = async () => {
     if (!editName || !editBreed || !editType || !editSex) {  // Validate that required fields are filled in
-      Alert.alert('Virhe', 'Täytä kaikki pakolliset kentät');
+      setValidationMessage('Täytä kaikki pakolliset kentät');
       return; // Exit early if validation fails
     }
 
     // Validate birthdate format (should be YYYY-MM-DD)
     if (!/^\d{4}-\d{2}-\d{2}$/.test(editBirthdate)) {
-      Alert.alert('Virhe', 'Syntymäpäivä pitää olla muodossa VVVV-KK-PP');
+      setValidationMessage('Syntymäpäivä pitää olla muodossa VVVV-KK-PP');
+      setValidationDialogVisible(true);
       return;
     }
     setIsSaving(true); // Mark save operation as in progress (to disable buttons and show loading)
@@ -94,7 +103,7 @@ export default function PetDetailsScreen() {
         Alert.alert('Onnistui', 'Lemmikin tiedot päivitetty');
       }
     } catch (error) {
-      Alert.alert('Virhe', 'Päivitys epäonnistui');
+      setError('Virhe. Päivitys epäonnistui');
     } finally {
       setIsSaving(false);
     }
@@ -121,7 +130,7 @@ export default function PetDetailsScreen() {
               Alert.alert('Onnistui', 'Lemmikki poistettu');
               navigation.goBack();
             } catch (error) {
-              Alert.alert('Virhe', 'Poistaminen epäonnistui');
+              setError('Virhe. Poistaminen epäonnistui');
             } finally {
               setIsDeleting(false); // Mark delete operation as complete
             }
@@ -144,8 +153,10 @@ export default function PetDetailsScreen() {
 // if pet data couldn't be found/loaded)
   if (!pet) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <Text>Lemmikkiä ei löytynyt</Text>
+      <View style={StyleSheet.container}>
+        <View style={StyleSheet.emptyContainer}>
+          <Text variant="bodyLarge" style={StyleSheet.loadingText}>Lemmikkiä ei löytynyt</Text>
+        </View>
       </View>
     );
   }
@@ -153,100 +164,96 @@ export default function PetDetailsScreen() {
 
 // Show pet details when data is loaded successfully
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: COLORS.background }}>
+    <ScrollView style={styles.container}>
       
       {/*HEADER*/}
       {/* Display pet icon and name at top with colored background */}
-      <View style={{ padding: SPACING.lg, backgroundColor: COLORS.primaryContainer }}>
+      <View style={styles.headerContainer}>
         
         {/* Paw icon */}
         <MaterialCommunityIcons 
           name="paw" 
-          size={80} 
+          size={LAYOUT.iconXl} 
           color={COLORS.onPrimaryContainer}
-          style={{ textAlign: 'center' }}
+          style={styles.headerIcon}
         />
         
         {/* headline (pet name) */}
         <Text 
           variant="headlineMedium" 
-          style={{ 
-            color: COLORS.onPrimaryContainer, 
-            textAlign: 'center',
-            marginTop: SPACING.md
-          }}
-        >
-          {pet.name}
+          style={styles.headerTitle}>
+            {pet.name} 
         </Text>
       </View>
 
       {/*PET INFORMATION*/}
-      <Card style={{ margin: SPACING.lg }}>
+      <Card style={styles.infoCard}>
         <Card.Content>
                     
           {/*Type*/}
-          <View style={{ marginBottom: SPACING.md }}>
-            <Text variant="labelMedium" style={{ color: COLORS.onSurfaceVariant }}>
+          <View style={styles.infoSection}>
+            <Text variant="labelMedium" style={styles.infoLabel}>
               Lajityyppi
             </Text>
-            <Text variant="bodyLarge">{pet.type || 'Ei tiedossa'}</Text>
+            <Text variant="bodyLarge" style={styles.infoValue}>{pet.type || 'Ei tiedossa'}</Text>
           </View>
-
+          
           {/*Breed*/}
-          <View style={{ marginBottom: SPACING.md }}>
-            <Text variant="labelMedium" style={{ color: COLORS.onSurfaceVariant }}>
+          <View style={styles.infoSection}>
+            <Text variant="labelMedium" style={styles.infoLabel}>
               Rotu
             </Text>
-            <Text variant="bodyLarge">{pet.breed}</Text>
+            <Text variant="bodyLarge" style={styles.infoValue}>{pet.breed}</Text>
           </View>
 
           {/*Sex*/}
-          <View style={{ marginBottom: SPACING.md }}>
-            <Text variant="labelMedium" style={{ color: COLORS.onSurfaceVariant }}>
+          <View style={styles.infoSection}>
+            <Text variant="labelMedium" style={styles.infoLabel}>
               Sukupuoli
             </Text>
-            <Text variant="bodyLarge">{pet.sex || 'Ei tiedossa'}</Text>
+            <Text variant="bodyLarge" style={styles.infoValue}>{pet.sex || 'Ei tiedossa'}</Text>
           </View>
 
           {/* Age field */}
-          <View style={{ marginBottom: SPACING.md }}>
-            <Text variant="labelMedium" style={{ color: COLORS.onSurfaceVariant }}>
+          <View style={styles.infoSection}>
+            <Text variant="labelMedium" style={styles.infoLabel}>
               Ikä
             </Text>
-            <Text variant="bodyLarge">
+            <Text variant="bodyLarge" style={styles.infoValue}>
               {calculateAge(pet.birthdate)} vuotta
             </Text>
           </View>
 
           {/*birthday*/}
-          <View style={{ marginBottom: SPACING.md }}>
-            <Text variant="labelMedium" style={{ color: COLORS.onSurfaceVariant }}>
+          <View style={styles.infoSection}>
+            <Text variant="labelMedium" style={styles.infoLabel}>
               Syntynyt
             </Text>
-            <Text variant="bodyLarge">
+            <Text variant="bodyLarge" style={styles.infoValue}>
               {formatDate(new Date(pet.birthdate))}
             </Text>
           </View>
 
           {/* Notes*/}
           {pet.notes && (
-            <View>
-              <Text variant="labelMedium" style={{ color: COLORS.onSurfaceVariant }}>
+            <View style={styles.infoSection}>
+              <Text variant="labelMedium" style={styles.infoLabel}>
                 Muistiinpanot
               </Text>
-              <Text variant="bodyLarge">{pet.notes}</Text>
+              <Text variant="bodyLarge" style={styles.infoValue}>{pet.notes}</Text>
             </View>
             )}
         </Card.Content>
       </Card>
 
       {/* ACTION BUTTONS*/}
-      <View style={{ padding: SPACING.lg, gap: SPACING.sm }}>
+      <View style={styles.actionsContainer}>
         {/* Edit button*/}
         <Button 
           mode="outlined" 
           onPress={handleEditPet}
           icon="pencil"
+          style={styles.actionButton}
         >
           Muokkaa lemmikin tietoja
         </Button>
@@ -254,17 +261,19 @@ export default function PetDetailsScreen() {
         {/* Vaccinations*/}
         <Button 
           mode="contained-tonal" 
-          onPress={() => navigation.navigate('Vaccinations' as never)}
+          onPress={() => navigation.navigate('Vaccinations')}
           icon="needle"
-        >
+          style={styles.actionButton}
+          >
           Rokotukset ({pet.id})
         </Button>
 
         {/* Medications*/}
         <Button 
           mode="contained-tonal" 
-          onPress={() => navigation.navigate('Medications' as never)}
+          onPress={() => navigation.navigate('Medications')}
           icon="pill"
+          styles={styles.actionButton}
         >
           Lääkitys
         </Button>
@@ -272,8 +281,9 @@ export default function PetDetailsScreen() {
         {/* Weight*/}
         <Button 
           mode="contained-tonal" 
-          onPress={() => navigation.navigate('WeightManagement' as never)}
+          onPress={() => navigation.navigate('WeightManagement')}
           icon="scale"
+          style={styles.actionButton}
         >
           Paino
         </Button>
@@ -285,6 +295,7 @@ export default function PetDetailsScreen() {
           onPress={handleDeletePet}
           disabled={isDeleting} // Disable if delete is already in progress
           icon="delete"
+          style={styles.actionButton}
         >
           Poista lemmikki
         </Button>
@@ -306,7 +317,7 @@ export default function PetDetailsScreen() {
               value={editName}
               onChangeText={setEditName}
               mode="outlined"
-              style={{ marginBottom: SPACING.md }}
+              style={styles.editInput}
             />
             {/* Pet type field */}
             <TextInput
@@ -314,7 +325,7 @@ export default function PetDetailsScreen() {
               value={editType}
               onChangeText={setEditType}
               mode="outlined"
-              style={{ marginBottom: SPACING.md }}
+              style={styles.editInput}
               placeholder="Koira, Kissa, jne."
             />
             
@@ -324,7 +335,7 @@ export default function PetDetailsScreen() {
               value={editBreed}
               onChangeText={setEditBreed}
               mode="outlined"
-              style={{ marginBottom: SPACING.md }}
+              style={styles.editInput}
             />
 
             {/* Pet sex field */}
@@ -333,7 +344,7 @@ export default function PetDetailsScreen() {
               value={editSex}
               onChangeText={setEditSex}
               mode="outlined"
-              style={{ marginBottom: SPACING.md }}
+              style={styles.editInput}
               placeholder="Uros tai Naaras"
             />
 
@@ -342,7 +353,7 @@ export default function PetDetailsScreen() {
               value={editBirthdate}
               onChangeText={setEditBirthdate} // Update state as user types
               mode="outlined"
-              style={{ marginBottom: SPACING.md }}
+              style={styles.editInput}
               placeholder="2020-03-15"
             />
 
@@ -355,6 +366,7 @@ export default function PetDetailsScreen() {
               multiline={true} // Allow multiple lines for notes
               numberOfLines={4} // Show 4 lines initially
               placeholder="Lisää muistiinpanoja lemmikistä..."
+              style={styles.editInput}
             />
           </Dialog.Content>
           

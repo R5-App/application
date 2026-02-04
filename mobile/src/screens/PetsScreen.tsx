@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { View, FlatList, Alert, Image } from 'react-native';
-import { Text, Card, FAB } from 'react-native-paper';
+import React, { useState } from 'react';
+import { View, FlatList } from 'react-native';
+import { Text, Card, FAB, Portal, Button, Dialog } from 'react-native-paper';
 import { petsStyles } from '../styles/screenStyles';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'; 
@@ -13,6 +13,8 @@ export default function PetsScreen() {
   const styles = petsStyles;
   const [pets, setPets] = useState<Pet[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showAddPetInfoDialog, setShowAddPetInfoDialog] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -24,12 +26,13 @@ export default function PetsScreen() {
   const fetchUserPets = async () => {
     try {
       setLoading(true);
+      setError(null);
       const response = await apiClient.get('/api/pets');
       if (response.data.success) {
         setPets(response.data.data);
       }
     } catch (error) {
-      Alert.alert('Virhe', 'Lemmikien lataus epäonnistui');
+      setError('Lemmikkien lataus epäonnistui');
       console.error('Error fetching pets:', error);
     } finally {
       // Whether success or error, mark loading as complete
@@ -44,9 +47,13 @@ export default function PetsScreen() {
 
   // NAVIGATE TO ADD PET SCREEN
   const handleAddPet = () => {
-    Alert.alert('Info', 'AddPet screen coming soon');
+    setShowAddPetInfoDialog(true);
     //navigation.navigate('AddPet', {});
   };
+
+  const handleCloseAddPetDialog = () => {
+    setShowAddPetInfoDialog(false);
+  }
 
   // EMPTY STATE
   // Show when user has no pets yet
@@ -87,22 +94,14 @@ export default function PetsScreen() {
               <Card.Content>
                 
                 {/* PLACEHOLDER PET IMAGE */}
-                <View style={{ 
-                  width: '100%', 
-                  height: 150, 
-                  backgroundColor: '#E0E0E0',
-                  borderRadius: 8,
-                  marginBottom: 12,
-                  justifyContent: 'center',
-                  alignItems: 'center'
-                }}>
-                  <Text variant="bodyMedium" style={{ color: '#999' }}>
+                <View style={styles.petImagePlaceholder}>
+                  <Text variant="bodyMedium" style={ styles.petImagePlaceholderText}>
                     🐾 Kuva
                   </Text>
                 </View>
 
                 {/* PET NAME */}
-                <Text variant="titleLarge" style={{ marginBottom: 8 }}>
+                <Text variant="titleLarge" style={styles.petName}>
                   {item.name}
                 </Text>
 
@@ -121,43 +120,27 @@ export default function PetsScreen() {
         style={styles.fab}
         onPress={handleAddPet}
       />
+
+      <Portal>
+        <Dialog
+          visible={showAddPetInfoDialog}
+          onDismiss={handleCloseAddPetDialog}
+        >
+          <Dialog.Title>Lisää lemmikki</Dialog.Title>
+          
+          <Dialog.Content>
+            <Text variant="bodyMedium">
+              AddPet screen tullaan pian. Voit lisätä lemmikin myöhemmin.
+            </Text>
+          </Dialog.Content>
+          
+          <Dialog.Actions>
+            <Button onPress={handleCloseAddPetDialog}>
+              Ok
+            </Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
     </View>
   );
 }
-
-
-
-
-  /*
-  const renderEmptyState = () => (
-    <View style={styles.emptyContainer}>
-      <Text variant="headlineSmall">Ei lemmikkejä</Text>
-      <Text variant="bodyMedium" style={styles.emptyText}>
-        Lisää ensimmäinen lemmikki aloittaaksesi
-      </Text>
-    </View>
-  );
-
-  return (
-    <View style={styles.container}>
-      {pets.length === 0 ? (
-        renderEmptyState()
-      ) : (
-        <FlatList
-          data={pets}
-          renderItem={({ item }) => (
-            <Card style={styles.card}>
-              <Card.Content>
-                <Text variant="titleLarge">{item.name}</Text>
-                <Text variant="bodyMedium">{item.breed}</Text>
-              </Card.Content>
-            </Card>
-          )}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContent}
-        />
-      )}
-    </View>
-  );
-}
-*/
