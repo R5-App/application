@@ -20,6 +20,7 @@ import VisitsScreen from '@screens/VisitsScreen';
 import MedicationsScreen from '@screens/MedicationsScreen';
 import VaccinationsScreen from '../screens/VaccinationsScreen';
 import WeightManagementScreen from '../screens/WeightManagementScreen';
+import CalendarScreen from '@screens/CalendarScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -233,6 +234,14 @@ export default function Navigation() {
               component={PetsScreen}
               options={{
                 title: 'Lemmikit',
+                headerBackTitle: 'Takaisin',
+              }}
+            />
+            <Stack.Screen
+              name="Calendar"
+              component={CalendarScreen}
+              options={{
+                title: 'Kalenteri',
                 headerBackTitle: 'Takaisin',
               }}
             />

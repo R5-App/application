@@ -72,7 +72,7 @@ export default function HomeScreen() {
           </Card.Content>
         </Card>
 
-        <Card style={styles.card} onPress={() => console.log('Kalenteri')}>
+        <Card style={styles.card} onPress={() => navigation.navigate('Calendar' as never)}>
           <Card.Content style={{ alignItems: 'center' }}>
             <MaterialCommunityIcons name="calendar" size={64} color={COLORS.primary} />
             <Text variant="titleLarge" style={{ marginTop: SPACING.md }}>Kalenteri</Text>

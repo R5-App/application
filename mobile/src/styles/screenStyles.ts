@@ -1212,3 +1212,88 @@ export const weightsStyles = StyleSheet.create({
     flex: 1,
   },
 });
+
+// ============================================
+// CALENDAR SCREEN STYLES
+// ============================================
+export const calendarStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+  },
+
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: SPACING.xl * 2,
+  },
+
+  emptyTitle: {
+    marginTop: SPACING.md,
+    color: COLORS.onSurfaceVariant,
+  },
+
+  emptyText: {
+    marginTop: SPACING.xs,
+    color: COLORS.onSurfaceVariant,
+    textAlign: 'center',
+  },
+
+  fab: {
+    position: 'absolute',
+    margin: SPACING.lg,
+    right: 0,
+    bottom: 0,
+    backgroundColor: COLORS.primaryContainer,
+  },
+
+  tabsContainer: {
+    maxHeight: 70,
+    backgroundColor: COLORS.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.surfaceVariant,
+  },
+
+  tabsContent: {
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.md,
+    gap: SPACING.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexGrow: 1,
+  },
+
+  tab: {
+    marginHorizontal: SPACING.xs,
+    paddingHorizontal: SPACING.md,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  selectedTab: {
+    backgroundColor: COLORS.primary,
+    elevation: 3,
+  },
+
+  selectedTabText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 15,
+    lineHeight: 20,
+  },
+
+  unselectedTabText: {
+    fontSize: 15,
+    lineHeight: 20,
+  },
+
+  content: {
+    flex: 1,
+  },
+
+  scrollContent: {
+    padding: SPACING.md,
+  },
+});
