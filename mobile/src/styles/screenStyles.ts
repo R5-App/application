@@ -404,9 +404,10 @@ export const visitsStyles = StyleSheet.create({
 
   fab: {
     position: 'absolute',
-    right: SPACING.md,
-    bottom: SPACING.md,
-    backgroundColor: COLORS.primary,
+    margin: SPACING.lg,
+    right: 0,
+    bottom: 0,
+    backgroundColor: COLORS.primaryContainer,
   },
 
   modalContainer: {
@@ -597,9 +598,10 @@ export const medicationsStyles = StyleSheet.create({
 
   fab: {
     position: 'absolute',
-    right: SPACING.md,
-    bottom: SPACING.md,
-    backgroundColor: COLORS.primary,
+    margin: SPACING.lg,
+    right: 0,
+    bottom: 0,
+    backgroundColor: COLORS.primaryContainer,
   },
 
   modalContainer: {
@@ -786,9 +788,10 @@ export const vaccinationsStyles = StyleSheet.create({
 
   fab: {
     position: 'absolute',
-    right: SPACING.md,
-    bottom: SPACING.md,
-    backgroundColor: COLORS.primary,
+    margin: SPACING.lg,
+    right: 0,
+    bottom: 0,
+    backgroundColor: COLORS.primaryContainer,
   },
 
   modalContainer: {
@@ -1166,9 +1169,10 @@ export const weightsStyles = StyleSheet.create({
 
   fab: {
     position: 'absolute',
-    right: SPACING.md,
-    bottom: SPACING.md,
-    backgroundColor: COLORS.primary,
+    margin: SPACING.lg,
+    right: 0,
+    bottom: 0,
+    backgroundColor: COLORS.primaryContainer,
   },
 
   graphScrollView: {
