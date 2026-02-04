@@ -612,9 +612,9 @@ export default function ProfileScreen() {
             <View style={{ gap: SPACING.sm }}>
               <Button
                 mode="contained"
-                onPress={() => handleUpdateRole('omistaja')}
+                onPress={() => handleUpdateRole('Omistaja')}
                 disabled={isUpdatingRole}
-                loading={isUpdatingRole && editingSubUser?.role !== 'omistaja'}
+                loading={isUpdatingRole && editingSubUser?.role !== 'Omistaja'}
                 icon="crown"
                 style={{ justifyContent: 'flex-start' }}
               >
@@ -622,13 +622,23 @@ export default function ProfileScreen() {
               </Button>
               <Button
                 mode="contained"
-                onPress={() => handleUpdateRole('hoitaja')}
+                onPress={() => handleUpdateRole('Hoitaja')}
                 disabled={isUpdatingRole}
-                loading={isUpdatingRole && editingSubUser?.role !== 'hoitaja'}
+                loading={isUpdatingRole && editingSubUser?.role !== 'Hoitaja'}
                 icon="account-heart"
                 style={{ justifyContent: 'flex-start' }}
               >
                 Hoitaja
+              </Button>
+              <Button
+                mode="contained"
+                onPress={() => handleUpdateRole('Lääkäri')}
+                disabled={isUpdatingRole}
+                loading={isUpdatingRole && editingSubUser?.role !== 'Lääkäri'}
+                icon="stethoscope"
+                style={{ justifyContent: 'flex-start' }}
+              >
+                Lääkäri
               </Button>
             </View>
           </Dialog.Content>
