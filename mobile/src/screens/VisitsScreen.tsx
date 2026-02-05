@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, ScrollView, TouchableOpacity, Keyboard } from 'react-native';
+import { View, ScrollView, TouchableOpacity } from 'react-native';
 import { Text, Card, FAB, Chip, Divider, ActivityIndicator, Portal, Modal, TextInput, Button, Dialog } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { visitsStyles as styles } from '../styles/screenStyles';
@@ -35,7 +35,6 @@ export default function VisitsScreen() {
   const [modalVisible, setModalVisible] = useState<boolean>(false);
   const [saving, setSaving] = useState<boolean>(false);
   const [showDatePicker, setShowDatePicker] = useState<boolean>(false);
-  const [keyboardHeight, setKeyboardHeight] = useState<number>(0);
   const [editingVisitId, setEditingVisitId] = useState<number | null>(null);
   const [isEditMode, setIsEditMode] = useState<boolean>(false);
   const [deleteDialogVisible, setDeleteDialogVisible] = useState<boolean>(false);
@@ -44,27 +43,6 @@ export default function VisitsScreen() {
   const scrollViewRef = useRef<ScrollView>(null);
   const costsInputRef = useRef<any>(null);
   const notesInputRef = useRef<any>(null);
-
-  // Handle keyboard events
-  useEffect(() => {
-    const keyboardDidShowListener = Keyboard.addListener(
-      'keyboardDidShow',
-      (e) => {
-        setKeyboardHeight(e.endCoordinates.height);
-      }
-    );
-    const keyboardDidHideListener = Keyboard.addListener(
-      'keyboardDidHide',
-      () => {
-        setKeyboardHeight(0);
-      }
-    );
-
-    return () => {
-      keyboardDidShowListener.remove();
-      keyboardDidHideListener.remove();
-    };
-  }, []);
   
   // Form state
   const [visitDate, setVisitDate] = useState<string>(new Date().toISOString().split('T')[0]);
@@ -468,7 +446,7 @@ export default function VisitsScreen() {
             <TouchableOpacity onPress={() => setShowDatePicker(true)}>
               <TextInput
                 label="Päivämäärä"
-                value={visitDate.split('-').reverse().join('-')}
+                value={new Date(visitDate).toLocaleDateString('fi-FI')}
                 style={styles.input}
                 mode="outlined"
                 editable={false}
@@ -520,7 +498,7 @@ export default function VisitsScreen() {
 
 
             <Text style={{ marginBottom: 8, color: COLORS.onSurfaceVariant }}>
-              Käynnin tyyppi *
+              Käynnin tyyppi 
             </Text>
             <ScrollView
               horizontal
