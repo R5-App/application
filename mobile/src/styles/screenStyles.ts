@@ -234,7 +234,7 @@ export const profileStyles = StyleSheet.create({
   },
   
   logoutButton: {
-    borderRadius: COMMON_STYLES.button.borderRadius,
+    marginBottom: 0,
   },
 });
 
@@ -1295,5 +1295,276 @@ export const calendarStyles = StyleSheet.create({
 
   scrollContent: {
     padding: SPACING.md,
+    paddingBottom: 100,
+  },
+
+  // Month Navigation
+  monthNavigation: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: SPACING.md,
+    paddingHorizontal: SPACING.sm,
+  },
+
+  navButton: {
+    padding: SPACING.xs,
+    borderRadius: 8,
+  },
+
+  monthYearDisplay: {
+    alignItems: 'center',
+  },
+
+  monthText: {
+    fontWeight: '600',
+    color: COLORS.onSurface,
+  },
+
+  yearText: {
+    color: COLORS.onSurfaceVariant,
+    marginTop: 2,
+  },
+
+  // Year Selection
+  yearTabsContainer: {
+    marginBottom: SPACING.md,
+  },
+
+  yearTabsContent: {
+    paddingHorizontal: SPACING.xs,
+    gap: SPACING.xs,
+  },
+
+  yearTab: {
+    backgroundColor: COLORS.surfaceVariant,
+  },
+
+  selectedYearTab: {
+    backgroundColor: COLORS.primary,
+  },
+
+  selectedYearTabText: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+  },
+
+  unselectedYearTabText: {
+    color: COLORS.onSurfaceVariant,
+  },
+
+  // Calendar Grid
+  calendarGrid: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 12,
+    padding: SPACING.sm,
+    marginBottom: SPACING.lg,
+    elevation: 2,
+  },
+
+  weekRow: {
+    flexDirection: 'row',
+    marginBottom: SPACING.xs,
+  },
+
+  dayHeader: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: SPACING.xs,
+  },
+
+  dayHeaderText: {
+    color: COLORS.onSurfaceVariant,
+    fontWeight: '600',
+  },
+
+  daysContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+
+  dayCell: {
+    width: `${100 / 7}%`,
+    aspectRatio: 1,
+    padding: 4,
+  },
+
+  todayCell: {
+    backgroundColor: COLORS.primaryContainer + '30',
+    borderRadius: 8,
+  },
+
+  dayCellContent: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    paddingTop: 4,
+  },
+
+  dayNumber: {
+    color: COLORS.onSurface,
+    fontWeight: '500',
+  },
+
+  todayNumber: {
+    color: COLORS.primary,
+    fontWeight: '700',
+  },
+
+  eventIndicators: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 2,
+  },
+
+  eventDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+
+  moreEventsText: {
+    fontSize: 9,
+    color: COLORS.onSurfaceVariant,
+    marginLeft: 2,
+  },
+
+  // Events List
+  eventsList: {
+    marginTop: SPACING.md,
+  },
+
+  eventsListTitle: {
+    marginBottom: SPACING.md,
+    fontWeight: '600',
+    color: COLORS.onSurface,
+  },
+
+  emptyEventsContainer: {
+    alignItems: 'center',
+    paddingVertical: SPACING.xl,
+  },
+
+  emptyEventsText: {
+    marginTop: SPACING.sm,
+    color: COLORS.onSurfaceVariant,
+  },
+
+  eventCard: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 12,
+    padding: SPACING.md,
+    marginBottom: SPACING.sm,
+    elevation: 1,
+  },
+
+  eventCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+  },
+
+  eventCardContent: {
+    flex: 1,
+  },
+
+  eventTitle: {
+    fontWeight: '600',
+    color: COLORS.onSurface,
+  },
+
+  eventDate: {
+    color: COLORS.onSurfaceVariant,
+    marginTop: 2,
+  },
+
+  eventTypeChip: {
+    height: 28,
+  },
+
+  eventDescription: {
+    marginTop: SPACING.sm,
+    color: COLORS.onSurfaceVariant,
+    lineHeight: 20,
+  },
+
+  // Modal
+  modal: {
+    backgroundColor: COLORS.surface,
+    margin: SPACING.lg,
+    padding: SPACING.lg,
+    borderRadius: 16,
+    maxHeight: '80%',
+  },
+
+  modalTitle: {
+    marginBottom: SPACING.lg,
+    fontWeight: '600',
+    color: COLORS.onSurface,
+  },
+
+  input: {
+    marginBottom: SPACING.md,
+  },
+
+  datePickerButton: {
+    marginBottom: SPACING.md,
+    padding: SPACING.md,
+    backgroundColor: COLORS.surfaceVariant,
+    borderRadius: 8,
+  },
+
+  datePickerLabel: {
+    color: COLORS.onSurfaceVariant,
+    marginBottom: SPACING.xs,
+  },
+
+  datePickerValue: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+  },
+
+  datePickerText: {
+    color: COLORS.onSurface,
+    fontWeight: '500',
+  },
+
+  typePickerButton: {
+    marginBottom: SPACING.md,
+    padding: SPACING.md,
+    backgroundColor: COLORS.surfaceVariant,
+    borderRadius: 8,
+  },
+
+  typePickerLabel: {
+    color: COLORS.onSurfaceVariant,
+    marginBottom: SPACING.xs,
+  },
+
+  typePickerValue: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+  },
+
+  typePickerText: {
+    flex: 1,
+    color: COLORS.onSurface,
+    fontWeight: '500',
+  },
+
+  modalActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: SPACING.sm,
+    marginTop: SPACING.lg,
+  },
+
+  modalButton: {
+    minWidth: 100,
   },
 });

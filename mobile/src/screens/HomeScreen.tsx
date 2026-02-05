@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { View, ScrollView, Animated } from 'react-native';
-import { Text, Card, IconButton } from 'react-native-paper';
+import { Text, Card } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../contexts/AuthContext';

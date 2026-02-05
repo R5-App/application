@@ -415,7 +415,7 @@ export default function VaccinationsScreen() {
             <TouchableOpacity onPress={() => setShowVaccinationDatePicker(true)}>
               <TextInput
                 label="Rokotuspäivä *"
-                value={vaccinationDate.split('-').reverse().join('-')}
+                value={new Date(vaccinationDate).toLocaleDateString('fi-FI')}
                 style={styles.input}
                 mode="outlined"
                 editable={false}
@@ -444,7 +444,7 @@ export default function VaccinationsScreen() {
             <TouchableOpacity onPress={() => setShowExpireDatePicker(true)}>
               <TextInput
                 label="Uusimispäivä"
-                value={expireDate ? expireDate.split('-').reverse().join('-') : ''}
+                value={expireDate ? new Date(expireDate).toLocaleDateString('fi-FI') : ''}
                 style={styles.input}
                 mode="outlined"
                 editable={false}

@@ -415,7 +415,7 @@ export default function MedicationsScreen() {
             <TouchableOpacity onPress={() => setShowMedicationDatePicker(true)}>
               <TextInput
                 label="Lääkityksen aloituspäivä *"
-                value={medicationDate.split('-').reverse().join('-')}
+                value={new Date(medicationDate).toLocaleDateString('fi-FI')}
                 style={styles.input}
                 mode="outlined"
                 editable={false}
@@ -444,7 +444,7 @@ export default function MedicationsScreen() {
             <TouchableOpacity onPress={() => setShowExpireDatePicker(true)}>
               <TextInput
                 label="Vanhenemispäivä"
-                value={expireDate ? expireDate.split('-').reverse().join('-') : ''}
+                value={expireDate ? new Date(expireDate).toLocaleDateString('fi-FI') : ''}
                 style={styles.input}
                 mode="outlined"
                 editable={false}

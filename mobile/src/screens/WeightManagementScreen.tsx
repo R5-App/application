@@ -691,7 +691,7 @@ export default function WeightManagementScreen() {
             <TouchableOpacity onPress={() => setShowDatePicker(true)}>
               <TextInput
                 label="Päivämäärä *"
-                value={date.split('-').reverse().join('-')}
+                value={new Date(date).toLocaleDateString('fi-FI')}
                 style={styles.input}
                 mode="outlined"
                 editable={false}
