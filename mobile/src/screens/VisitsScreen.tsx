@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, ScrollView, TouchableOpacity } from 'react-native';
+import { View, ScrollView, TouchableOpacity, Platform, Keyboard, TouchableWithoutFeedback } from 'react-native';
 import { Text, Card, FAB, Chip, Divider, ActivityIndicator, Portal, Modal, TextInput, Button, Dialog } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { visitsStyles as styles } from '../styles/screenStyles';
@@ -7,7 +7,7 @@ import { COLORS, SPACING } from '../styles/theme';
 import apiClient from '../services/api';
 import { visitsService } from '../services/visitsService';
 import { Pet } from '../types';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import DateTimePickerModal from 'react-native-modal-datetime-picker';
 
 interface Visit {
   id: number;
@@ -443,7 +443,7 @@ export default function VisitsScreen() {
               {isEditMode ? 'Muokkaa käyntiä' : 'Lisää käynti'}
             </Text>
 
-            <TouchableOpacity onPress={() => setShowDatePicker(true)}>
+            <TouchableOpacity onPress={() => setShowDatePicker(true)} activeOpacity={1}>
               <TextInput
                 label="Päivämäärä"
                 value={new Date(visitDate).toLocaleDateString('fi-FI')}
@@ -455,22 +455,9 @@ export default function VisitsScreen() {
                 placeholderTextColor="rgba(0, 0, 0, 0.3)"
                 textColor={COLORS.onSurface}
                 theme={{ colors: { onSurfaceVariant: 'rgba(0, 0, 0, 0.4)' } }}
+                pointerEvents="none"
               />
             </TouchableOpacity>
-
-            {showDatePicker && (
-              <DateTimePicker
-                value={new Date(visitDate)}
-                mode="date"
-                display="default"
-                onChange={(_, selectedDate) => {
-                  setShowDatePicker(false);
-                  if (selectedDate) {
-                    setVisitDate(selectedDate.toISOString().split('T')[0]);
-                  }
-                }}
-              />
-            )}
 
             <TextInput
               label="Eläinlääkäri *"
@@ -609,6 +596,23 @@ export default function VisitsScreen() {
             <Button onPress={confirmDeleteVisit} textColor={COLORS.error}>Poista</Button>
           </Dialog.Actions>
         </Dialog>
+
+        <DateTimePickerModal
+          isVisible={showDatePicker}
+          mode="date"
+          date={new Date(visitDate)}
+          onConfirm={(selectedDate) => {
+            setShowDatePicker(false);
+            setVisitDate(selectedDate.toISOString().split('T')[0]);
+          }}
+          onCancel={() => setShowDatePicker(false)}
+          locale="fi-FI"
+          confirmTextIOS="Vahvista"
+          cancelTextIOS="Peruuta"
+          customModalProps={{
+            presentationStyle: 'overFullScreen',
+          }}
+        />
       </Portal>
     </View>
   );

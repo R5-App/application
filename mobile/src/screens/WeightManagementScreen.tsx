@@ -3,7 +3,7 @@ import { View, ScrollView, Dimensions, TouchableOpacity } from 'react-native';
 import { Text, Card, FAB, Chip, Divider, ActivityIndicator, Portal, Modal, Button, TextInput, Dialog } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Svg, { Line, Circle } from 'react-native-svg';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { weightsStyles as styles } from '../styles/screenStyles';
 import { COLORS, SPACING } from '../styles/theme';
 import apiClient from '../services/api';
@@ -688,7 +688,7 @@ export default function WeightManagementScreen() {
               }}
             />
 
-            <TouchableOpacity onPress={() => setShowDatePicker(true)}>
+            <TouchableOpacity onPress={() => setShowDatePicker(true)} activeOpacity={1}>
               <TextInput
                 label="Päivämäärä *"
                 value={new Date(date).toLocaleDateString('fi-FI')}
@@ -700,22 +700,9 @@ export default function WeightManagementScreen() {
                 placeholderTextColor="rgba(0, 0, 0, 0.3)"
                 textColor={COLORS.onSurface}
                 theme={{ colors: { onSurfaceVariant: 'rgba(0, 0, 0, 0.4)' } }}
+                pointerEvents="none"
               />
             </TouchableOpacity>
-
-            {showDatePicker && (
-              <DateTimePicker
-                value={new Date(date)}
-                mode="date"
-                display="default"
-                onChange={(_, selectedDate) => {
-                  setShowDatePicker(false);
-                  if (selectedDate) {
-                    setDate(selectedDate.toISOString().split('T')[0]);
-                  }
-                }}
-              />
-            )}
 
             <View style={styles.modalButtons}>
               <Button
@@ -751,6 +738,23 @@ export default function WeightManagementScreen() {
             <Button onPress={confirmDeleteWeightRecord} textColor={COLORS.error}>Poista</Button>
           </Dialog.Actions>
         </Dialog>
+
+        <DateTimePickerModal
+          isVisible={showDatePicker}
+          mode="date"
+          date={new Date(date)}
+          onConfirm={(selectedDate) => {
+            setShowDatePicker(false);
+            setDate(selectedDate.toISOString().split('T')[0]);
+          }}
+          onCancel={() => setShowDatePicker(false)}
+          locale="fi-FI"
+          confirmTextIOS="Vahvista"
+          cancelTextIOS="Peruuta"
+          customModalProps={{
+            presentationStyle: 'overFullScreen',
+          }}
+        />
       </Portal>
     </View>
   );

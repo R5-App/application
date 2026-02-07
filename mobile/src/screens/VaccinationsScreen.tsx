@@ -7,7 +7,7 @@ import { COLORS, SPACING } from '../styles/theme';
 import apiClient from '../services/api';
 import { vaccinationsService } from '../services/vaccinationsService';
 import { Pet } from '../types';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import DateTimePickerModal from 'react-native-modal-datetime-picker';
 
 interface Vaccination {
   id: number;
@@ -412,7 +412,7 @@ export default function VaccinationsScreen() {
               theme={{ colors: { onSurfaceVariant: 'rgba(0, 0, 0, 0.4)' } }}
             />
 
-            <TouchableOpacity onPress={() => setShowVaccinationDatePicker(true)}>
+            <TouchableOpacity onPress={() => setShowVaccinationDatePicker(true)} activeOpacity={1}>
               <TextInput
                 label="Rokotuspäivä *"
                 value={new Date(vaccinationDate).toLocaleDateString('fi-FI')}
@@ -424,24 +424,11 @@ export default function VaccinationsScreen() {
                 placeholderTextColor="rgba(0, 0, 0, 0.3)"
                 textColor={COLORS.onSurface}
                 theme={{ colors: { onSurfaceVariant: 'rgba(0, 0, 0, 0.4)' } }}
+                pointerEvents="none"
               />
             </TouchableOpacity>
 
-            {showVaccinationDatePicker && (
-              <DateTimePicker
-                value={new Date(vaccinationDate)}
-                mode="date"
-                display="default"
-                onChange={(_, selectedDate) => {
-                  setShowVaccinationDatePicker(false);
-                  if (selectedDate) {
-                    setVaccinationDate(selectedDate.toISOString().split('T')[0]);
-                  }
-                }}
-              />
-            )}
-
-            <TouchableOpacity onPress={() => setShowExpireDatePicker(true)}>
+            <TouchableOpacity onPress={() => setShowExpireDatePicker(true)} activeOpacity={1}>
               <TextInput
                 label="Uusimispäivä"
                 value={expireDate ? new Date(expireDate).toLocaleDateString('fi-FI') : ''}
@@ -453,22 +440,9 @@ export default function VaccinationsScreen() {
                 placeholderTextColor="rgba(0, 0, 0, 0.3)"
                 textColor={COLORS.onSurface}
                 theme={{ colors: { onSurfaceVariant: 'rgba(0, 0, 0, 0.4)' } }}
+                pointerEvents="none"
               />
             </TouchableOpacity>
-
-            {showExpireDatePicker && (
-              <DateTimePicker
-                value={expireDate ? new Date(expireDate) : new Date()}
-                mode="date"
-                display="default"
-                onChange={(_, selectedDate) => {
-                  setShowExpireDatePicker(false);
-                  if (selectedDate) {
-                    setExpireDate(selectedDate.toISOString().split('T')[0]);
-                  }
-                }}
-              />
-            )}
 
             <TextInput
               label="Kustannukset (€)"
@@ -541,6 +515,40 @@ export default function VaccinationsScreen() {
             <Button onPress={confirmDeleteVaccination} textColor={COLORS.error}>Poista</Button>
           </Dialog.Actions>
         </Dialog>
+
+        <DateTimePickerModal
+          isVisible={showVaccinationDatePicker}
+          mode="date"
+          date={new Date(vaccinationDate)}
+          onConfirm={(selectedDate) => {
+            setShowVaccinationDatePicker(false);
+            setVaccinationDate(selectedDate.toISOString().split('T')[0]);
+          }}
+          onCancel={() => setShowVaccinationDatePicker(false)}
+          locale="fi-FI"
+          confirmTextIOS="Vahvista"
+          cancelTextIOS="Peruuta"
+          customModalProps={{
+            presentationStyle: 'overFullScreen',
+          }}
+        />
+
+        <DateTimePickerModal
+          isVisible={showExpireDatePicker}
+          mode="date"
+          date={expireDate ? new Date(expireDate) : new Date()}
+          onConfirm={(selectedDate) => {
+            setShowExpireDatePicker(false);
+            setExpireDate(selectedDate.toISOString().split('T')[0]);
+          }}
+          onCancel={() => setShowExpireDatePicker(false)}
+          locale="fi-FI"
+          confirmTextIOS="Vahvista"
+          cancelTextIOS="Peruuta"
+          customModalProps={{
+            presentationStyle: 'overFullScreen',
+          }}
+        />
       </Portal>
     </View>
   );

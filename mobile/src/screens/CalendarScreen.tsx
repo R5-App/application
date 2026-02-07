@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { View, ScrollView, TouchableOpacity } from 'react-native';
+import { View, ScrollView, TouchableOpacity, Platform, Keyboard, TouchableWithoutFeedback } from 'react-native';
 import { Text, Chip, ActivityIndicator, FAB, Portal, Modal, Button, TextInput } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { calendarStyles as styles } from '../styles/screenStyles';
 import { COLORS, SPACING } from '../styles/theme';
 import apiClient from '../services/api';
@@ -242,11 +242,13 @@ export default function CalendarScreen() {
     }
   };
 
-  const handleDateChange = (_event: any, selectedDate?: Date) => {
+  const handleDateConfirm = (selectedDate: Date) => {
     setShowDatePicker(false);
-    if (selectedDate) {
-      setEventDate(selectedDate);
-    }
+    setEventDate(selectedDate);
+  };
+
+  const handleDateCancel = () => {
+    setShowDatePicker(false);
   };
 
   const getEventTypeLabel = (type: CalendarEvent['eventType']) => {
@@ -551,7 +553,7 @@ export default function CalendarScreen() {
           onDismiss={handleCloseModal}
           contentContainerStyle={styles.modal}
         >
-          <ScrollView>
+          <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
             <Text variant="headlineSmall" style={styles.modalTitle}>
               Lisää tapahtuma
             </Text>
@@ -574,7 +576,7 @@ export default function CalendarScreen() {
               style={styles.input}
             />
 
-            <TouchableOpacity onPress={() => setShowDatePicker(true)}>
+            <TouchableOpacity onPress={() => setShowDatePicker(true)} activeOpacity={1}>
               <TextInput
                 label="Päivämäärä"
                 value={eventDate ? eventDate.toLocaleDateString('fi-FI') : ''}
@@ -586,17 +588,9 @@ export default function CalendarScreen() {
                 placeholderTextColor="rgba(0, 0, 0, 0.3)"
                 textColor={COLORS.onSurface}
                 theme={{ colors: { onSurfaceVariant: 'rgba(0, 0, 0, 0.4)' } }}
+                pointerEvents="none"
               />
             </TouchableOpacity>
-
-            {showDatePicker && (
-              <DateTimePicker
-                value={eventDate || new Date()}
-                mode="date"
-                display="default"
-                onChange={handleDateChange}
-              />
-            )}
 
             <View style={styles.input}>
               <Text variant="bodyMedium" style={styles.typePickerLabel}>
@@ -657,6 +651,20 @@ export default function CalendarScreen() {
             </View>
           </ScrollView>
         </Modal>
+
+        <DateTimePickerModal
+          isVisible={showDatePicker}
+          mode="date"
+          date={eventDate || new Date()}
+          onConfirm={handleDateConfirm}
+          onCancel={handleDateCancel}
+          locale="fi-FI"
+          confirmTextIOS="Vahvista"
+          cancelTextIOS="Peruuta"
+          customModalProps={{
+            presentationStyle: 'overFullScreen',
+          }}
+        />
       </Portal>
     </View>
   );

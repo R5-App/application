@@ -1497,7 +1497,7 @@ export const calendarStyles = StyleSheet.create({
     margin: SPACING.lg,
     padding: SPACING.lg,
     borderRadius: 16,
-    maxHeight: '80%',
+    maxHeight: '90%',
   },
 
   modalTitle: {

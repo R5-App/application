@@ -60,6 +60,10 @@ export const calendarService = {
       
       return [];
     } catch (error: any) {
+      // 404 is expected when there are no events yet
+      if (error.response?.status === 404) {
+        return [];
+      }
       console.error('Failed to fetch calendar events:', error);
       throw error;
     }
@@ -88,6 +92,10 @@ export const calendarService = {
       
       return [];
     } catch (error: any) {
+      // 404 is expected when there are no events for this pet yet
+      if (error.response?.status === 404) {
+        return [];
+      }
       console.error(`Failed to fetch events for pet ${petId}:`, error);
       throw error;
     }
