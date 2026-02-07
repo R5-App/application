@@ -20,11 +20,11 @@ const EVENT_TYPE_ICONS: Record<CalendarEvent['eventType'], any> = {
 };
 
 const EVENT_TYPE_COLORS = {
-  vaccination: '#4CAF50',
-  veterinary: '#2196F3',
-  medication: '#FF9800',
-  grooming: '#9C27B0',
-  other: '#607D8B'
+  vaccination: COLORS.vaccination,
+  veterinary: COLORS.veterinary,
+  medication: COLORS.medication,
+  grooming: COLORS.grooming,
+  other: COLORS.other
 };
 
 const DAYS_OF_WEEK = ['Ma', 'Ti', 'Ke', 'To', 'Pe', 'La', 'Su'];
@@ -469,7 +469,7 @@ export default function CalendarScreen() {
               <MaterialCommunityIcons 
                 name="paw" 
                 size={18} 
-                color={selectedPetId === pet.id ? '#FFFFFF' : COLORS.onSurfaceVariant} 
+                color={selectedPetId === pet.id ? COLORS.onPrimary : COLORS.onSurfaceVariant} 
               />
             )}
           >
@@ -583,9 +583,9 @@ export default function CalendarScreen() {
                 editable={false}
                 right={<TextInput.Icon icon="calendar" />}
                 placeholder="PP-KK-VVVV"
-                placeholderTextColor="rgba(0, 0, 0, 0.3)"
+                placeholderTextColor={COLORS.placeholderText}
                 textColor={COLORS.onSurface}
-                theme={{ colors: { onSurfaceVariant: 'rgba(0, 0, 0, 0.4)' } }}
+                theme={{ colors: { onSurfaceVariant: COLORS.onSurfaceVariant } }}
               />
             </TouchableOpacity>
 

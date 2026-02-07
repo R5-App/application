@@ -449,7 +449,7 @@ export default function WeightManagementScreen() {
                     y1={0}
                     x2={svgWidth}
                     y2={0}
-                    stroke="#E0E0E0"
+                    stroke={COLORS.outlineVariant}
                     strokeWidth="1"
                   />
                   <Line
@@ -457,7 +457,7 @@ export default function WeightManagementScreen() {
                     y1={svgHeight / 2}
                     x2={svgWidth}
                     y2={svgHeight / 2}
-                    stroke="#E0E0E0"
+                    stroke={COLORS.outlineVariant}
                     strokeWidth="1"
                   />
                   <Line
@@ -465,7 +465,7 @@ export default function WeightManagementScreen() {
                     y1={svgHeight}
                     x2={svgWidth}
                     y2={svgHeight}
-                    stroke="#E0E0E0"
+                    stroke={COLORS.outlineVariant}
                     strokeWidth="1"
                   />
                   
@@ -480,7 +480,7 @@ export default function WeightManagementScreen() {
                         y1={0}
                         x2={x}
                         y2={svgHeight}
-                        stroke="#E0E0E0"
+                        stroke={COLORS.outlineVariant}
                         strokeWidth="1"
                         strokeDasharray="4,4"
                       />
@@ -528,7 +528,7 @@ export default function WeightManagementScreen() {
                           cx={x}
                           cy={y}
                           r="5"
-                          fill="#FFFFFF"
+                          fill={COLORS.surface}
                         />
                         {/* Colored stroke circle */}
                         <Circle
@@ -617,7 +617,7 @@ export default function WeightManagementScreen() {
                 <MaterialCommunityIcons 
                   name="paw" 
                   size={18} 
-                  color={selectedPetId === pet.id ? '#FFFFFF' : COLORS.onSurfaceVariant} 
+                  color={selectedPetId === pet.id ? COLORS.onPrimary : COLORS.onSurfaceVariant} 
                 />
               )}
             >
@@ -678,9 +678,9 @@ export default function WeightManagementScreen() {
               mode="outlined"
               keyboardType="decimal-pad"
               placeholder=""
-              placeholderTextColor="rgba(0, 0, 0, 0.3)"
+              placeholderTextColor={COLORS.placeholderText}
               textColor={COLORS.onSurface}
-              theme={{ colors: { onSurfaceVariant: 'rgba(0, 0, 0, 0.4)' } }}
+              theme={{ colors: { onSurfaceVariant: COLORS.onSurfaceVariant } }}
               onFocus={() => {
                 setTimeout(() => {
                   scrollViewRef.current?.scrollToEnd({ animated: true });
@@ -697,9 +697,9 @@ export default function WeightManagementScreen() {
                 editable={false}
                 right={<TextInput.Icon icon="calendar" />}
                 placeholder="PP-KK-VVVV"
-                placeholderTextColor="rgba(0, 0, 0, 0.3)"
+                placeholderTextColor={COLORS.placeholderText}
                 textColor={COLORS.onSurface}
-                theme={{ colors: { onSurfaceVariant: 'rgba(0, 0, 0, 0.4)' } }}
+                theme={{ colors: { onSurfaceVariant: COLORS.onSurfaceVariant } }}
               />
             </TouchableOpacity>
 

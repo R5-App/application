@@ -2,6 +2,7 @@
 export interface Pet {
   id: number;
   name: string;
+  type?: string;
   breed: string;
   age: number;
   weight: number;
@@ -59,32 +60,38 @@ export interface Coordinate {
   latitude: number;
   longitude: number;
   altitude?: number;
-  timestamp: number;
+  accuracy?: number;
+  timestamp: number | string;
 }
 
 export interface WalkStats {
   distance: number; // meters
   duration: number; // seconds
-  averageSpeed: number; // km/h
+  averageSpeed: number; // m/s or km/h depending on context
   steps?: number;
-  calories?: number;
 }
 
 export interface Walk {
   id: string;
-  startTime: number;
-  endTime: number;
-  coordinates: Coordinate[];
-  stats: WalkStats;
+  backendId?: string; // ID from backend after sync
   petId: string;
   petName: string;
-  synced: boolean;
+  startTime: number;
+  endTime?: number;
+  distance: number;
+  duration: number;
+  averageSpeed: number;
+  steps: number;
+  path: Coordinate[]; // Full coordinate path
+  synced?: boolean; // Whether synced to backend
 }
 
 export interface WalkSettings {
   enableSync: boolean;
   autoStartOnMovement: boolean;
   trackSteps: boolean;
+  syncOnlyOnWifi?: boolean;
+  syncedOnce?: boolean; // Track if user has done first-time sync setup
 }
 
 // Calendar Event types

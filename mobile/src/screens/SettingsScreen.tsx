@@ -1,5 +1,5 @@
 import React from 'react';
-import { ScrollView, View } from 'react-native';
+import { ScrollView, View, Alert } from 'react-native';
 import { Text, List, Switch, Button, Portal, Dialog } from 'react-native-paper';
 import { useAuth } from '@contexts/AuthContext';
 import { useWalk } from '@contexts/WalkContext';
@@ -8,10 +8,11 @@ import { COLORS } from '../styles/theme';
 
 export default function SettingsScreen() {
   const { user, logout } = useAuth();
-  const { settings, updateSettings } = useWalk();
+  const { settings, updateSettings, syncAllWalks } = useWalk();
   const [notifications, setNotifications] = React.useState(true);
   const [darkMode, setDarkMode] = React.useState(false);
   const [logoutDialogVisible, setLogoutDialogVisible] = React.useState(false);
+  const [isSyncing, setIsSyncing] = React.useState(false);
 
   const handleLogout = () => {
     setLogoutDialogVisible(true);
@@ -20,6 +21,38 @@ export default function SettingsScreen() {
   const handleConfirmLogout = async () => {
     setLogoutDialogVisible(false);
     await logout();
+  };
+
+  const handleManualSync = async () => {
+    if (!settings.enableSync) {
+      Alert.alert(
+        'Synkronointi pois käytöstä',
+        'Ota synkronointi käyttöön ennen manuaalista synkronointia.'
+      );
+      return;
+    }
+
+    setIsSyncing(true);
+    try {
+      const result = await syncAllWalks();
+      if (result.synced > 0 || result.failed === 0) {
+        Alert.alert(
+          'Synkronointi valmis',
+          `Synkronoitu: ${result.synced} lenkkiä${result.failed > 0 ? `\\nEpäonnistui: ${result.failed}` : ''}`
+        );
+      } else if (result.failed > 0) {
+        Alert.alert(
+          'Synkronointi epäonnistui',
+          `${result.failed} lenkin synkronointi epäonnistui. Tarkista internet-yhteys.`
+        );
+      } else {
+        Alert.alert('Info', 'Ei synkronoitavia lenkkejä.');
+      }
+    } catch (error) {
+      Alert.alert('Virhe', 'Synkronointi epäonnistui.');
+    } finally {
+      setIsSyncing(false);
+    }
   };
 
   return (
@@ -48,7 +81,38 @@ export default function SettingsScreen() {
           )}
         />
       </View>
-
+{settings.enableSync && (
+          <>
+            <List.Item
+              title="Synkronoi vain WiFi-yhteydellä"
+              description="Säästä mobiilid ataa"
+              right={() => (
+                <Switch
+                  value={settings.syncOnlyOnWifi || false}
+                  onValueChange={(value) => 
+                    updateSettings({ ...settings, syncOnlyOnWifi: value })
+                  }
+                />
+              )}
+            />
+            <List.Item
+              title="Manuaalinen synkronointi"
+              description="Synkronoi kaikki tallentamattomat lenkit nyt"
+              right={() => (
+                <Button 
+                  mode="contained" 
+                  compact
+                  loading={isSyncing}
+                  disabled={isSyncing}
+                  onPress={handleManualSync}
+                >
+                  Synkronoi
+                </Button>
+              )}
+            />
+          </>
+        )}
+        
       <View style={styles.section}>
         <Text variant="titleMedium" style={styles.sectionTitle}>
           Näyttö
@@ -124,7 +188,7 @@ export default function SettingsScreen() {
         <Dialog 
           visible={logoutDialogVisible} 
           onDismiss={() => setLogoutDialogVisible(false)}
-          style={{ backgroundColor: 'rgba(255, 255, 255, 0.95)' }}
+          style={{ backgroundColor: COLORS.dialogBackground }}
         >
           <Dialog.Title>Kirjaudu ulos</Dialog.Title>
           <Dialog.Content>

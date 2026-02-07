@@ -141,6 +141,7 @@ vite.config.ts.timestamp-*
 # Expo prebuild generated folders (älä commitoi)
 mobile/android/
 mobile/ios/
+.expo/
 
 # Signing files (turvallisuussyistä)
 *.keystore

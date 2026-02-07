@@ -80,6 +80,8 @@ export const storageService = {
         enableSync: false,
         autoStartOnMovement: false,
         trackSteps: true,
+        syncOnlyOnWifi: false,
+        syncedOnce: false,
       };
     } catch (error) {
       console.error('Error getting walk settings:', error);
@@ -87,6 +89,8 @@ export const storageService = {
         enableSync: false,
         autoStartOnMovement: false,
         trackSteps: true,
+        syncOnlyOnWifi: false,
+        syncedOnce: false,
       };
     }
   },
