@@ -6,7 +6,10 @@ import {
   FlatList, 
   TouchableOpacity,
   Alert,
+  RefreshControl,
+  Animated,
 } from 'react-native';
+import { Swipeable } from 'react-native-gesture-handler';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useWalk } from '@contexts/WalkContext';
@@ -17,12 +20,20 @@ export default function WalkHistoryScreen() {
   const navigation = useNavigation<any>();
   const { walks, deleteWalk, refreshWalks } = useWalk();
   const [selectedWalk, setSelectedWalk] = useState<Walk | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     refreshWalks();
   }, []);
 
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await refreshWalks();
+    setRefreshing(false);
+  };
+
   const formatDuration = (seconds: number): string => {
+    if (!seconds || isNaN(seconds)) return '0 min';
     const hrs = Math.floor(seconds / 3600);
     const mins = Math.floor((seconds % 3600) / 60);
     
@@ -33,6 +44,7 @@ export default function WalkHistoryScreen() {
   };
 
   const formatDistance = (meters: number): string => {
+    if (!meters || isNaN(meters)) return '0 m';
     if (meters < 1000) {
       return `${Math.round(meters)} m`;
     }
@@ -41,13 +53,7 @@ export default function WalkHistoryScreen() {
 
   const formatDate = (timestamp: number): string => {
     const date = new Date(timestamp);
-    return date.toLocaleDateString('fi-FI', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+    return date.toLocaleDateString('fi-FI');
   };
 
   const handleDeleteWalk = (id: string) => {
@@ -68,15 +74,47 @@ export default function WalkHistoryScreen() {
     );
   };
 
+  const renderRightActions = (_progress: Animated.AnimatedInterpolation<number>, dragX: Animated.AnimatedInterpolation<number>, item: Walk) => {
+    const trans = dragX.interpolate({
+      inputRange: [-100, 0],
+      outputRange: [0, 100],
+      extrapolate: 'clamp',
+    });
+
+    return (
+      <Animated.View
+        style={[
+          styles.deleteAction,
+          {
+            transform: [{ translateX: trans }],
+          },
+        ]}
+      >
+        <TouchableOpacity
+          style={styles.deleteActionButton}
+          onPress={() => handleDeleteWalk(item.id)}
+        >
+          <MaterialCommunityIcons name="delete" size={28} color={COLORS.onError} />
+          <Text style={styles.deleteText}>Poista</Text>
+        </TouchableOpacity>
+      </Animated.View>
+    );
+  };
+
   const renderWalkItem = ({ item }: { item: Walk }) => (
-    <TouchableOpacity
-      style={[
-        styles.walkCard,
-        selectedWalk?.id === item.id && styles.walkCardSelected,
-      ]}
-      onPress={() => setSelectedWalk(selectedWalk?.id === item.id ? null : item)}
-      activeOpacity={0.7}
+    <Swipeable
+      renderRightActions={(progress, dragX) => renderRightActions(progress, dragX, item)}
+      overshootRight={false}
+      friction={2}
     >
+      <TouchableOpacity
+        style={[
+          styles.walkCard,
+          selectedWalk?.id === item.id && styles.walkCardSelected,
+        ]}
+        onPress={() => setSelectedWalk(selectedWalk?.id === item.id ? null : item)}
+        activeOpacity={0.7}
+      >
       <View style={styles.walkCardHeader}>
         <View style={styles.walkCardIcon}>
           <MaterialCommunityIcons 
@@ -94,7 +132,7 @@ export default function WalkHistoryScreen() {
           </Text>
           <View style={styles.walkCardStats}>
             <Text style={styles.walkCardStatText}>
-              {formatDistance(item.stats.distance)} • {formatDuration(item.stats.duration)}
+              {formatDistance(item.distance)} • {formatDuration(item.duration)}
             </Text>
           </View>
         </View>
@@ -118,7 +156,7 @@ export default function WalkHistoryScreen() {
               />
               <Text style={styles.detailLabel}>Keskinopeus</Text>
               <Text style={styles.detailValue}>
-                {item.stats.averageSpeed.toFixed(1)} km/h
+                {typeof item.averageSpeed === 'number' ? item.averageSpeed.toFixed(1) : '0.0'} km/h
               </Text>
             </View>
 
@@ -130,19 +168,7 @@ export default function WalkHistoryScreen() {
               />
               <Text style={styles.detailLabel}>Askeleet</Text>
               <Text style={styles.detailValue}>
-                {item.stats.steps || 0}
-              </Text>
-            </View>
-
-            <View style={styles.detailItem}>
-              <MaterialCommunityIcons 
-                name="fire" 
-                size={LAYOUT.iconSm} 
-                color={COLORS.primary} 
-              />
-              <Text style={styles.detailLabel}>Kalorit</Text>
-              <Text style={styles.detailValue}>
-                {item.stats.calories || 0}
+                {item.steps || 0}
               </Text>
             </View>
 
@@ -154,7 +180,7 @@ export default function WalkHistoryScreen() {
               />
               <Text style={styles.detailLabel}>Pisteet</Text>
               <Text style={styles.detailValue}>
-                {item.coordinates.length}
+                {item.path?.length || 0}
               </Text>
             </View>
           </View>
@@ -189,6 +215,7 @@ export default function WalkHistoryScreen() {
         </View>
       )}
     </TouchableOpacity>
+    </Swipeable>
   );
 
   const renderEmptyState = () => (
@@ -220,6 +247,14 @@ export default function WalkHistoryScreen() {
         keyExtractor={item => item.id}
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={renderEmptyState}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[COLORS.primary]}
+            tintColor={COLORS.primary}
+          />
+        }
       />
     </View>
   );
@@ -374,5 +409,27 @@ const styles = StyleSheet.create({
     color: COLORS.onSurfaceVariant,
     marginTop: SPACING.sm,
     textAlign: 'center',
+  },
+  deleteAction: {
+    backgroundColor: COLORS.error,
+    justifyContent: 'center',
+    alignItems: 'flex-end',
+    width: 100,
+    marginVertical: SPACING.xs,
+    marginRight: SPACING.md,
+    borderRadius: LAYOUT.radiusMd,
+  },
+  deleteActionButton: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 100,
+    height: '100%',
+    paddingHorizontal: SPACING.sm,
+  },
+  deleteText: {
+    ...TYPOGRAPHY.labelSmall,
+    color: COLORS.onError,
+    fontWeight: '600',
+    marginTop: SPACING.xs,
   },
 });

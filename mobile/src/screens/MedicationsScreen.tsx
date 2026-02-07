@@ -236,13 +236,13 @@ export default function MedicationsScreen() {
               <MaterialCommunityIcons 
                 name="calendar-end" 
                 size={20} 
-                color={isExpired ? '#D32F2F' : COLORS.onSurfaceVariant} 
+                color={isExpired ? COLORS.error : COLORS.onSurfaceVariant} 
               />
               <Text 
                 variant="bodyMedium" 
                 style={[
                   styles.dosage,
-                  isExpired && { color: '#D32F2F', fontWeight: '600' }
+                  isExpired && { color: COLORS.error, fontWeight: '600' }
                 ]}
               >
                 Vanhenee: {formatDate(medication.expire_date)}
@@ -357,7 +357,7 @@ export default function MedicationsScreen() {
               <MaterialCommunityIcons 
                 name="paw" 
                 size={18} 
-                color={selectedPetId === pet.id ? '#FFFFFF' : COLORS.onSurfaceVariant} 
+                  color={selectedPetId === pet.id ? COLORS.onPrimary : COLORS.onSurfaceVariant}
               />
             )}
           >
@@ -407,9 +407,9 @@ export default function MedicationsScreen() {
               style={styles.input}
               mode="outlined"
               placeholder="Esim. Antibiootit"
-              placeholderTextColor="rgba(0, 0, 0, 0.3)"
+              placeholderTextColor={COLORS.placeholderText}
               textColor={COLORS.onSurface}
-              theme={{ colors: { onSurfaceVariant: 'rgba(0, 0, 0, 0.4)' } }}
+              theme={{ colors: { onSurfaceVariant: COLORS.onSurfaceVariant } }}
             />
 
             <TouchableOpacity onPress={() => setShowMedicationDatePicker(true)}>
@@ -421,9 +421,9 @@ export default function MedicationsScreen() {
                 editable={false}
                 right={<TextInput.Icon icon="calendar" />}
                 placeholder="PP-KK-VVVV"
-                placeholderTextColor="rgba(0, 0, 0, 0.3)"
+                placeholderTextColor={COLORS.placeholderText}
                 textColor={COLORS.onSurface}
-                theme={{ colors: { onSurfaceVariant: 'rgba(0, 0, 0, 0.4)' } }}
+                theme={{ colors: { onSurfaceVariant: COLORS.onSurfaceVariant } }}
               />
             </TouchableOpacity>
 
@@ -450,9 +450,9 @@ export default function MedicationsScreen() {
                 editable={false}
                 right={<TextInput.Icon icon="calendar" />}
                 placeholder="PP-KK-VVVV (valinnainen)"
-                placeholderTextColor="rgba(0, 0, 0, 0.3)"
+                placeholderTextColor={COLORS.placeholderText}
                 textColor={COLORS.onSurface}
-                theme={{ colors: { onSurfaceVariant: 'rgba(0, 0, 0, 0.4)' } }}
+                theme={{ colors: { onSurfaceVariant: COLORS.onSurfaceVariant } }}
               />
             </TouchableOpacity>
 
@@ -478,9 +478,9 @@ export default function MedicationsScreen() {
               mode="outlined"
               keyboardType="decimal-pad"
               placeholder=""
-              placeholderTextColor="rgba(0, 0, 0, 0.3)"
+              placeholderTextColor={COLORS.placeholderText}
               textColor={COLORS.onSurface}
-              theme={{ colors: { onSurfaceVariant: 'rgba(0, 0, 0, 0.4)' } }}
+              theme={{ colors: { onSurfaceVariant: COLORS.onSurfaceVariant } }}
               onFocus={() => {
                 setTimeout(() => {
                   scrollViewRef.current?.scrollToEnd({ animated: true });
@@ -497,9 +497,9 @@ export default function MedicationsScreen() {
               multiline
               numberOfLines={4}
               placeholder="Anna ruoan kanssa kahdesti päivässä"
-              placeholderTextColor="rgba(0, 0, 0, 0.3)"
+              placeholderTextColor={COLORS.placeholderText}
               textColor={COLORS.onSurface}
-              theme={{ colors: { onSurfaceVariant: 'rgba(0, 0, 0, 0.4)' } }}
+              theme={{ colors: { onSurfaceVariant: COLORS.onSurfaceVariant } }}
               onFocus={() => {
                 setTimeout(() => {
                   scrollViewRef.current?.scrollToEnd({ animated: true });
