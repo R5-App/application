@@ -8,6 +8,8 @@ import petService from '../services/petService';
 import { Pet } from '../types';
 import { RootStackParamList } from '../navigation/Navigation';
 
+const SCREEN_NAME = 'PetsScreen';
+
 export default function PetsScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [pets, setPets] = useState<Pet[]>([]);

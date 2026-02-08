@@ -188,8 +188,57 @@ export const petsStyles = StyleSheet.create({
   loadingText: {
     textAlign: 'center',
   },
+
+  // === AddPetScreen Styles ===
+  formContainer: {
+    padding: SPACING.lg,
+  },
+
+  scrollViewContent: {
+    paddingBottom: SPACING['2xl'],
+  },
+
+  actionButtonsContainer: {
+    flexDirection: 'row',
+    gap: SPACING.md,
+    marginTop: SPACING.lg,
+  },
   
+    modalContainer: {
+    backgroundColor: COLORS.surface,
+    margin: SPACING.lg,
+    padding: SPACING.lg,
+    borderRadius: 12,
+    maxHeight: '90%',
+  },
+
+  scrollContentContainer: {
+    paddingBottom: 0,
+  },
+
+  modalTitle: {
+    marginBottom: SPACING.lg,
+    fontWeight: 'bold',
+    color: COLORS.onSurface,
+  },
+
+  input: {
+    marginBottom: SPACING.md,
+  },
+
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: SPACING.lg,
+    gap: SPACING.md,
+  },
+
+  modalButton: {
+    flex: 1,
+  },
+
 });
+
 
 // ============================================
 // SETTINGS SCREEN STYLES

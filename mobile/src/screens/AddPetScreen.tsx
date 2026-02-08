@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { View, ScrollView } from 'react-native';
-import { Text, Button, Portal, Modal, TextInput, Dialog } from 'react-native-paper';
+import { Text, Button, Portal, TextInput, Dialog } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import petService from '../services/petService';
 import { COLORS, SPACING } from '../styles/theme';
@@ -23,7 +23,6 @@ export default function AddPetScreen() {
   const navigation = useNavigation();
   const scrollViewRef = useRef<ScrollView>(null);
 
-  // Form state
   const [form, setForm] = useState<FormState>({
     name: '',
     type: '',
@@ -42,19 +41,17 @@ export default function AddPetScreen() {
   const [messageContent, setMessageContent] = useState('');
   const [messageType, setMessageType] = useState<'success' | 'error'>('success');
 
-  // Handle form field changes
   const handleFieldChange = (field: keyof FormState, value: string) => {
+    console.log(`[${SCREEN_NAME}] ${field} changed to: ${value}`);
     setForm(prev => ({
       ...prev,
       [field]: value
     }));
   };
 
-  // Handle save pet
   const handleSavePet = async () => {
     console.log(`[${SCREEN_NAME}] handleSavePet called`);
 
-    // Validate form data
     const validation = validatePetData(
       form.name,
       form.type,
@@ -82,25 +79,25 @@ export default function AddPetScreen() {
       console.log(`[${SCREEN_NAME}] Create response:`, result);
 
       if (result.success) {
-        console.log(`[${SCREEN_NAME}] ✅ Pet created successfully:`, result.data?.name);
+        console.log(`[${SCREEN_NAME}] Pet created successfully:`, result.data?.name);
         setMessageTitle('Onnistui');
         setMessageContent('Lemmikki lisätty onnistuneesti');
         setMessageType('success');
         setMessageDialogVisible(true);
 
-        // Navigate back after showing success message
+    // Navigate back after showing success message
         setTimeout(() => {
           navigation.goBack();
         }, 1500);
       } else {
-        console.error(`[${SCREEN_NAME}] ❌ Create failed:`, result.message);
+        console.error(`[${SCREEN_NAME}] Create failed:`, result.message);
         setMessageTitle('Virhe');
         setMessageContent(result.message || 'Lemmikin lisääminen epäonnistui');
         setMessageType('error');
         setMessageDialogVisible(true);
       }
     } catch (error) {
-      console.error(`[${SCREEN_NAME}] ❌ Exception in handleSavePet:`, error);
+      console.error(`[${SCREEN_NAME}] Exception in handleSavePet:`, error);
       setMessageTitle('Virhe');
       setMessageContent('Lemmikin lisääminen epäonnistui');
       setMessageType('error');
@@ -110,8 +107,8 @@ export default function AddPetScreen() {
     }
   };
 
-  // Handle date picker change
   const handleDateChange = (event: any, selectedDate?: Date) => {
+    console.log(`[${SCREEN_NAME}] Date selected:`, selectedDate?.toISOString().split('T')[0]);
     setShowDatePicker(false);
     if (selectedDate) {
       const dateString = selectedDate.toISOString().split('T')[0];
@@ -127,76 +124,73 @@ export default function AddPetScreen() {
         ref={scrollViewRef}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{ paddingBottom: SPACING['2xl'] }}
+        contentContainerStyle={styles.scrollViewContent}
       >
-        {/* Header */}
+        {/* HEADER */}
         <View style={styles.headerContainer}>
           <Text variant="headlineMedium" style={styles.headerTitle}>
             Lisää uusi lemmikki
           </Text>
         </View>
 
-        {/* Form Content */}
-        <View style={{ padding: SPACING.lg }}>
-          {/* Pet Name Field */}
+        {/* FORM CONTENT */}
+        <View style={styles.formContainer}>
+          {/* NAME FIELD */}
           <TextInput
             label="Lemmikin nimi *"
             value={form.name}
             onChangeText={(value) => handleFieldChange('name', value)}
             mode="outlined"
-            style={styles.editInput}
+            style={styles.input}
             placeholder="Esim. Fluffy"
-            placeholderTextColor="rgba(0, 0, 0, 0.3)"
           />
 
-          {/* Pet Type Field */}
+          {/* TYPE FIELD */}
           <TextInput
             label="Laji *"
             value={form.type}
             onChangeText={(value) => handleFieldChange('type', value)}
             mode="outlined"
-            style={styles.editInput}
+            style={styles.input}
             placeholder="Esim. Koira, Kissa"
-            placeholderTextColor="rgba(0, 0, 0, 0.3)"
           />
 
-          {/* Pet Breed Field */}
+          {/* BREED FIELD */}
           <TextInput
             label="Rotu *"
             value={form.breed}
             onChangeText={(value) => handleFieldChange('breed', value)}
             mode="outlined"
-            style={styles.editInput}
+            style={styles.input}
             placeholder="Esim. Labradorinnoutaja"
-            placeholderTextColor="rgba(0, 0, 0, 0.3)"
           />
 
-          {/* Pet Sex Field */}
+          {/* SEX FIELD */}
           <TextInput
             label="Sukupuoli *"
             value={form.sex}
             onChangeText={(value) => handleFieldChange('sex', value)}
             mode="outlined"
-            style={styles.editInput}
+            style={styles.input}
             placeholder="Uros tai Naaras"
-            placeholderTextColor="rgba(0, 0, 0, 0.3)"
           />
 
-          {/* Birth Date Field */}
-          <View onTouchStart={() => setShowDatePicker(true)}>
+          {/* BIRTH DATE FIELD */}
+          <View onTouchStart={() => {
+            console.log(`[${SCREEN_NAME}] Date picker opened`);
+            setShowDatePicker(true);
+          }}>
             <TextInput
               label="Syntymäpäivä *"
               value={new Date(form.birthdate).toLocaleDateString('fi-FI')}
               mode="outlined"
-              style={styles.editInput}
+              style={styles.input}
               editable={false}
               right={<TextInput.Icon icon="calendar" />}
-              placeholder="PP-KK-VVVV"
-              placeholderTextColor="rgba(0, 0, 0, 0.3)"
             />
           </View>
 
-          {/* Date Picker */}
+          {/* DATE PICKER */}
           {showDatePicker && (
             <DateTimePicker
               value={new Date(form.birthdate)}
@@ -206,7 +200,7 @@ export default function AddPetScreen() {
             />
           )}
 
-          {/* Notes Field */}
+          {/* NOTES FIELD */}
           <TextInput
             label="Muistiinpanot (valinnainen)"
             value={form.notes}
@@ -214,32 +208,38 @@ export default function AddPetScreen() {
             mode="outlined"
             multiline
             numberOfLines={4}
-            style={styles.editInput}
+            style={styles.input}
             placeholder="Lisää muistiinpanoja lemmikistä..."
-            placeholderTextColor="rgba(0, 0, 0, 0.3)"
             onFocus={() => {
+              console.log(`[${SCREEN_NAME}] Notes field focused, scrolling to end`);
               setTimeout(() => {
                 scrollViewRef.current?.scrollToEnd({ animated: true });
               }, 200);
             }}
           />
 
-          {/* Action Buttons */}
-          <View style={{ flexDirection: 'row', gap: SPACING.md, marginTop: SPACING.lg }}>
+          {/* ACTION BUTTONS */}
+          <View style={styles.actionButtonsContainer}>
+            {/* CANCEL BUTTON */}
             <Button
               mode="outlined"
-              onPress={() => navigation.goBack()}
+              onPress={() => {
+                console.log(`[${SCREEN_NAME}] Cancel button pressed, navigating back`);
+                navigation.goBack();
+              }}
               disabled={isSaving}
-              style={{ flex: 1 }}
+              style={styles.modalButton}
             >
               Peruuta
             </Button>
+
+            {/* SAVE BUTTON */}
             <Button
               mode="contained"
               onPress={handleSavePet}
               loading={isSaving}
               disabled={isSaving}
-              style={{ flex: 1 }}
+              style={styles.modalButton}
             >
               Lisää lemmikki
             </Button>
@@ -247,9 +247,9 @@ export default function AddPetScreen() {
         </View>
       </ScrollView>
 
-      {/* Dialogs */}
+      {/* DIALOGS */}
       <Portal>
-        {/* Validation Error Dialog */}
+        {/* VALIDATION ERROR DIALOG */}
         <Dialog
           visible={validationDialogVisible}
           onDismiss={() => setValidationDialogVisible(false)}
@@ -259,11 +259,16 @@ export default function AddPetScreen() {
             <Text>{validationMessage}</Text>
           </Dialog.Content>
           <Dialog.Actions>
-            <Button onPress={() => setValidationDialogVisible(false)}>OK</Button>
+            <Button onPress={() => {
+              console.log(`[${SCREEN_NAME}] Validation dialog closed`);
+              setValidationDialogVisible(false);
+            }}>
+              OK
+            </Button>
           </Dialog.Actions>
         </Dialog>
 
-        {/* Success/Error Message Dialog */}
+        {/* SUCCESS/ERROR MESSAGE DIALOG */}
         <Dialog
           visible={messageDialogVisible}
           onDismiss={() => setMessageDialogVisible(false)}
@@ -275,7 +280,12 @@ export default function AddPetScreen() {
             <Text>{messageContent}</Text>
           </Dialog.Content>
           <Dialog.Actions>
-            <Button onPress={() => setMessageDialogVisible(false)}>OK</Button>
+            <Button onPress={() => {
+              console.log(`[${SCREEN_NAME}] Message dialog closed`);
+              setMessageDialogVisible(false);
+            }}>
+              OK
+            </Button>
           </Dialog.Actions>
         </Dialog>
       </Portal>
