@@ -21,6 +21,7 @@ import VisitsScreen from '@screens/VisitsScreen';
 import MedicationsScreen from '@screens/MedicationsScreen';
 import VaccinationsScreen from '../screens/VaccinationsScreen';
 import WeightManagementScreen from '../screens/WeightManagementScreen';
+import CalendarScreen from '@screens/CalendarScreen';
 
 // Added this root stack params list while trying to fix pet navigation issues
 export type RootStackParamList = {
@@ -243,6 +244,30 @@ export default function Navigation() {
               component={WeightManagementScreen}
               options={{
                 title: 'Painonhallinta',
+                headerBackTitle: 'Takaisin',
+              }}
+            />
+            <Stack.Screen
+              name="Settings"
+              component={SettingsScreen}
+              options={{
+                title: 'Asetukset',
+                headerBackTitle: 'Takaisin',
+              }}
+            />
+            <Stack.Screen
+              name="Pets"
+              component={PetsScreen}
+              options={{
+                title: 'Lemmikit',
+                headerBackTitle: 'Takaisin',
+              }}
+            />
+            <Stack.Screen
+              name="Calendar"
+              component={CalendarScreen}
+              options={{
+                title: 'Kalenteri',
                 headerBackTitle: 'Takaisin',
               }}
             />

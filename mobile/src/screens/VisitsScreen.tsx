@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, ScrollView, StyleSheet, TouchableOpacity, Keyboard } from 'react-native';
-import { Text, Card, FAB, Chip, Divider, ActivityIndicator, Portal, Modal, TextInput, Button } from 'react-native-paper';
+import { View, ScrollView, TouchableOpacity } from 'react-native';
+import { Text, Card, FAB, Chip, Divider, ActivityIndicator, Portal, Modal, TextInput, Button, Dialog } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { visitsStyles as styles } from '../styles/screenStyles';
 import { COLORS, SPACING } from '../styles/theme';
 import apiClient from '../services/api';
+import { visitsService } from '../services/visitsService';
 import { Pet } from '../types';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
@@ -33,32 +35,14 @@ export default function VisitsScreen() {
   const [modalVisible, setModalVisible] = useState<boolean>(false);
   const [saving, setSaving] = useState<boolean>(false);
   const [showDatePicker, setShowDatePicker] = useState<boolean>(false);
-  const [keyboardHeight, setKeyboardHeight] = useState<number>(0);
+  const [editingVisitId, setEditingVisitId] = useState<number | null>(null);
+  const [isEditMode, setIsEditMode] = useState<boolean>(false);
+  const [deleteDialogVisible, setDeleteDialogVisible] = useState<boolean>(false);
+  const [visitToDelete, setVisitToDelete] = useState<Visit | null>(null);
   
   const scrollViewRef = useRef<ScrollView>(null);
   const costsInputRef = useRef<any>(null);
   const notesInputRef = useRef<any>(null);
-
-  // Handle keyboard events
-  useEffect(() => {
-    const keyboardDidShowListener = Keyboard.addListener(
-      'keyboardDidShow',
-      (e) => {
-        setKeyboardHeight(e.endCoordinates.height);
-      }
-    );
-    const keyboardDidHideListener = Keyboard.addListener(
-      'keyboardDidHide',
-      () => {
-        setKeyboardHeight(0);
-      }
-    );
-
-    return () => {
-      keyboardDidShowListener.remove();
-      keyboardDidHideListener.remove();
-    };
-  }, []);
   
   // Form state
   const [visitDate, setVisitDate] = useState<string>(new Date().toISOString().split('T')[0]);
@@ -76,9 +60,9 @@ export default function VisitsScreen() {
         setError(null);
         
         // Fetch pets and visits in parallel
-        const [petsResponse, visitsResponse] = await Promise.all([
+        const [petsResponse, fetchedVisits] = await Promise.all([
           apiClient.get('/api/pets'),
-          apiClient.get('/api/vet-visits')
+          visitsService.getAllVisits()
         ]);
         
         if (petsResponse.data.success && petsResponse.data.data) {
@@ -91,22 +75,7 @@ export default function VisitsScreen() {
           }
         }
 
-        if (visitsResponse.data.success && visitsResponse.data.data) {
-          // Flatten the nested structure: each pet has a vet_visits array
-          const flattenedVisits: Visit[] = [];
-          visitsResponse.data.data.forEach((petVisitGroup: any) => {
-            const petId = petVisitGroup.pet_id;
-            if (petVisitGroup.vet_visits && Array.isArray(petVisitGroup.vet_visits)) {
-              petVisitGroup.vet_visits.forEach((visit: any) => {
-                flattenedVisits.push({
-                  ...visit,
-                  pet_id: petId
-                });
-              });
-            }
-          });
-          setVisits(flattenedVisits);
-        }
+        setVisits(fetchedVisits);
       } catch (err: any) {
         console.error('Failed to fetch data:', err);
         setError('Tietojen lataus epäonnistui. Yritä uudelleen.');
@@ -123,7 +92,9 @@ export default function VisitsScreen() {
     .sort((a, b) => new Date(b.visit_date).getTime() - new Date(a.visit_date).getTime());
 
   const handleOpenModal = async () => {
-    // Reset form
+    // Reset form for create mode
+    setIsEditMode(false);
+    setEditingVisitId(null);
     setVisitDate(new Date().toISOString().split('T')[0]);
     setVetName('');
     setLocation('');
@@ -135,11 +106,9 @@ export default function VisitsScreen() {
     // Fetch visit types if not already loaded
     if (visitTypes.length === 0) {
       try {
-        const typesResponse = await apiClient.get('/api/vet-visits/types');
-        if (typesResponse.data.success && typesResponse.data.data) {
-          console.log('Visit types response:', typesResponse.data.data);
-          setVisitTypes(typesResponse.data.data);
-        }
+        const types = await visitsService.getVisitTypes();
+        console.log('Visit types response:', types);
+        setVisitTypes(types);
       } catch (err: any) {
         console.error('Failed to fetch visit types:', err);
       }
@@ -148,10 +117,12 @@ export default function VisitsScreen() {
 
   const handleCloseModal = () => {
     setModalVisible(false);
+    setIsEditMode(false);
+    setEditingVisitId(null);
   };
 
   const handleSaveVisit = async () => {
-    if (!selectedPetId || !vetName || !location || !selectedTypeId) {
+    if (!vetName || !location || !selectedTypeId) {
       alert('Täytä kaikki pakolliset kentät');
       return;
     }
@@ -159,38 +130,50 @@ export default function VisitsScreen() {
     try {
       setSaving(true);
       
-      const visitData = {
-        pet_id: selectedPetId,
-        visit_date: visitDate,
-        vet_name: vetName,
-        location: location,
-        type_id: selectedTypeId,
-        notes: notes || undefined,
-        costs: costs ? parseFloat(costs) : undefined
-      };
+      if (isEditMode && editingVisitId) {
+        
+        const visitData = {
+          visit_date: visitDate,
+          vet_name: vetName,
+          location: location,
+          type_id: selectedTypeId,
+          notes: notes || undefined,
+          costs: costs ? parseFloat(costs) : undefined
+        };
 
-      const response = await apiClient.post('/api/vet-visits', visitData);
+        const updatedVisit = await visitsService.updateVisit(editingVisitId, visitData);
 
-      if (response.data.success) {
-        // Refresh visits
-        const visitsResponse = await apiClient.get('/api/vet-visits');
-        if (visitsResponse.data.success && visitsResponse.data.data) {
-          const flattenedVisits: Visit[] = [];
-          visitsResponse.data.data.forEach((petVisitGroup: any) => {
-            const petId = petVisitGroup.pet_id;
-            if (petVisitGroup.vet_visits && Array.isArray(petVisitGroup.vet_visits)) {
-              petVisitGroup.vet_visits.forEach((visit: any) => {
-                flattenedVisits.push({
-                  ...visit,
-                  pet_id: petId
-                });
-              });
-            }
-          });
-          setVisits(flattenedVisits);
+        if (updatedVisit) {
+          // Refresh visits
+          const refreshedVisits = await visitsService.getAllVisits();
+          setVisits(refreshedVisits);
+          handleCloseModal();
+        }
+      } else {
+        // Create new visit
+        if (!selectedPetId) {
+          alert('Valitse lemmikki');
+          return;
         }
         
-        handleCloseModal();
+        const visitData = {
+          pet_id: selectedPetId,
+          visit_date: visitDate,
+          vet_name: vetName,
+          location: location,
+          type_id: selectedTypeId,
+          notes: notes || undefined,
+          costs: costs ? parseFloat(costs) : undefined
+        };
+
+        const newVisit = await visitsService.createVisit(visitData);
+
+        if (newVisit) {
+          // Refresh visits
+          const refreshedVisits = await visitsService.getAllVisits();
+          setVisits(refreshedVisits);
+          handleCloseModal();
+        }
       }
     } catch (err: any) {
       console.error('Failed to save visit:', err);
@@ -200,6 +183,7 @@ export default function VisitsScreen() {
     }
   };
 
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('fi-FI', {
@@ -207,6 +191,67 @@ export default function VisitsScreen() {
       month: 'long',
       year: 'numeric',
     });
+  };
+
+  const handleEditVisit = async (visit: Visit) => {
+    // Set edit mode
+    setIsEditMode(true);
+    setEditingVisitId(visit.id);
+    
+    // Fetch visit types first if not already loaded
+    let types = visitTypes;
+    if (types.length === 0) {
+      try {
+        types = await visitsService.getVisitTypes();
+        setVisitTypes(types);
+      } catch (err: any) {
+        console.error('Failed to fetch visit types:', err);
+      }
+    }
+    
+    // Pre-fill form with visit data
+    // Extract date only (remove timestamp if present)
+    const dateOnly = visit.visit_date.split('T')[0];
+    setVisitDate(dateOnly);
+    setVetName(visit.vet_name);
+    setLocation(visit.location);
+    
+    // Find the type by name (since type_id stores the name, not ID)
+    const matchingType = types.find(t => t.name.toLowerCase() === visit.type_id.toLowerCase());
+    if (matchingType) {
+      setSelectedTypeId(matchingType.id);
+    }
+    
+    setNotes(visit.notes || '');
+    setCosts(visit.costs || '');
+    
+    setModalVisible(true);
+  };
+
+  const handleDeleteVisit = (visit: Visit) => {
+    setVisitToDelete(visit);
+    setDeleteDialogVisible(true);
+  };
+
+  const confirmDeleteVisit = async () => {
+    if (!visitToDelete) return;
+
+    try {
+      const success = await visitsService.deleteVisit(visitToDelete.id);
+      
+      if (success) {
+        // Refresh visits
+        const refreshedVisits = await visitsService.getAllVisits();
+        setVisits(refreshedVisits);
+        setDeleteDialogVisible(false);
+        setVisitToDelete(null);
+      } else {
+        alert('Käynnin poistaminen epäonnistui.');
+      }
+    } catch (err: any) {
+      console.error('Failed to delete visit:', err);
+      alert('Käynnin poistaminen epäonnistui. Yritä uudelleen.');
+    }
   };
 
   const renderVisitCard = (visit: Visit) => (
@@ -249,17 +294,29 @@ export default function VisitsScreen() {
           </Text>
         </View>
 
-        {visit.notes && (
-          <>
-            <Divider style={styles.divider} />
+        <Divider style={styles.divider} />
+        
+        <View style={styles.bottomSection}>
+          {visit.notes ? (
             <View style={styles.notesContainer}>
               <MaterialCommunityIcons name="note-text" size={18} color={COLORS.onSurfaceVariant} />
               <Text variant="bodySmall" style={styles.notesText}>
                 {visit.notes}
               </Text>
             </View>
-          </>
-        )}
+          ) : (
+            <View style={{ flex: 1 }} />
+          )}
+          
+          <View style={styles.actionButtons}>
+            <TouchableOpacity onPress={() => handleEditVisit(visit)} style={styles.actionButton}>
+              <MaterialCommunityIcons name="pencil" size={25} color={COLORS.primary} />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => handleDeleteVisit(visit)} style={styles.actionButton}>
+              <MaterialCommunityIcons name="delete" size={25} color={COLORS.error} />
+            </TouchableOpacity>
+          </View>
+        </View>
       </Card.Content>
     </Card>
   );
@@ -383,13 +440,13 @@ export default function VisitsScreen() {
             contentContainerStyle={styles.scrollContentContainer}
           >
             <Text variant="headlineSmall" style={styles.modalTitle}>
-              Lisää käynti
+              {isEditMode ? 'Muokkaa käyntiä' : 'Lisää käynti'}
             </Text>
 
             <TouchableOpacity onPress={() => setShowDatePicker(true)}>
               <TextInput
                 label="Päivämäärä"
-                value={visitDate.split('-').reverse().join('-')}
+                value={new Date(visitDate).toLocaleDateString('fi-FI')}
                 style={styles.input}
                 mode="outlined"
                 editable={false}
@@ -441,7 +498,7 @@ export default function VisitsScreen() {
 
 
             <Text style={{ marginBottom: 8, color: COLORS.onSurfaceVariant }}>
-              Käynnin tyyppi *
+              Käynnin tyyppi 
             </Text>
             <ScrollView
               horizontal
@@ -536,157 +593,24 @@ export default function VisitsScreen() {
             </View>
           </ScrollView>
         </Modal>
+
+        <Dialog
+          visible={deleteDialogVisible}
+          onDismiss={() => setDeleteDialogVisible(false)}
+        >
+          <Dialog.Title>Poista käynti</Dialog.Title>
+          <Dialog.Content>
+            <Text variant="bodyMedium">
+              {visitToDelete && `Haluatko varmasti poistaa käynnin ${formatDate(visitToDelete.visit_date)}?`}
+            </Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setDeleteDialogVisible(false)}>Peruuta</Button>
+            <Button onPress={confirmDeleteVisit} textColor={COLORS.error}>Poista</Button>
+          </Dialog.Actions>
+        </Dialog>
       </Portal>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  header: {
-    paddingHorizontal: SPACING.lg,
-    paddingTop: SPACING.lg,
-    paddingBottom: SPACING.md,
-  },
-  title: {
-    fontWeight: 'bold',
-    color: COLORS.onBackground,
-  },
-  tabsContainer: {
-    maxHeight: 70,
-    backgroundColor: COLORS.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.surfaceVariant,
-  },
-  tabsContent: {
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.md,
-    gap: SPACING.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexGrow: 1,
-  },
-  tab: {
-    marginHorizontal: SPACING.xs,
-    paddingHorizontal: SPACING.md,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  selectedTab: {
-    backgroundColor: COLORS.primary,
-    elevation: 3,
-  },
-  selectedTabText: {
-    color: '#FFFFFF',
-    fontWeight: '700',
-    fontSize: 15,
-    lineHeight: 20,
-  },
-  unselectedTabText: {
-    fontSize: 15,
-    lineHeight: 20,
-  },
-  content: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: SPACING.md,
-  },
-  visitCard: {
-    marginBottom: SPACING.md,
-    elevation: 2,
-  },
-  visitHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: SPACING.sm,
-  },
-  dateContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.xs,
-  },
-  dateText: {
-    fontWeight: '600',
-    color: COLORS.primary,
-  },
-  divider: {
-    marginVertical: SPACING.sm,
-  },
-  visitDetail: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.sm,
-    marginBottom: SPACING.xs,
-  },
-  detailText: {
-    flex: 1,
-    color: COLORS.onSurface,
-  },
-  notesContainer: {
-    flexDirection: 'row',
-    gap: SPACING.sm,
-    marginTop: SPACING.xs,
-  },
-  notesText: {
-    flex: 1,
-    color: COLORS.onSurfaceVariant,
-    fontStyle: 'italic',
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: SPACING.xl * 2,
-  },
-  emptyTitle: {
-    marginTop: SPACING.md,
-    color: COLORS.onSurfaceVariant,
-  },
-  emptyText: {
-    marginTop: SPACING.xs,
-    color: COLORS.onSurfaceVariant,
-    textAlign: 'center',
-  },
-  fab: {
-    position: 'absolute',
-    right: SPACING.md,
-    bottom: SPACING.md,
-    backgroundColor: COLORS.primary,
-  },
-  modalContainer: {
-    backgroundColor: COLORS.surface,
-    margin: SPACING.lg,
-    padding: SPACING.lg,
-    borderRadius: 12,
-    maxHeight: '90%',
-  },
-  keyboardAvoid: {
-    width: '100%',
-  },
-  scrollContentContainer: {
-    paddingBottom: 0,
-  },
-  modalTitle: {
-    marginBottom: SPACING.lg,
-    fontWeight: 'bold',
-    color: COLORS.onSurface,
-  },
-  input: {
-    marginBottom: SPACING.md,
-  },
-  modalButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: SPACING.lg,
-    gap: SPACING.md,
-  },
-  modalButton: {
-    flex: 1,
-  },
-});

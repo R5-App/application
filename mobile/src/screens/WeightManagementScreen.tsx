@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, ScrollView, StyleSheet, Dimensions, TouchableOpacity } from 'react-native';
-import { Text, Card, FAB, Chip, Divider, ActivityIndicator, Portal, Modal, Button, TextInput } from 'react-native-paper';
+import { View, ScrollView, Dimensions, TouchableOpacity } from 'react-native';
+import { Text, Card, FAB, Chip, Divider, ActivityIndicator, Portal, Modal, Button, TextInput, Dialog } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Svg, { Line, Circle } from 'react-native-svg';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { weightsStyles as styles } from '../styles/screenStyles';
 import { COLORS, SPACING } from '../styles/theme';
 import apiClient from '../services/api';
+import { weightsService } from '../services/weightsService';
 import { Pet } from '../types';
 
 interface WeightRecord {
@@ -28,6 +30,10 @@ export default function WeightManagementScreen() {
   const [modalVisible, setModalVisible] = useState<boolean>(false);
   const [saving, setSaving] = useState<boolean>(false);
   const [showDatePicker, setShowDatePicker] = useState<boolean>(false);
+  const [editingWeightId, setEditingWeightId] = useState<number | null>(null);
+  const [isEditMode, setIsEditMode] = useState<boolean>(false);
+  const [deleteDialogVisible, setDeleteDialogVisible] = useState<boolean>(false);
+  const [weightToDelete, setWeightToDelete] = useState<WeightRecord | null>(null);  
   
   const scrollViewRef = useRef<ScrollView>(null);
 
@@ -43,9 +49,9 @@ export default function WeightManagementScreen() {
         setError(null);
         
         // Fetch both pets and weights in parallel
-        const [petsResponse, weightsResponse] = await Promise.all([
+        const [petsResponse, fetchedWeights] = await Promise.all([
           apiClient.get('/api/pets'),
-          apiClient.get('/api/weights')
+          weightsService.getAllWeights()
         ]);
         
         if (petsResponse.data.success && petsResponse.data.data) {
@@ -58,30 +64,7 @@ export default function WeightManagementScreen() {
           }
         }
 
-        if (weightsResponse.data.success && weightsResponse.data.data) {
-          const weightsData = weightsResponse.data.data;
-          
-          // If nested structure (array of pet weight groups)
-          if (Array.isArray(weightsData) && weightsData.length > 0 && weightsData[0].weights) {
-            const flattenedWeights: WeightRecord[] = [];
-            weightsData.forEach((petWeightGroup: any) => {
-              const petId = petWeightGroup.pet_id;
-              if (petWeightGroup.weights && Array.isArray(petWeightGroup.weights)) {
-                petWeightGroup.weights.forEach((weight: any) => {
-                  flattenedWeights.push({
-                    ...weight,
-                    petId: petId,
-                    weight: parseFloat(weight.weight) // Convert string to number
-                  });
-                });
-              }
-            });
-            setWeightRecords(flattenedWeights);
-          } else {
-            // If flat structure
-            setWeightRecords(weightsData);
-          }
-        }
+        setWeightRecords(fetchedWeights);
       } catch (err: any) {
         console.error('Failed to fetch data:', err);
         setError('Tietojen lataus epäonnistui. Yritä uudelleen.');
@@ -107,6 +90,8 @@ export default function WeightManagementScreen() {
   );
 
   const handleOpenModal = () => {
+    setIsEditMode(false);
+    setEditingWeightId(null);
     setWeight('');
     setDate(new Date().toISOString().split('T')[0]);
     setModalVisible(true);
@@ -114,56 +99,99 @@ export default function WeightManagementScreen() {
 
   const handleCloseModal = () => {
     setModalVisible(false);
+    setIsEditMode(false);
+    setEditingWeightId(null);
   };
 
   const handleSaveWeight = async () => {
-    if (!selectedPetId || !weight) {
+    if (!weight) {
       alert('Täytä kaikki pakolliset kentät');
       return;
     }
 
     try {
       setSaving(true);
-      
-      const weightData = {
-        pet_id: selectedPetId,
-        weight: parseFloat(weight),
-        date: date
-      };
 
-      const response = await apiClient.post('/api/weights', weightData);
+      if (isEditMode && editingWeightId) {
 
-      if (response.data.success) {
-        const weightsResponse = await apiClient.get('/api/weights');
-        if (weightsResponse.data.success && weightsResponse.data.data) {
-          const weightsData = weightsResponse.data.data;
-          
-          if (Array.isArray(weightsData) && weightsData.length > 0 && weightsData[0].weights) {
-            const flattenedWeights: WeightRecord[] = [];
-            weightsData.forEach((petWeightGroup: any) => {
-              const petId = petWeightGroup.pet_id;
-              if (petWeightGroup.weights && Array.isArray(petWeightGroup.weights)) {
-                petWeightGroup.weights.forEach((weight: any) => {
-                  flattenedWeights.push({
-                    ...weight,
-                    petId: petId,
-                    weight: parseFloat(weight.weight)
-                  });
-                });
-              }
-            });
-            setWeightRecords(flattenedWeights);
-          } else {
-            setWeightRecords(weightsData);
-          }
+        const weightData = {
+          pet_id: selectedPetId,
+          weight: parseFloat(weight),
+          date: date
+        };
+
+        const updatedWeight = await weightsService.updateWeight(editingWeightId, weightData);
+
+        if (updatedWeight) {
+          // Refresh weights
+          const refreshedWeights = await weightsService.getAllWeights();
+          setWeightRecords(refreshedWeights);
+
+          handleCloseModal();
         }
-        
-        handleCloseModal();
+      } else {
+        if (!selectedPetId) {
+          alert('Valitse lemmikki ennen tallentamista.');
+          return;
+        }
+      
+        const weightData = {
+          pet_id: selectedPetId,
+          weight: parseFloat(weight),
+          date: date
+        };
+
+        const newWeight = await weightsService.createWeight(weightData);
+
+        if (newWeight) {
+          // Refresh weights
+          const refreshedWeights = await weightsService.getAllWeights();
+          setWeightRecords(refreshedWeights);
+          
+          handleCloseModal();
+        }
       }
     } catch (err: any) {
       alert('Painon tallentaminen epäonnistui. Yritä uudelleen.');
     } finally {
       setSaving(false);
+    }
+  };
+
+    const handleEditWeightRecord = (weightRecord: WeightRecord) => {
+      setIsEditMode(true);
+      setEditingWeightId(weightRecord.id);
+
+      // Pre-fill form with weight data
+      const dateOnly = weightRecord.date.split('T')[0];
+      setWeight(weightRecord.weight.toString());
+      setDate(dateOnly);
+      setModalVisible(true);
+  };
+
+  const handleDeleteWeightRecord = async (weightRecord: WeightRecord) => {
+    setWeightToDelete(weightRecord);
+    setDeleteDialogVisible(true);
+  };
+
+  const confirmDeleteWeightRecord = async () => {   
+    if (!weightToDelete) return;
+
+    try {
+      const success = await weightsService.deleteWeight(weightToDelete.id);
+
+      if (success) {
+        // Refresh weights
+        const refreshedWeights = await weightsService.getAllWeights();
+        setWeightRecords(refreshedWeights);
+        setDeleteDialogVisible(false);
+        setWeightToDelete(null);
+      } else {
+        alert('Painomittauksen poistaminen epäonnistui. Yritä uudelleen.');
+      }
+    } catch (err: any) {
+      console.error("Failed to delete weight record:", err);
+      alert('Painomittauksen poistaminen epäonnistui. Yritä uudelleen.');
     }
   };
 
@@ -223,36 +251,29 @@ export default function WeightManagementScreen() {
             )}
           </View>
 
-          <View style={styles.dateContainer}>
-            <MaterialCommunityIcons name="calendar" size={18} color={COLORS.onSurfaceVariant} />
-            <Text variant="bodyMedium" style={styles.dateText}>
-              {formatDate(record.date)}
-            </Text>
+          <Divider style={styles.divider} />
+
+          <View style={styles.bottomSection}>
+            {record.date ? (
+              <View style={styles.dateContainer}>
+                <MaterialCommunityIcons name="calendar" size={18} color={COLORS.onSurfaceVariant} />
+                <Text variant="bodyMedium" style={styles.dateText}>
+                  {formatDate(record.date)}
+                </Text>
+              </View>
+              ) : (  
+                <View style={{  flex: 1}} />
+              )}
+
+              <View style={styles.actionButtons}>
+                <TouchableOpacity onPress={() => handleEditWeightRecord(record)} style={styles.actionButton}>
+                  <MaterialCommunityIcons name="pencil" size={25} color={COLORS.primary} />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => handleDeleteWeightRecord(record)} style={styles.actionButton}>
+                  <MaterialCommunityIcons name="delete" size={25} color={COLORS.error} />
+                </TouchableOpacity>
+              </View>
           </View>
-
-          {record.measuredBy && (
-            <>
-              <Divider style={styles.divider} />
-              <View style={styles.weightDetail}>
-                <MaterialCommunityIcons name="account" size={18} color={COLORS.onSurfaceVariant} />
-                <Text variant="bodyMedium" style={styles.detailText}>
-                  {record.measuredBy}
-                </Text>
-              </View>
-            </>
-          )}
-
-          {record.notes && (
-            <>
-              <Divider style={styles.divider} />
-              <View style={styles.notesContainer}>
-                <MaterialCommunityIcons name="note-text" size={18} color={COLORS.onSurfaceVariant} />
-                <Text variant="bodySmall" style={styles.notesText}>
-                  {record.notes}
-                </Text>
-              </View>
-            </>
-          )}
         </Card.Content>
       </Card>
     );
@@ -646,7 +667,7 @@ export default function WeightManagementScreen() {
             contentContainerStyle={styles.scrollContentContainer}
           >
             <Text variant="headlineSmall" style={styles.modalTitle}>
-              Lisää painomittaus
+              {isEditMode ? 'Muokkaa painomittausta' : 'Lisää painomittaus'}
             </Text>
 
             <TextInput
@@ -670,7 +691,7 @@ export default function WeightManagementScreen() {
             <TouchableOpacity onPress={() => setShowDatePicker(true)}>
               <TextInput
                 label="Päivämäärä *"
-                value={date.split('-').reverse().join('-')}
+                value={new Date(date).toLocaleDateString('fi-FI')}
                 style={styles.input}
                 mode="outlined"
                 editable={false}
@@ -717,301 +738,21 @@ export default function WeightManagementScreen() {
             </View>
           </ScrollView>
         </Modal>
+        <Dialog
+          visible={deleteDialogVisible}
+          onDismiss={() => setDeleteDialogVisible(false)}
+        >
+          <Dialog.Title>Poista painomittaus</Dialog.Title>
+          <Dialog.Content>
+            <Text variant="bodyMedium">Haluatko varmasti poistaa tämän painomittauksen?</Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setDeleteDialogVisible(false)}>Peruuta</Button>
+            <Button onPress={confirmDeleteWeightRecord} textColor={COLORS.error}>Poista</Button>
+          </Dialog.Actions>
+        </Dialog>
       </Portal>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  tabsContainer: {
-    maxHeight: 70,
-    backgroundColor: COLORS.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.surfaceVariant,
-  },
-  tabsContent: {
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.md,
-    gap: SPACING.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexGrow: 1,
-  },
-  tab: {
-    marginHorizontal: SPACING.xs,
-    paddingHorizontal: SPACING.md,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  selectedTab: {
-    backgroundColor: COLORS.primary,
-    elevation: 3,
-  },
-  selectedTabText: {
-    color: '#FFFFFF',
-    fontWeight: '700',
-    fontSize: 15,
-    lineHeight: 20,
-  },
-  unselectedTabText: {
-    fontSize: 15,
-    lineHeight: 20,
-  },
-  content: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingBottom: 80,
-  },
-  graphContainer: {
-    backgroundColor: COLORS.surface,
-    padding: SPACING.md,
-    paddingBottom: SPACING.xl,
-    marginHorizontal: SPACING.md,
-    marginTop: SPACING.md,
-    marginBottom: SPACING.md,
-    borderRadius: 12,
-    elevation: 2,
-  },
-  graphTitle: {
-    fontWeight: '600',
-    color: COLORS.onSurface,
-    marginBottom: SPACING.md,
-  },
-  graphContent: {
-    flexDirection: 'row',
-  },
-  yAxisContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  axisTitle: {
-    fontSize: 9,
-    color: COLORS.onSurfaceVariant,
-    fontWeight: '600',
-  },
-  yAxisLabels: {
-    width: 50,
-    height: 220,
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
-    paddingRight: SPACING.xs,
-    marginTop: -50,
-  },
-  yAxisMiddle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  axisLabel: {
-    color: COLORS.onSurfaceVariant,
-    textAlign: 'right',
-    lineHeight: 12,
-  },
-  graphArea: {
-    flex: 1,
-    position: 'relative',
-  },
-  gridLines: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 220,
-    justifyContent: 'space-between',
-  },
-  gridLine: {
-    height: 1,
-    backgroundColor: COLORS.surfaceVariant,
-    opacity: 0.5,
-  },
-  svgGraph: {
-    marginBottom: SPACING.xs,
-  },
-  xAxisLabelsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingBottom: SPACING.sm,
-    position: 'relative',
-    height: 20,
-  },
-  xAxisLabel: {
-    fontSize: 9,
-    color: COLORS.onSurfaceVariant,
-    textAlign: 'center',
-    flex: 1,
-    flexShrink: 1,
-  },
-  xAxisLabelShown: {
-    fontSize: 10,
-    color: COLORS.onSurfaceVariant,
-    textAlign: 'center',
-    flex: 1,
-  },
-  xAxisTitle: {
-    fontSize: 10,
-    color: COLORS.onSurfaceVariant,
-    fontWeight: '600',
-    textAlign: 'center',
-    marginTop: SPACING.xs,
-  },
-  yearTabsContainer: {
-    marginTop: SPACING.md,
-    paddingTop: SPACING.sm,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.surfaceVariant,
-  },
-  yearTabsContent: {
-    gap: SPACING.xs,
-    paddingHorizontal: 4,
-  },
-  yearTab: {
-    backgroundColor: COLORS.surfaceVariant,
-  },
-  selectedYearTab: {
-    backgroundColor: COLORS.primary,
-  },
-  selectedYearTabText: {
-    color: '#FFFFFF',
-    fontWeight: '600',
-  },
-  unselectedYearTabText: {
-    color: COLORS.onSurfaceVariant,
-  },
-  dividerSection: {
-    paddingHorizontal: SPACING.md,
-  },
-  sectionTitle: {
-    fontWeight: '600',
-    color: COLORS.onSurface,
-    marginTop: SPACING.md,
-    marginBottom: SPACING.xs,
-  },
-  weightCard: {
-    marginHorizontal: SPACING.md,
-    marginBottom: SPACING.md,
-    elevation: 2,
-  },
-  weightHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: SPACING.sm,
-  },
-  weightMainInfo: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: SPACING.xs,
-  },
-  weightValue: {
-    fontWeight: '700',
-    color: COLORS.primary,
-  },
-  weightUnit: {
-    color: COLORS.onSurfaceVariant,
-    fontWeight: '600',
-  },
-  changeChip: {
-    marginLeft: SPACING.sm,
-  },
-  increaseChip: {
-    backgroundColor: '#FFEBEE',
-  },
-  decreaseChip: {
-    backgroundColor: '#E8F5E9',
-  },
-  increaseChipText: {
-    color: '#D32F2F',
-  },
-  decreaseChipText: {
-    color: '#2E7D32',
-  },
-  dateContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.xs,
-    marginTop: SPACING.xs,
-  },
-  dateText: {
-    color: COLORS.onSurfaceVariant,
-  },
-  divider: {
-    marginVertical: SPACING.sm,
-  },
-  weightDetail: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.sm,
-    marginBottom: SPACING.xs,
-  },
-  detailText: {
-    flex: 1,
-    color: COLORS.onSurface,
-  },
-  notesContainer: {
-    flexDirection: 'row',
-    gap: SPACING.sm,
-    marginTop: SPACING.xs,
-  },
-  notesText: {
-    flex: 1,
-    color: COLORS.onSurfaceVariant,
-    fontStyle: 'italic',
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: SPACING.xl * 2,
-  },
-  emptyTitle: {
-    marginTop: SPACING.md,
-    color: COLORS.onSurfaceVariant,
-  },
-  emptyText: {
-    marginTop: SPACING.xs,
-    color: COLORS.onSurfaceVariant,
-    textAlign: 'center',
-  },
-  fab: {
-    position: 'absolute',
-    right: SPACING.md,
-    bottom: SPACING.md,
-    backgroundColor: COLORS.primary,
-  },
-  graphScrollView: {
-    width: '100%',
-  },
-  modalContainer: {
-    backgroundColor: COLORS.surface,
-    margin: SPACING.lg,
-    padding: SPACING.lg,
-    borderRadius: 12,
-    maxHeight: '90%',
-  },
-  scrollContentContainer: {
-    paddingBottom: 0,
-  },
-  modalTitle: {
-    marginBottom: SPACING.lg,
-    fontWeight: 'bold',
-    color: COLORS.onSurface,
-  },
-  input: {
-    marginBottom: SPACING.md,
-  },
-  modalButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: SPACING.lg,
-    gap: SPACING.md,
-  },
-  modalButton: {
-    flex: 1,
-  },
-});

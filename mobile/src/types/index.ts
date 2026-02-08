@@ -91,3 +91,16 @@ export interface WalkSettings {
   autoStartOnMovement: boolean;
   trackSteps: boolean;
 }
+
+// Calendar Event types
+export interface CalendarEvent {
+  id: number;
+  petId: number;
+  title: string;
+  description?: string;
+  date: string;
+  eventType: 'vaccination' | 'veterinary' | 'medication' | 'grooming' | 'other';
+  completed: boolean;
+  notificationEnabled?: boolean;
+  notificationTime?: string;
+}

@@ -1,11 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
-import { Text, Card, FAB, Chip, Divider, ActivityIndicator, Portal, Modal, TextInput, Button } from 'react-native-paper';
+import { View, ScrollView, TouchableOpacity } from 'react-native';
+import { Text, Card, FAB, Chip, Divider, ActivityIndicator, Portal, Modal, TextInput, Button, Dialog } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { medicationsStyles as styles } from '../styles/screenStyles';
 import { COLORS, SPACING } from '../styles/theme';
 import apiClient from '../services/api';
+import { medicationsService } from '../services/medicationsService';
 import { Pet } from '../types';
 import DateTimePicker from '@react-native-community/datetimepicker';
+
 
 interface Medication {
   id: number;
@@ -16,7 +19,7 @@ interface Medication {
   costs?: string;
   notes?: string;
 }
-
+  
 export default function MedicationsScreen() {
   const [pets, setPets] = useState<Pet[]>([]);
   const [medications, setMedications] = useState<Medication[]>([]);
@@ -27,6 +30,10 @@ export default function MedicationsScreen() {
   const [saving, setSaving] = useState<boolean>(false);
   const [showMedicationDatePicker, setShowMedicationDatePicker] = useState<boolean>(false);
   const [showExpireDatePicker, setShowExpireDatePicker] = useState<boolean>(false);
+  const [editingMedicationId, setEditingMedicationId] = useState<number | null>(null);
+  const [isEditMode, setIsEditMode] = useState<boolean>(false);
+  const [deleteDialogVisible, setDeleteDialogVisible] = useState<boolean>(false);
+  const [medicationToDelete, setMedicationToDelete] = useState<Medication | null>(null);
   
   const scrollViewRef = useRef<ScrollView>(null);
 
@@ -44,9 +51,9 @@ export default function MedicationsScreen() {
         setLoading(true);
         setError(null);
         
-        const [petsResponse, medicationsResponse] = await Promise.all([
+        const [petsResponse, fetchedMedications] = await Promise.all([
           apiClient.get('/api/pets'),
-          apiClient.get('/api/medications')
+          medicationsService.getAllMedications()
         ]);
         
         if (petsResponse.data.success && petsResponse.data.data) {
@@ -58,27 +65,7 @@ export default function MedicationsScreen() {
           }
         }
 
-        if (medicationsResponse.data.success && medicationsResponse.data.data) {
-          const medicationsData = medicationsResponse.data.data;
-          
-          if (Array.isArray(medicationsData) && medicationsData.length > 0 && medicationsData[0].medications) {
-            const flattenedMedications: Medication[] = [];
-            medicationsData.forEach((petMedGroup: any) => {
-              const petId = petMedGroup.pet_id;
-              if (petMedGroup.medications && Array.isArray(petMedGroup.medications)) {
-                petMedGroup.medications.forEach((med: any) => {
-                  flattenedMedications.push({
-                    ...med,
-                    pet_id: petId
-                  });
-                });
-              }
-            });
-            setMedications(flattenedMedications);
-          } else {
-            setMedications(medicationsData);
-          }
-        }
+        setMedications(fetchedMedications);
       } catch (err: any) {
         setError('Tietojen lataus epäonnistui. Yritä uudelleen.');
       } finally {
@@ -94,6 +81,8 @@ export default function MedicationsScreen() {
     .sort((a, b) => new Date(b.medication_date).getTime() - new Date(a.medication_date).getTime());
 
   const handleOpenModal = () => {
+    setIsEditMode(false);
+    setEditingMedicationId(null);
     setMedName('');
     setMedicationDate(new Date().toISOString().split('T')[0]);
     setExpireDate('');
@@ -104,58 +93,108 @@ export default function MedicationsScreen() {
 
   const handleCloseModal = () => {
     setModalVisible(false);
+    setIsEditMode(false);
+    setEditingMedicationId(null);
   };
 
   const handleSaveMedication = async () => {
-    if (!selectedPetId || !medName) {
+    if (!medName) {
       alert('Täytä kaikki pakolliset kentät');
       return;
     }
 
     try {
       setSaving(true);
-      
-      const medicationData = {
-        pet_id: selectedPetId,
-        med_name: medName,
-        medication_date: medicationDate,
-        expire_date: expireDate || undefined,
-        costs: costs ? parseFloat(costs) : undefined,
-        notes: notes || undefined
-      };
 
-      const response = await apiClient.post('/api/medications', medicationData);
+      if (isEditMode && editingMedicationId) {
 
-      if (response.data.success) {
-        const medicationsResponse = await apiClient.get('/api/medications');
-        if (medicationsResponse.data.success && medicationsResponse.data.data) {
-          const medicationsData = medicationsResponse.data.data;
+        const medicationData = {
+          med_name: medName,
+          medication_date: medicationDate,
+          expire_date: expireDate || undefined,
+          costs: costs ? parseFloat(costs) : undefined,
+          notes: notes || undefined
+        };
+
+        const updatedMedication = await medicationsService.updateMedication(editingMedicationId, medicationData);
+
+        if (updatedMedication) {
+          // Refresh medications
+          const refreshedMedications = await medicationsService.getAllMedications();
+          setMedications(refreshedMedications);
           
-          if (Array.isArray(medicationsData) && medicationsData.length > 0 && medicationsData[0].medications) {
-            const flattenedMedications: Medication[] = [];
-            medicationsData.forEach((petMedGroup: any) => {
-              const petId = petMedGroup.pet_id;
-              if (petMedGroup.medications && Array.isArray(petMedGroup.medications)) {
-                petMedGroup.medications.forEach((med: any) => {
-                  flattenedMedications.push({
-                    ...med,
-                    pet_id: petId
-                  });
-                });
-              }
-            });
-            setMedications(flattenedMedications);
-          } else {
-            setMedications(medicationsData);
-          }
+          handleCloseModal();
         }
-        
-        handleCloseModal();
+      } else { 
+        if (!selectedPetId) {
+          alert('Valitse lemmikki ennen tallentamista.');
+          return;
+        }
+      
+        const medicationData = {
+          pet_id: selectedPetId,
+          med_name: medName,
+          medication_date: medicationDate,
+          expire_date: expireDate || undefined,
+          costs: costs ? parseFloat(costs) : undefined,
+          notes: notes || undefined
+        };
+
+        const newMedication = await medicationsService.createMedication(medicationData);
+
+        if (newMedication) {
+          // Refresh medications
+          const refreshedMedications = await medicationsService.getAllMedications();
+          setMedications(refreshedMedications);
+          
+          handleCloseModal();
+        }
       }
     } catch (err: any) {
       alert('Lääkityksen tallentaminen epäonnistui. Yritä uudelleen.');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleEditMedication = (medication: Medication) => {
+    
+    setIsEditMode(true);
+    setEditingMedicationId(medication.id);
+
+    const dateOnly = medication.medication_date.split('T')[0];
+    setMedName(medication.med_name);
+    setMedicationDate(dateOnly);
+    const expireDateOnly = medication.expire_date ? medication.expire_date.split('T')[0] : '';
+    setExpireDate(expireDateOnly);
+    setCosts(medication.costs || '');
+    setNotes(medication.notes || '');
+    setModalVisible(true);
+  };
+
+  const handleDeleteMedication = (medication: Medication) => {
+    setMedicationToDelete(medication);
+    setDeleteDialogVisible(true);
+  };
+
+  const confirmDeleteMedication = async () => {
+    if (!medicationToDelete) return;
+
+    try {
+      const success = await medicationsService.deleteMedication(medicationToDelete.id);
+
+      if (success) {
+        // Refresh medications
+        const refreshedMedications = await medicationsService.getAllMedications();
+        setMedications(refreshedMedications);
+        setDeleteDialogVisible(false);
+        setMedicationToDelete(null);
+      } else {
+        alert('Lääkityksen poistaminen epäonnistui. Yritä uudelleen.');
+      }
+    } catch (err: any) {
+      console.error("Failed to delete medication:", err);
+      alert('Lääkityksen poistaminen epäonnistui. Yritä uudelleen.');
     }
   };
 
@@ -211,17 +250,29 @@ export default function MedicationsScreen() {
             </View>
           )}
 
-          {medication.notes && (
-            <>
-              <Divider style={styles.divider} />
+          <Divider style={styles.divider} />
+
+          <View style={styles.bottomSection}>
+            {medication.notes ? (
               <View style={styles.notesContainer}>
                 <MaterialCommunityIcons name="note-text" size={18} color={COLORS.onSurfaceVariant} />
                 <Text variant="bodySmall" style={styles.notesText}>
                   {medication.notes}
                 </Text>
               </View>
-            </>
-          )}
+            ) : (
+              <View style={{ flex: 1 }} />
+            )}
+
+            <View style={styles.actionButtons}>
+              <TouchableOpacity onPress={() => handleEditMedication(medication)} style={styles.actionButton}>
+                <MaterialCommunityIcons name="pencil" size={25} color={COLORS.primary} />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => handleDeleteMedication(medication)} style={styles.actionButton}>
+                <MaterialCommunityIcons name="delete" size={25} color={COLORS.error} />
+              </TouchableOpacity>
+            </View>
+          </View>
         </Card.Content>
       </Card>
     );
@@ -346,7 +397,7 @@ export default function MedicationsScreen() {
             contentContainerStyle={styles.scrollContentContainer}
           >
             <Text variant="headlineSmall" style={styles.modalTitle}>
-              Lisää lääkitys
+              {isEditMode ? 'Muokkaa lääkitystä' : 'Lisää lääkitys'}
             </Text>
 
             <TextInput
@@ -364,7 +415,7 @@ export default function MedicationsScreen() {
             <TouchableOpacity onPress={() => setShowMedicationDatePicker(true)}>
               <TextInput
                 label="Lääkityksen aloituspäivä *"
-                value={medicationDate.split('-').reverse().join('-')}
+                value={new Date(medicationDate).toLocaleDateString('fi-FI')}
                 style={styles.input}
                 mode="outlined"
                 editable={false}
@@ -393,7 +444,7 @@ export default function MedicationsScreen() {
             <TouchableOpacity onPress={() => setShowExpireDatePicker(true)}>
               <TextInput
                 label="Vanhenemispäivä"
-                value={expireDate ? expireDate.split('-').reverse().join('-') : ''}
+                value={expireDate ? new Date(expireDate).toLocaleDateString('fi-FI') : ''}
                 style={styles.input}
                 mode="outlined"
                 editable={false}
@@ -477,141 +528,23 @@ export default function MedicationsScreen() {
             </View>
           </ScrollView>
         </Modal>
+        <Dialog
+          visible={deleteDialogVisible}
+          onDismiss={() => setDeleteDialogVisible(false)}
+        >
+          <Dialog.Title>Vahvista poisto</Dialog.Title>
+          <Dialog.Content>
+            <Text variant="bodyMedium">
+              Haluatko varmasti poistaa tämän lääkityksen?
+            </Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setDeleteDialogVisible(false)}>Peruuta</Button>
+            <Button onPress={confirmDeleteMedication}>Poista</Button>
+          </Dialog.Actions>
+        </Dialog>
       </Portal>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  tabsContainer: {
-    maxHeight: 70,
-    backgroundColor: COLORS.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.surfaceVariant,
-  },
-  tabsContent: {
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.md,
-    gap: SPACING.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexGrow: 1,
-  },
-  tab: {
-    marginHorizontal: SPACING.xs,
-    paddingHorizontal: SPACING.md,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  selectedTab: {
-    backgroundColor: COLORS.primary,
-    elevation: 3,
-  },
-  selectedTabText: {
-    color: '#FFFFFF',
-    fontWeight: '700',
-    fontSize: 15,
-    lineHeight: 20,
-  },
-  unselectedTabText: {
-    fontSize: 15,
-    lineHeight: 20,
-  },
-  content: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: SPACING.md,
-  },
-  medicationCard: {
-    marginBottom: SPACING.md,
-    elevation: 2,
-  },
-  medicationHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: SPACING.sm,
-  },
-  medicationName: {
-    fontWeight: '700',
-    color: COLORS.primary,
-    flex: 1,
-  },
-  dosageContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.xs,
-    marginBottom: SPACING.sm,
-  },
-  dosage: {
-    fontWeight: '600',
-    color: COLORS.onSurface,
-  },
-  divider: {
-    marginVertical: SPACING.sm,
-  },
-  notesContainer: {
-    flexDirection: 'row',
-    gap: SPACING.sm,
-    marginTop: SPACING.xs,
-  },
-  notesText: {
-    flex: 1,
-    color: COLORS.onSurfaceVariant,
-    fontStyle: 'italic',
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: SPACING.xl * 2,
-  },
-  emptyTitle: {
-    marginTop: SPACING.md,
-    color: COLORS.onSurfaceVariant,
-  },
-  emptyText: {
-    marginTop: SPACING.xs,
-    color: COLORS.onSurfaceVariant,
-    textAlign: 'center',
-  },
-  fab: {
-    position: 'absolute',
-    right: SPACING.md,
-    bottom: SPACING.md,
-    backgroundColor: COLORS.primary,
-  },
-  modalContainer: {
-    backgroundColor: COLORS.surface,
-    margin: SPACING.lg,
-    padding: SPACING.lg,
-    borderRadius: 12,
-    maxHeight: '90%',
-  },
-  scrollContentContainer: {
-    paddingBottom: 0,
-  },
-  modalTitle: {
-    marginBottom: SPACING.lg,
-    fontWeight: 'bold',
-    color: COLORS.onSurface,
-  },
-  input: {
-    marginBottom: SPACING.md,
-  },
-  modalButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: SPACING.lg,
-    gap: SPACING.md,
-  },
-  modalButton: {
-    flex: 1,
-  },
-});
