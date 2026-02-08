@@ -4,7 +4,7 @@
  */
 
 import { StyleSheet } from 'react-native';
-import { COLORS, SPACING, COMMON_STYLES, LAYOUT, TYPOGRAPHY } from './theme';
+import { COLORS, SPACING, COMMON_STYLES, LAYOUT, TYPOGRAPHY, BORDER_RADIUS } from './theme';
 
 // ============================================
 // HOME SCREEN STYLES
@@ -109,6 +109,21 @@ export const petsStyles = StyleSheet.create({
   petInfo: {
     ...COMMON_STYLES.textSecondary,
   },
+
+  petImagePlaceholder: {
+    backgroundColor: COLORS.surfaceVariant,
+    borderRadius: BORDER_RADIUS.medium,
+    height: 150,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: SPACING.md,
+  },
+  
+  petImagePlaceholderText: {
+    ...TYPOGRAPHY.bodyLarge,
+    color: COLORS.onSurfaceVariant,
+  },
+  
   
   fab: {
     position: 'absolute',
@@ -117,6 +132,63 @@ export const petsStyles = StyleSheet.create({
     bottom: 0,
     backgroundColor: COLORS.primaryContainer,
   },
+
+   headerContainer: {
+    backgroundColor: COLORS.primaryContainer,
+    paddingVertical: SPACING.xl,
+    alignItems: 'center',
+    borderBottomLeftRadius: BORDER_RADIUS.large,
+    borderBottomRightRadius: BORDER_RADIUS.large,
+  },
+  
+  headerIcon: {
+    marginBottom: SPACING.md,
+  },
+  
+  headerTitle: {
+    ...TYPOGRAPHY.headlineMedium,
+    color: COLORS.onPrimaryContainer,
+  },
+  
+  infoCard: {
+    margin: SPACING.lg,
+    marginBottom: SPACING.md,
+  },
+  
+  infoSection: {
+    marginBottom: SPACING.md,
+  },
+  
+  infoLabel: {
+    ...TYPOGRAPHY.labelMedium,
+    color: COLORS.onSurfaceVariant,
+    marginBottom: SPACING.xs,
+  },
+  
+  infoValue: {
+    ...TYPOGRAPHY.bodyLarge,
+    color: COLORS.onSurface,
+    fontWeight: '500',
+  },
+  
+  actionsContainer: {
+    paddingHorizontal: SPACING.lg,
+    paddingBottom: SPACING.xl,
+    gap: SPACING.md,
+  },
+  
+  actionButton: {
+    marginBottom: SPACING.sm,
+  },
+  
+  editInput: {
+    marginBottom: SPACING.md,
+  },
+  
+  loadingText: {
+    textAlign: 'center',
+  },
+  
 });
 
 // ============================================

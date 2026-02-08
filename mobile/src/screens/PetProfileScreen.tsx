@@ -3,15 +3,13 @@ import { View, ScrollView } from 'react-native';
 import { Text, Card, Button, Dialog, Portal, TextInput } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRoute, useNavigation } from '@react-navigation/native';
-import apiClient from '../services/api'; // petapp api
+import petService from '../services/petService';
 import { Pet } from '../types';
-import { COLORS } from '../styles/theme';
-import { calculateAge, formatDate } from '../helpers';
-import { petsStyles } from '../styles/screenStyles';
-
+import { COLORS, SPACING, LAYOUT } from '../styles/theme';
+import { calculateAge, formatDate, validatePetData } from '../helpers';
+import { petsStyles as styles } from '../styles/screenStyles';
 
 export default function PetDetailsScreen() {
-
   const route = useRoute(); // access to route params
   const navigation = useNavigation();
   const { petId } = route.params as { petId: string };  // Extract the petId from route params
@@ -34,7 +32,11 @@ export default function PetDetailsScreen() {
   const [isDeleting, setIsDeleting] = useState(false); // same as above but for deleting
   const [validationDialogVisible, setValidationDialogVisible] = useState(false);
   const [validationMessage, setValidationMessage] = useState('');
-  const [saveSuccessDialogVisible, setSaveSuccessDialogVisible] = useState(false);
+
+  const [messageDialogVisible, setMessageDialogVisible] = useState(false);
+  const [messageTitle, setMessageTitle] = useState('');
+  const [messageContent, setMessageContent] = useState('');
+  const [messageType, setMessageType] = useState<'success' | 'error'>('success');
 
   useEffect(() => {
     fetchPetDetails();
@@ -45,13 +47,16 @@ export default function PetDetailsScreen() {
   // Fetch pet data
   const fetchPetDetails = async () => {
     try {
-      const response = await apiClient.get(`/api/pets/${petId}`); // fetch pet by id (GET request)
+      const result = await petService.getPetById(petId);
       
-      if (response.data.success) {
-        setPet(response.data.data); // store pet data in state
+      if (result.success && result.data) {
+        setPet(result.data); // store pet data in state
+      } else {
+        setError(result.message || 'Lemmikin tietojen lataus epäonnistui');
       }
     } catch (error) {
       setError('Virhe. Lemmikin tietojen lataus epäonnistui');
+      console.error('Error fetching pet details:', error);
     } finally {
       setLoading(false); // mark loading as complete
     }
@@ -73,22 +78,30 @@ export default function PetDetailsScreen() {
 
   // Save edited pet data
   const handleSavePet = async () => {
-    if (!editName || !editBreed || !editType || !editSex) {  // Validate that required fields are filled in
-      setValidationMessage('Täytä kaikki pakolliset kentät');
-      return; // Exit early if validation fails
-    }
-
-    // Validate birthdate format (should be YYYY-MM-DD)
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(editBirthdate)) {
-      setValidationMessage('Syntymäpäivä pitää olla muodossa VVVV-KK-PP');
+    const validation = validatePetData(editName, editType, editBreed, editSex, editBirthdate);
+    
+    if (!validation.valid) {
+      setValidationMessage(validation.message || '');
       setValidationDialogVisible(true);
       return;
     }
+   // ennen kuin const validation jne lisättiin, tässä oli:
+   // if (!editName || !editBreed || !editType || !editSex) {  // Validate that required fields are filled in
+   //   setValidationMessage('Täytä kaikki pakolliset kentät');
+   //   setValidationDialogVisible(true);
+   //   return; // Exit early if validation fails
+   // }
+   // Validate birthdate format (should be YYYY-MM-DD)
+   // if (!/^\d{4}-\d{2}-\d{2}$/.test(editBirthdate)) {
+   //   setValidationMessage('Syntymäpäivä pitää olla muodossa VVVV-KK-PP');
+   //   setValidationDialogVisible(true);
+   //   return;
+   // }
     setIsSaving(true); // Mark save operation as in progress (to disable buttons and show loading)
     
- // Send updated pet data to API (PUT request)
+    // Send updated pet data to API (PUT request)
     try {
-      const response = await apiClient.put(`/api/pets/${petId}`, {
+      const result = await petService.updatePet(petId, {
         name: editName,
         type: editType,
         breed: editBreed,
@@ -97,13 +110,26 @@ export default function PetDetailsScreen() {
         notes: editNotes,
       });
 
-      if (response.data.success) { // Check if API response indicates success
-        setPet(response.data.data); // Update the displayed pet data with the new values from API
+      if (result.success && result.data) { // Check if API response indicates success
+        setPet(result.data); // Update the displayed pet data with the new values from API
         setEditDialogVisible(false); // Close the edit dialog
-        Alert.alert('Onnistui', 'Lemmikin tiedot päivitetty');
+
+        setMessageTitle('Onnistui');
+        setMessageContent('Lemmikin tiedot päivitetty');
+        setMessageType('success');
+        setMessageDialogVisible(true);
+      } else {
+        setMessageTitle('Virhe');
+        setMessageContent(result.message || 'Päivitys epäonnistui');
+        setMessageType('error');
+        setMessageDialogVisible(true);
       }
     } catch (error) {
-      setError('Virhe. Päivitys epäonnistui');
+      setMessageTitle('Virhe');
+      setMessageContent('Päivitys epäonnistui');
+      setMessageType('error');
+      setMessageDialogVisible(true);
+      console.error('Error updating pet:', error);
     } finally {
       setIsSaving(false);
     }
@@ -111,40 +137,50 @@ export default function PetDetailsScreen() {
 
 // Deleting pet + confirmation
   const handleDeletePet = () => {
-    Alert.alert(
-      'Poista lemmikki',
-      `Haluatko varmasti poistaa lemmikin "${pet?.name}"?`,
-      [
-        // Button 1: Cancel button, closes dialog
-        { text: 'Peruuta', style: 'cancel' },
-        
-        // Button 2: Confirm delete button
-        {
-          text: 'Poista',
-          style: 'destructive',
-          onPress: async () => {
-            setIsDeleting(true);  // Mark delete operation as in progress
+    setMessageTitle('Poista lemmikki');
+    setMessageContent(`Haluatko varmasti poistaa lemmikin "${pet?.name}"?`);
+    setMessageType('error');
+    setMessageDialogVisible(true);
+  };
+
+  const confirmDeletePet = async () => {
+    setMessageDialogVisible(false);
+    setIsDeleting(true);
             
             try {
-              await apiClient.delete(`/api/pets/${petId}`); // Send DELETE request to API to remove the pet
-              Alert.alert('Onnistui', 'Lemmikki poistettu');
-              navigation.goBack();
-            } catch (error) {
-              setError('Virhe. Poistaminen epäonnistui');
+              const result = await petService.deletePet(petId); // Send DELETE request to API to remove the pet
+
+              if (result.success) {
+                  setMessageTitle('Onnistui');
+                  setMessageContent('Lemmikki poistettu');
+                  setMessageType('success');
+                  setMessageDialogVisible(true);
+
+                  // Navigate back after showing dialog
+                  setTimeout(() => {
+                    navigation.goBack();
+                  }, 1000);
+                } else {
+                  setMessageTitle('Virhe');
+                  setMessageContent(result.message || 'Poistaminen epäonnistui');
+                  setMessageType('error');
+                  setMessageDialogVisible(true);
+                }
+              } catch (error) {
+                setMessageTitle('Virhe');
+                setMessageContent('Poistaminen epäonnistui');
+                setMessageType('error');
+                setMessageDialogVisible(true);
+                console.error('Error deleting pet:', error);
             } finally {
               setIsDeleting(false); // Mark delete operation as complete
             }
-          },
-        },
-      ]
-    );
-  };
-
-
+          };
+          
 // show while data is being fetched)
   if (loading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <View style={styles.emptyContainer}>
         <Text>Ladataan...</Text>
       </View>
     );
@@ -153,9 +189,9 @@ export default function PetDetailsScreen() {
 // if pet data couldn't be found/loaded)
   if (!pet) {
     return (
-      <View style={StyleSheet.container}>
-        <View style={StyleSheet.emptyContainer}>
-          <Text variant="bodyLarge" style={StyleSheet.loadingText}>Lemmikkiä ei löytynyt</Text>
+      <View style={styles.container}>
+        <View style={styles.emptyContainer}>
+          <Text variant="bodyLarge" style={styles.loadingText}>Lemmikkiä ei löytynyt</Text>
         </View>
       </View>
     );
@@ -265,7 +301,7 @@ export default function PetDetailsScreen() {
           icon="needle"
           style={styles.actionButton}
           >
-          Rokotukset ({pet.id})
+          Rokotukset
         </Button>
 
         {/* Medications*/}
@@ -273,7 +309,7 @@ export default function PetDetailsScreen() {
           mode="contained-tonal" 
           onPress={() => navigation.navigate('Medications')}
           icon="pill"
-          styles={styles.actionButton}
+          style={styles.actionButton}
         >
           Lääkitys
         </Button>

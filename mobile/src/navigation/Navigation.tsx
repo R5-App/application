@@ -9,6 +9,7 @@ import { COLORS, SPACING, LAYOUT } from '../styles/theme';
 import HomeScreen from '@screens/HomeScreen';
 import PetsScreen from '@screens/PetsScreen';
 import PetProfileScreen from '@screens/PetProfileScreen';
+import AddPetScreen from '@screens/AddPetScreen';
 import SettingsScreen from '@screens/SettingsScreen';
 import ProfileScreen from '@screens/ProfileScreen';
 import LoginScreen from '@screens/LoginScreen';
@@ -27,6 +28,7 @@ import CalendarScreen from '@screens/CalendarScreen';
 export type RootStackParamList = {
   HomeTabs: undefined;
   PetProfile: { petId: string };
+  AddPet: undefined;
   WalkHistory: undefined;
   WalkDetail: { walkId: string };
   Profile: undefined;
@@ -262,6 +264,14 @@ export default function Navigation() {
                 title: 'Lemmikit',
                 headerBackTitle: 'Takaisin',
               }}
+            />
+            <Stack.Screen
+              name="AddPet"
+              component={AddPetScreen}
+              options={{
+                title: 'Lisää lemmikki',
+                headerBackTitle: 'Takaisin',
+                }}
             />
             <Stack.Screen
               name="Calendar"

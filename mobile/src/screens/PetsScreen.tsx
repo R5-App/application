@@ -1,16 +1,15 @@
 import React, { useState } from 'react';
 import { View, FlatList } from 'react-native';
 import { Text, Card, FAB, Portal, Button, Dialog } from 'react-native-paper';
-import { petsStyles } from '../styles/screenStyles';
+import { petsStyles as styles } from '../styles/screenStyles';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'; 
-import apiClient from '../services/api';
+import petService from '../services/petService';
 import { Pet } from '../types';
 import { RootStackParamList } from '../navigation/Navigation';
 
 export default function PetsScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const styles = petsStyles;
   const [pets, setPets] = useState<Pet[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddPetInfoDialog, setShowAddPetInfoDialog] = useState(false);
@@ -27,9 +26,12 @@ export default function PetsScreen() {
     try {
       setLoading(true);
       setError(null);
-      const response = await apiClient.get('/api/pets');
-      if (response.data.success) {
-        setPets(response.data.data);
+      const result = await petService.getUserPets();
+      
+      if (result.success && result.data) {
+        setPets(result.data);
+      } else {
+        setError(result.message || 'Lemmikkien lataus epäonnistui');
       }
     } catch (error) {
       setError('Lemmikkien lataus epäonnistui');
@@ -46,10 +48,10 @@ export default function PetsScreen() {
   };
 
   // NAVIGATE TO ADD PET SCREEN
-  const handleAddPet = () => {
-    setShowAddPetInfoDialog(true);
-    //navigation.navigate('AddPet', {});
-  };
+const handleAddPet = () => {
+  console.log(`[${SCREEN_NAME}] Navigating to AddPet`);
+  navigation.navigate('AddPet' as never);
+};
 
   const handleCloseAddPetDialog = () => {
     setShowAddPetInfoDialog(false);
