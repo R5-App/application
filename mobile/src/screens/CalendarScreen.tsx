@@ -9,6 +9,7 @@ import apiClient from '../services/api';
 import calendarService from '../services/calendarService';
 import { visitsService } from '../services/visitsService';
 import { Pet, CalendarEvent } from '../types';
+import { SwipeableCard } from '../components/SwipeableCard';
 
 interface Visit {
   id: number;
@@ -80,6 +81,8 @@ export default function CalendarScreen() {
   const [saving, setSaving] = useState<boolean>(false);
   const [showDatePicker, setShowDatePicker] = useState<boolean>(false);
   const [showTimePicker, setShowTimePicker] = useState<boolean>(false);
+  const [editingEventId, setEditingEventId] = useState<number | null>(null);
+  const [isEditMode, setIsEditMode] = useState<boolean>(false);
   
   // Form state
   const [eventTitle, setEventTitle] = useState<string>('');
@@ -267,6 +270,8 @@ export default function CalendarScreen() {
 
   // Modal handlers
   const handleOpenModal = (date?: Date) => {
+    setIsEditMode(false);
+    setEditingEventId(null);
     setEventTitle('');
     setEventDescription('');
     const newDate = date || new Date();
@@ -276,8 +281,43 @@ export default function CalendarScreen() {
     setModalVisible(true);
   };
 
+  const handleEditEvent = (event: DayEvent) => {
+    if (event.type === 'visit') return; // Can't edit visits from calendar
+    
+    setIsEditMode(true);
+    setEditingEventId(parseInt(event.id));
+    setEventTitle(event.title);
+    setEventDescription(event.description || '');
+    const eventDateTime = new Date(event.dateTime);
+    setEventDate(eventDateTime);
+    setEventTime(eventDateTime);
+    setSelectedTypeId(visitTypes.find(t => t.name.toLowerCase() === event.eventType)?.id || null);
+    setDayViewVisible(false);
+    setModalVisible(true);
+  };
+
+  const handleDeleteEvent = async (event: DayEvent) => {
+    if (event.type === 'visit') {
+      alert('Käyntejä ei voi poistaa kalenterista. Poista ne käynnit-näkymästä.');
+      return;
+    }
+
+    try {
+      const eventId = parseInt(event.id);
+      await calendarService.deleteEvent(eventId);
+      const refreshedEvents = await calendarService.getAllEvents();
+      setEvents(refreshedEvents);
+    } catch (error) {
+      console.error('Failed to delete event:', error);
+      // Fallback: remove from local state
+      setEvents(events.filter(e => e.id !== parseInt(event.id)));
+    }
+  };
+
   const handleCloseModal = () => {
     setModalVisible(false);
+    setIsEditMode(false);
+    setEditingEventId(null);
   };
 
   const handleSaveEvent = async () => {
@@ -312,27 +352,43 @@ export default function CalendarScreen() {
         completed: false,
       };
 
-      // Try to save to API, fall back to local state if API is not available
-      try {
-        const newEvent = await calendarService.createEvent(eventData);
-        if (newEvent) {
-          // Refresh events from API
-          const refreshedEvents = await calendarService.getAllEvents();
-          setEvents(refreshedEvents);
+      if (isEditMode && editingEventId) {
+        // Update existing event
+        try {
+          const updatedEvent = await calendarService.updateEvent(editingEventId, eventData);
+          if (updatedEvent) {
+            const refreshedEvents = await calendarService.getAllEvents();
+            setEvents(refreshedEvents);
+          }
+        } catch (apiError) {
+          console.log('API not available, updating local state:', apiError);
+          setEvents(events.map(e => 
+            e.id === editingEventId 
+              ? { ...e, ...eventData, id: editingEventId, petId: selectedPetId } 
+              : e
+          ));
         }
-      } catch (apiError) {
-        console.log('API not available, saving to local state:', apiError);
-        // For now, add to local state with a temporary ID
-        const localEvent: CalendarEvent = {
-          id: Date.now(),
-          petId: selectedPetId,
-          title: eventTitle.trim(),
-          description: eventDescription.trim(),
-          date: combinedDateTime.toISOString(),
-          eventType: 'other', // Default for local storage
-          completed: false,
-        };
-        setEvents([...events, localEvent]);
+      } else {
+        // Create new event
+        try {
+          const newEvent = await calendarService.createEvent(eventData);
+          if (newEvent) {
+            const refreshedEvents = await calendarService.getAllEvents();
+            setEvents(refreshedEvents);
+          }
+        } catch (apiError) {
+          console.log('API not available, saving to local state:', apiError);
+          const localEvent: CalendarEvent = {
+            id: Date.now(),
+            petId: selectedPetId,
+            title: eventTitle.trim(),
+            description: eventDescription.trim(),
+            date: combinedDateTime.toISOString(),
+            eventType: 'other',
+            completed: false,
+          };
+          setEvents([...events, localEvent]);
+        }
       }
       
       handleCloseModal();
@@ -396,14 +452,18 @@ export default function CalendarScreen() {
       .sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime());
 
     const renderEventCard = (event: DayEvent) => (
-      <View 
-        key={event.id} 
-        style={[
-          styles.dayViewEventCard,
-          event.type === 'visit' ? styles.visitEventCard : styles.calendarEventCard
-        ]}
+      <SwipeableCard
+        key={event.id}
+        onEdit={() => handleEditEvent(event)}
+        onDelete={() => handleDeleteEvent(event)}
       >
-        <View style={styles.eventCardRow}>
+        <View 
+          style={[
+            styles.dayViewEventCard,
+            event.type === 'visit' ? styles.visitEventCard : styles.calendarEventCard
+          ]}
+        >
+          <View style={styles.eventCardRow}>
           <MaterialCommunityIcons
             name={event.type === 'visit' ? 'hospital-box' : EVENT_TYPE_ICONS[event.eventType || 'other']}
             size={24}
@@ -458,6 +518,7 @@ export default function CalendarScreen() {
           </Chip>
         )}
       </View>
+      </SwipeableCard>
     );
 
     return (
@@ -766,7 +827,7 @@ export default function CalendarScreen() {
         >
           <ScrollView>
             <Text variant="headlineSmall" style={styles.modalTitle}>
-              Lisää tapahtuma
+              {isEditMode ? 'Muokkaa tapahtumaa' : 'Lisää tapahtuma'}
             </Text>
 
             <TextInput

@@ -9,6 +9,7 @@ import { COLORS, SPACING } from '../styles/theme';
 import apiClient from '../services/api';
 import { weightsService } from '../services/weightsService';
 import { Pet } from '../types';
+import { SwipeableCard } from '../components/SwipeableCard';
 
 interface WeightRecord {
   id: number;
@@ -226,56 +227,51 @@ export default function WeightManagementScreen() {
     const weightChange = calculateWeightChange(index);
     
     return (
-      <Card key={record.id} style={styles.weightCard}>
-        <Card.Content>
-          <View style={styles.weightHeader}>
-            <View style={styles.weightMainInfo}>
-              <Text variant="displaySmall" style={styles.weightValue}>
-                {formatWeight(record.weight)} kg
-              </Text>
-            </View>
-            {weightChange && (
-              <Chip
-                icon={weightChange.isIncrease ? 'arrow-up' : 'arrow-down'}
-                compact
-                style={[
-                  styles.changeChip,
-                  weightChange.isIncrease ? styles.increaseChip : styles.decreaseChip
-                ]}
-                textStyle={
-                  weightChange.isIncrease ? styles.increaseChipText : styles.decreaseChipText
-                }
-              >
-                {weightChange.isIncrease ? '+' : ''}{weightChange.change} kg ({weightChange.percentChange}%)
-              </Chip>
-            )}
-          </View>
-
-          <Divider style={styles.divider} />
-
-          <View style={styles.bottomSection}>
-            {record.date ? (
-              <View style={styles.dateContainer}>
-                <MaterialCommunityIcons name="calendar" size={18} color={COLORS.onSurfaceVariant} />
-                <Text variant="bodyMedium" style={styles.dateText}>
-                  {formatDate(record.date)}
+      <SwipeableCard
+        key={record.id}
+        onEdit={() => handleEditWeightRecord(record)}
+        onDelete={() => handleDeleteWeightRecord(record)}
+      >
+        <Card style={styles.weightCard}>
+          <Card.Content>
+            <View style={styles.weightHeader}>
+              <View style={styles.weightMainInfo}>
+                <Text variant="displaySmall" style={styles.weightValue}>
+                  {formatWeight(record.weight)} kg
                 </Text>
               </View>
-              ) : (  
-                <View style={{  flex: 1}} />
+              {weightChange && (
+                <Chip
+                  icon={weightChange.isIncrease ? 'arrow-up' : 'arrow-down'}
+                  compact
+                  style={[
+                    styles.changeChip,
+                    weightChange.isIncrease ? styles.increaseChip : styles.decreaseChip
+                  ]}
+                  textStyle={
+                    weightChange.isIncrease ? styles.increaseChipText : styles.decreaseChipText
+                  }
+                >
+                  {weightChange.isIncrease ? '+' : ''}{weightChange.change} kg ({weightChange.percentChange}%)
+                </Chip>
               )}
+            </View>
 
-              <View style={styles.actionButtons}>
-                <TouchableOpacity onPress={() => handleEditWeightRecord(record)} style={styles.actionButton}>
-                  <MaterialCommunityIcons name="pencil" size={25} color={COLORS.primary} />
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => handleDeleteWeightRecord(record)} style={styles.actionButton}>
-                  <MaterialCommunityIcons name="delete" size={25} color={COLORS.error} />
-                </TouchableOpacity>
-              </View>
-          </View>
-        </Card.Content>
-      </Card>
+            <Divider style={styles.divider} />
+
+            <View style={styles.bottomSection}>
+              {record.date && (
+                <View style={styles.dateContainer}>
+                  <MaterialCommunityIcons name="calendar" size={18} color={COLORS.onSurfaceVariant} />
+                  <Text variant="bodyMedium" style={styles.dateText}>
+                    {formatDate(record.date)}
+                  </Text>
+                </View>
+              )}
+            </View>
+          </Card.Content>
+        </Card>
+      </SwipeableCard>
     );
   };
 
