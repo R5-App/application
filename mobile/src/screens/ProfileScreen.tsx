@@ -1,9 +1,11 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { View, ScrollView, Alert, Pressable } from 'react-native';
-import { Text, Card, Button, Divider, Portal, Dialog, TextInput } from 'react-native-paper';
+import { Text, Card, Button, Divider, Portal, Dialog, TextInput, List, Switch } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
 import { useSnackbar } from '../contexts/SnackbarContext';
+import { useWalk } from '../contexts/WalkContext';
+import { useNotifications } from '../contexts/NotificationContext';
 import authService from '../services/authService';
 import { profileStyles as styles } from '../styles/screenStyles';
 import { COLORS, SPACING } from '../styles/theme';
@@ -11,6 +13,9 @@ import { COLORS, SPACING } from '../styles/theme';
 export default function ProfileScreen() {
   const { user, logout, deleteAccount, updateUser } = useAuth();
   const { showSnackbar } = useSnackbar();
+  const { settings, updateSettings } = useWalk();
+  const { settings: notifSettings, updateSettings: updateNotifSettings, hasPermission: notifPermission, requestPermission: requestNotifPermission } = useNotifications();
+  const [darkMode, setDarkMode] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [emailDialogVisible, setEmailDialogVisible] = useState(false);
   const [newEmail, setNewEmail] = useState('');
@@ -436,9 +441,156 @@ export default function ProfileScreen() {
           <Text variant="titleMedium" style={styles.sectionTitle}>
             Sovelluksen asetukset
           </Text>
-          <Text variant="bodyMedium" style={styles.sectionDescription}>
-            Lisää asetuksia tulossa pian...
+
+          <Text variant="titleSmall" style={{ marginTop: SPACING.sm, marginBottom: SPACING.xs, color: COLORS.onSurfaceVariant }}>
+            Ilmoitukset
           </Text>
+          <List.Item
+            title="Push-ilmoitukset"
+            description={notifPermission ? 'Lupa myönnetty' : 'Lupa vaaditaan'}
+            left={() => <List.Icon icon="bell" />}
+            right={() => (
+              <Switch
+                value={notifSettings.enabled}
+                onValueChange={async (value) => {
+                  if (value && !notifPermission) {
+                    const granted = await requestNotifPermission();
+                    if (!granted) return;
+                  }
+                  updateNotifSettings({ ...notifSettings, enabled: value });
+                }}
+              />
+            )}
+          />
+          {notifSettings.enabled && (
+            <>
+              <List.Item
+                title="Lenkkimuistutukset"
+                description="Muistutus lemmikin ulkoiluttamisesta"
+                left={() => <List.Icon icon="walk" />}
+                right={() => (
+                  <Switch
+                    value={notifSettings.walkReminders}
+                    onValueChange={(value) =>
+                      updateNotifSettings({ ...notifSettings, walkReminders: value })
+                    }
+                  />
+                )}
+              />
+              <List.Item
+                title="Rokotusmuistutukset"
+                description="Muistutus tulevista rokotuksista"
+                left={() => <List.Icon icon="needle" />}
+                right={() => (
+                  <Switch
+                    value={notifSettings.vaccinationReminders}
+                    onValueChange={(value) =>
+                      updateNotifSettings({ ...notifSettings, vaccinationReminders: value })
+                    }
+                  />
+                )}
+              />
+              <List.Item
+                title="Lääkitysmuistutukset"
+                description="Muistutus lääkkeiden antamisesta"
+                left={() => <List.Icon icon="pill" />}
+                right={() => (
+                  <Switch
+                    value={notifSettings.medicationReminders}
+                    onValueChange={(value) =>
+                      updateNotifSettings({ ...notifSettings, medicationReminders: value })
+                    }
+                  />
+                )}
+              />
+              <List.Item
+                title="Kalenterimuistutukset"
+                description="Muistutus kalenteritapahtumista"
+                left={() => <List.Icon icon="calendar" />}
+                right={() => (
+                  <Switch
+                    value={notifSettings.calendarReminders}
+                    onValueChange={(value) =>
+                      updateNotifSettings({ ...notifSettings, calendarReminders: value })
+                    }
+                  />
+                )}
+              />
+              <List.Item
+                title="Terveysmuistutukset"
+                description="Muistutus eläinlääkärikäynneistä"
+                left={() => <List.Icon icon="hospital-box" />}
+                right={() => (
+                  <Switch
+                    value={notifSettings.healthReminders}
+                    onValueChange={(value) =>
+                      updateNotifSettings({ ...notifSettings, healthReminders: value })
+                    }
+                  />
+                )}
+              />
+            </>
+          )}
+
+          <Divider style={{ marginVertical: SPACING.sm }} />
+
+          <Text variant="titleSmall" style={{ marginTop: SPACING.sm, marginBottom: SPACING.xs, color: COLORS.onSurfaceVariant }}>
+            Näyttö
+          </Text>
+          <List.Item
+            title="Pimeä tila"
+            left={() => <List.Icon icon="theme-light-dark" />}
+            right={() => (
+              <Switch
+                value={darkMode}
+                onValueChange={setDarkMode}
+              />
+            )}
+          />
+
+          <Divider style={{ marginVertical: SPACING.sm }} />
+
+          <Text variant="titleSmall" style={{ marginTop: SPACING.sm, marginBottom: SPACING.xs, color: COLORS.onSurfaceVariant }}>
+            Lenkkiasetukset
+          </Text>
+          <List.Item
+            title="Synkronoi lenkit pilvipalveluun"
+            description="Tallenna lenkit automaattisesti"
+            right={() => (
+              <Switch
+                value={settings.enableSync}
+                onValueChange={(value) =>
+                  updateSettings({ ...settings, enableSync: value })
+                }
+              />
+            )}
+          />
+          <List.Item
+            title="Seuraa askelmäärää"
+            description="Käytä laitteen askelmittaria"
+            right={() => (
+              <Switch
+                value={settings.trackSteps}
+                onValueChange={(value) =>
+                  updateSettings({ ...settings, trackSteps: value })
+                }
+              />
+            )}
+          />
+
+          <Divider style={{ marginVertical: SPACING.sm }} />
+
+          <Text variant="titleSmall" style={{ marginTop: SPACING.sm, marginBottom: SPACING.xs, color: COLORS.onSurfaceVariant }}>
+            Tietoa
+          </Text>
+          <List.Item
+            title="Sovelluksen versio"
+            description="1.0.0"
+          />
+          <List.Item
+            title="Yhteydenotto"
+            description="support@mypet.com"
+          />
         </Card.Content>
       </Card>
 

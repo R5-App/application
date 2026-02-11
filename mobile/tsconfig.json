@@ -50,7 +50,8 @@
         "src/assets/*"
       ]
     },
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    "jsx": "react-native"
   },
   "include": [
     "src"

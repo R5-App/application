@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "MyPet",
-    "slug": "mypet",
+    "slug": "mypet-5hnd13",
     "version": "1.0.0",
     "orientation": "portrait",
     "entryPoint": "./index.ts",
@@ -18,7 +18,10 @@
         "android.permission.ACCESS_FINE_LOCATION",
         "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.ACCESS_BACKGROUND_LOCATION",
-        "android.permission.ACTIVITY_RECOGNITION"
+        "android.permission.ACTIVITY_RECOGNITION",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.VIBRATE",
+        "android.permission.SCHEDULE_EXACT_ALARM"
       ]
     },
     "ios": {
@@ -29,10 +32,16 @@
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Tarvitsemme sijaintitietojasi lenkkien seurantaan",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "Tarvitsemme sijaintitietojasi lenkkien seurantaan taustalla",
-        "NSMotionUsageDescription": "Tarvitsemme liikeanturitietoja askeleiden laskemiseen"
+        "NSMotionUsageDescription": "Tarvitsemme liikeanturitietoja askeleiden laskemiseen",
+        "UIBackgroundModes": [
+          "remote-notification",
+          "remote-notification"
+        ],
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "plugins": [
+      ["expo-osm-sdk/plugin"],
       [
         "expo-location",
         {
@@ -40,11 +49,23 @@
           "locationAlwaysPermission": "Tarvitsemme sijaintitietojasi lenkkien seurantaan taustalla.",
           "locationWhenInUsePermission": "Tarvitsemme sijaintitietojasi lenkkien seurantaan."
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#6750A4",
+          "defaultChannel": "default"
+        }
       ]
     ],
     "web": {
       "favicon": "./src/assets/favicon.png"
     },
-    "owner": "mypet-organization"
+    "owner": "mypet-organization",
+    "extra": {
+      "eas": {
+        "projectId": "3d6ebc68-807b-43b2-8843-728a8ce0aedc"
+      }
+    }
   }
 }

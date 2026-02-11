@@ -84,8 +84,6 @@ function HomeTabs() {
             iconName = 'paw';
           } else if (route.name === 'MapTab') {
             iconName = 'map-marker-path';
-          } else if (route.name === 'SettingsTab') {
-            iconName = 'cog';
           } else {
             iconName = 'help';
           }
@@ -126,14 +124,6 @@ function HomeTabs() {
         options={{
           title: 'Kartta',
           tabBarLabel: 'Kartta',
-        }}
-      />
-      <Tab.Screen
-        name="SettingsTab"
-        component={SettingsScreen}
-        options={{
-          title: 'Asetukset',
-          tabBarLabel: 'Asetukset',
         }}
       />
     </Tab.Navigator>
@@ -218,14 +208,6 @@ export default function Navigation() {
               component={WeightManagementScreen}
               options={{
                 title: 'Painonhallinta',
-                headerBackTitle: 'Takaisin',
-              }}
-            />
-            <Stack.Screen
-              name="Settings"
-              component={SettingsScreen}
-              options={{
-                title: 'Asetukset',
                 headerBackTitle: 'Takaisin',
               }}
             />

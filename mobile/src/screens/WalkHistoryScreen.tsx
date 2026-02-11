@@ -68,7 +68,11 @@ export default function WalkHistoryScreen() {
     );
   };
 
-  const renderWalkItem = ({ item }: { item: Walk }) => (
+  const defaultStats: Walk['stats'] = { distance: 0, duration: 0, averageSpeed: 0, steps: 0, calories: 0 };
+
+  const renderWalkItem = ({ item }: { item: Walk }) => {
+    const stats = item.stats ?? defaultStats;
+    return (
     <TouchableOpacity
       style={[
         styles.walkCard,
@@ -94,7 +98,7 @@ export default function WalkHistoryScreen() {
           </Text>
           <View style={styles.walkCardStats}>
             <Text style={styles.walkCardStatText}>
-              {formatDistance(item.stats.distance)} • {formatDuration(item.stats.duration)}
+              {formatDistance(stats.distance)} • {formatDuration(stats.duration)}
             </Text>
           </View>
         </View>
@@ -118,7 +122,7 @@ export default function WalkHistoryScreen() {
               />
               <Text style={styles.detailLabel}>Keskinopeus</Text>
               <Text style={styles.detailValue}>
-                {item.stats.averageSpeed.toFixed(1)} km/h
+                {(stats.averageSpeed ?? 0).toFixed(1)} km/h
               </Text>
             </View>
 
@@ -130,7 +134,7 @@ export default function WalkHistoryScreen() {
               />
               <Text style={styles.detailLabel}>Askeleet</Text>
               <Text style={styles.detailValue}>
-                {item.stats.steps || 0}
+                {stats.steps || 0}
               </Text>
             </View>
 
@@ -142,7 +146,7 @@ export default function WalkHistoryScreen() {
               />
               <Text style={styles.detailLabel}>Kalorit</Text>
               <Text style={styles.detailValue}>
-                {item.stats.calories || 0}
+                {stats.calories || 0}
               </Text>
             </View>
 
@@ -190,6 +194,7 @@ export default function WalkHistoryScreen() {
       )}
     </TouchableOpacity>
   );
+  };
 
   const renderEmptyState = () => (
     <View style={styles.emptyState}>

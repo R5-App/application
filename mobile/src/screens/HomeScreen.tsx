@@ -111,16 +111,6 @@ export default function HomeScreen() {
             </Text>
           </Card.Content>
         </Card>
-
-        <Card style={styles.card} onPress={() => navigation.navigate('Settings' as never)}>
-          <Card.Content style={{ alignItems: 'center' }}>
-            <MaterialCommunityIcons name="cog" size={64} color={COLORS.primary} />
-            <Text variant="titleLarge" style={{ marginTop: SPACING.md }}>Asetukset</Text>
-            <Text variant="bodyMedium" style={[styles.cardText, { textAlign: 'center' }]}>
-              Sovelluksen asetukset
-            </Text>
-          </Card.Content>
-        </Card>
       </View>
     </ScrollView>
   );

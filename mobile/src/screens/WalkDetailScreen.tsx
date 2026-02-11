@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import MapView, { Marker, Polyline, PROVIDER_DEFAULT } from 'react-native-maps';
+import { OSMView, useOSRMRouting, type OSMViewRef } from 'expo-osm-sdk';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { Walk } from '../types';
 import { COLORS, SPACING, TYPOGRAPHY, LAYOUT } from '../styles/theme';
@@ -10,20 +10,21 @@ export default function WalkDetailScreen() {
   const route = useRoute();
   const navigation = useNavigation();
   const { walk } = route.params as { walk: Walk };
-  const mapRef = useRef<MapView>(null);
+  const mapRef = useRef<OSMViewRef>(null);
+  const routing = useOSRMRouting();
 
   useEffect(() => {
     if (walk.coordinates.length > 0 && mapRef.current) {
-      // Keskitä kartta lenkin reitille
-      const coords = walk.coordinates.map(c => ({
-        latitude: c.latitude,
-        longitude: c.longitude,
-      }));
-      
-      mapRef.current.fitToCoordinates(coords, {
-        edgePadding: { top: 150, right: 50, bottom: 50, left: 50 },
-        animated: true,
-      });
+      // Keskitä kartta lenkin ensimmäiseen pisteeseen
+      const firstCoord = walk.coordinates[0];
+      // Anna kartan latautua ensin
+      setTimeout(() => {
+        mapRef.current?.animateToLocation(
+          firstCoord.latitude,
+          firstCoord.longitude,
+          13
+        );
+      }, 1000);
     }
   }, [walk]);
 
@@ -55,57 +56,50 @@ export default function WalkDetailScreen() {
     });
   };
 
+  // Luo markerit lenkin aloitus- ja lopetuspisteille
+  const markers = React.useMemo(() => {
+    const markerList = [];
+    if (walk.coordinates.length > 0) {
+      markerList.push({
+        id: 'start',
+        coordinate: {
+          latitude: walk.coordinates[0].latitude,
+          longitude: walk.coordinates[0].longitude,
+        },
+        title: 'Aloitus',
+        description: 'Lenkin aloituspiste',
+      });
+      
+      if (walk.coordinates.length > 1) {
+        const lastCoord = walk.coordinates[walk.coordinates.length - 1];
+        markerList.push({
+          id: 'end',
+          coordinate: {
+            latitude: lastCoord.latitude,
+            longitude: lastCoord.longitude,
+          },
+          title: 'Lopetus',
+          description: 'Lenkin lopetuspiste',
+        });
+      }
+    }
+    return markerList;
+  }, [walk.coordinates]);
+
   return (
     <View style={styles.container}>
       {/* Kokoruutu kartta */}
-      <MapView
+      <OSMView
         ref={mapRef}
         style={styles.map}
-        provider={PROVIDER_DEFAULT}
-        mapType="standard"
-        initialRegion={{
+        initialCenter={{
           latitude: walk.coordinates[0]?.latitude || 60.1699,
           longitude: walk.coordinates[0]?.longitude || 24.9384,
-          latitudeDelta: 0.05,
-          longitudeDelta: 0.05,
         }}
-      >
-        {/* Lenkin reitti */}
-        {walk.coordinates.length > 1 && (
-          <Polyline
-            coordinates={walk.coordinates.map(c => ({
-              latitude: c.latitude,
-              longitude: c.longitude,
-            }))}
-            strokeColor={COLORS.primary}
-            strokeWidth={4}
-          />
-        )}
-        
-        {/* Aloituspiste */}
-        {walk.coordinates.length > 0 && (
-          <Marker
-            coordinate={{
-              latitude: walk.coordinates[0].latitude,
-              longitude: walk.coordinates[0].longitude,
-            }}
-            title="Aloitus"
-            pinColor="green"
-          />
-        )}
-
-        {/* Lopetuspiste */}
-        {walk.coordinates.length > 0 && (
-          <Marker
-            coordinate={{
-              latitude: walk.coordinates[walk.coordinates.length - 1].latitude,
-              longitude: walk.coordinates[walk.coordinates.length - 1].longitude,
-            }}
-            title="Lopetus"
-            pinColor="red"
-          />
-        )}
-      </MapView>
+        initialZoom={13}
+        markers={markers}
+        onMarkerPress={(id) => console.log('Marker pressed:', id)}
+      />
 
       {/* Yläosan tilastopalkki */}
       <View style={styles.topBar}>

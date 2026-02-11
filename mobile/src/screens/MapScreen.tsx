@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Modal, Platform } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import MapView, { Marker, Polyline, PROVIDER_DEFAULT } from 'react-native-maps';
+import { OSMView, useOSRMRouting, type OSMViewRef } from 'expo-osm-sdk';
 import * as Location from 'expo-location';
 import { useWalk } from '@contexts/WalkContext';
 import { Pet } from '../types';
@@ -24,7 +24,8 @@ export default function MapScreen() {
   const [showPetSelector, setShowPetSelector] = useState(false);
   const [selectedPets, setSelectedPets] = useState<Pet[]>([]);
   const [pets, setPets] = useState<Pet[]>([]);
-  const mapRef = useRef<MapView>(null);
+  const mapRef = useRef<OSMViewRef>(null);
+  const routing = useOSRMRouting();
 
   useEffect(() => {
     if (!hasLocationPermission) {
@@ -59,11 +60,13 @@ export default function MapScreen() {
 
       // Keskitä kartta käyttäjän sijaintiin
       if (mapRef.current) {
-        mapRef.current.animateToRegion({
-          latitude: userPos.latitude,
-          longitude: userPos.longitude,
-          latitudeDelta: 0.01,
-          longitudeDelta: 0.01,
+        // Anna kartan latautua ensin
+        setTimeout(() => {
+          mapRef.current?.animateToLocation(
+            userPos.latitude,
+            userPos.longitude,
+            15
+          );
         }, 1000);
       }
     } catch (error) {
@@ -77,12 +80,14 @@ export default function MapScreen() {
       
       // Keskitä kartta käyttäjän sijaintiin
       if (mapRef.current) {
-        mapRef.current.animateToRegion({
-          latitude: latest.latitude,
-          longitude: latest.longitude,
-          latitudeDelta: 0.01,
-          longitudeDelta: 0.01,
-        }, 1000);
+        // Anna kartan latautua ensin
+        setTimeout(() => {
+          mapRef.current?.animateToLocation(
+            latest.latitude,
+            latest.longitude,
+            15
+          );
+        }, 500);
       }
     }
   }, [currentCoordinates]);
@@ -175,51 +180,49 @@ export default function MapScreen() {
     return `${(meters / 1000).toFixed(2)} km`;
   };
 
+  // Luo markerit lenkin aloitus- ja lopetuspisteille
+  const markers = React.useMemo(() => {
+    const markerList = [];
+    if (currentCoordinates.length > 0) {
+      markerList.push({
+        id: 'start',
+        coordinate: {
+          latitude: currentCoordinates[0].latitude,
+          longitude: currentCoordinates[0].longitude,
+        },
+        title: 'Aloitus',
+        description: 'Lenkin aloituspiste',
+      });
+    }
+    return markerList;
+  }, [currentCoordinates]);
+
+  // Päivitä reitti kartalle kun koordinaatit muuttuvat
+  useEffect(() => {
+    if (currentCoordinates.length > 1) {
+      // Piirretään reitti käyttäen OSRM routingia
+      const coords = currentCoordinates.map(c => ({
+        latitude: c.latitude,
+        longitude: c.longitude,
+      }));
+      // Yksinkertaistetaan: näytetään vain markerit, koska route rendering vaatii from/to pisteet
+    }
+  }, [currentCoordinates]);
+
   return (
     <View style={styles.container}>
       {/* Kokoruutu kartta */}
-      <MapView
+      <OSMView
         ref={mapRef}
         style={styles.map}
-        provider={PROVIDER_DEFAULT}
-        mapType="standard"
-        initialRegion={{
+        initialCenter={{
           latitude: 60.1699,
           longitude: 24.9384,
-          latitudeDelta: 0.0922,
-          longitudeDelta: 0.0421,
         }}
-        showsUserLocation={true}
-        showsMyLocationButton={true}
-        followsUserLocation={isTracking}
-        loadingEnabled={true}
-        loadingIndicatorColor={COLORS.primary}
-        loadingBackgroundColor={COLORS.background}
-      >
-        {/* Lenkin reitti */}
-        {currentCoordinates.length > 1 && (
-          <Polyline
-            coordinates={currentCoordinates.map(c => ({
-              latitude: c.latitude,
-              longitude: c.longitude,
-            }))}
-            strokeColor={COLORS.primary}
-            strokeWidth={4}
-          />
-        )}
-        
-        {/* Aloituspiste */}
-        {currentCoordinates.length > 0 && (
-          <Marker
-            coordinate={{
-              latitude: currentCoordinates[0].latitude,
-              longitude: currentCoordinates[0].longitude,
-            }}
-            title="Aloitus"
-            pinColor="green"
-          />
-        )}
-      </MapView>
+        initialZoom={13}
+        markers={markers}
+        onMarkerPress={(id) => console.log('Marker pressed:', id)}
+      />
 
       {/* Yläosan tilastopalkki */}
       {isTracking && (
