@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import MapView, { Marker, Polyline, PROVIDER_DEFAULT } from 'react-native-maps';
+import { OSMView, type OSMViewRef } from 'expo-osm-sdk';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { Walk } from '../types';
 import { COLORS, SPACING, TYPOGRAPHY, LAYOUT } from '../styles/theme';
@@ -10,20 +10,20 @@ export default function WalkDetailScreen() {
   const route = useRoute();
   const navigation = useNavigation();
   const { walk } = route.params as { walk: Walk };
-  const mapRef = useRef<MapView>(null);
+  const mapRef = useRef<OSMViewRef>(null);
 
   useEffect(() => {
     if (walk.path?.length > 0 && mapRef.current) {
-      // Keskitä kartta lenkin reitille
-      const coords = walk.path.map((c: any) => ({
-        latitude: c.latitude,
-        longitude: c.longitude,
-      }));
+      // Laske reitin keskipiste
+      const latSum = walk.path.reduce((sum: number, p: any) => sum + p.latitude, 0);
+      const lngSum = walk.path.reduce((sum: number, p: any) => sum + p.longitude, 0);
+      const centerLat = latSum / walk.path.length;
+      const centerLng = lngSum / walk.path.length;
       
-      mapRef.current.fitToCoordinates(coords, {
-        edgePadding: { top: 150, right: 50, bottom: 50, left: 50 },
-        animated: true,
-      });
+      // Animoi kartalle keskipisteeseen
+      setTimeout(() => {
+        mapRef.current?.animateToLocation(centerLat, centerLng, 14);
+      }, 500);
     }
   }, [walk]);
 
@@ -51,57 +51,62 @@ export default function WalkDetailScreen() {
     return date.toLocaleDateString('fi-FI');
   };
 
+  // Luo markerit OSMView:lle
+  const osmMarkers = React.useMemo(() => {
+    const markers = [];
+    
+    if (walk.path && walk.path.length > 0) {
+      // Aloituspiste
+      markers.push({
+        id: 'start',
+        coordinate: {
+          latitude: walk.path[0].latitude,
+          longitude: walk.path[0].longitude,
+        },
+        title: '🟢 Aloitus',
+      });
+      
+      // Lopetuspiste
+      markers.push({
+        id: 'end',
+        coordinate: {
+          latitude: walk.path[walk.path.length - 1].latitude,
+          longitude: walk.path[walk.path.length - 1].longitude,
+        },
+        title: '🔴 Lopetus',
+      });
+      
+      // Lisää välipisteitä reitille (joka 10. piste tassunjälki)
+      walk.path
+        .filter((_, index) => index > 0 && index < walk.path.length - 1 && index % 10 === 0)
+        .forEach((point: any, index: number) => {
+          markers.push({
+            id: `paw-${index}`,
+            coordinate: {
+              latitude: point.latitude,
+              longitude: point.longitude,
+            },
+            title: '🐾',
+          });
+        });
+    }
+    
+    return markers;
+  }, [walk.path]);
+
   return (
     <View style={styles.container}>
       {/* Kokoruutu kartta */}
-      <MapView
+      <OSMView
         ref={mapRef}
         style={styles.map}
-        provider={PROVIDER_DEFAULT}
-        mapType="standard"
-        initialRegion={{
+        initialCenter={{
           latitude: walk.path?.[0]?.latitude || 60.1699,
           longitude: walk.path?.[0]?.longitude || 24.9384,
-          latitudeDelta: 0.05,
-          longitudeDelta: 0.05,
         }}
-      >
-        {/* Lenkin reitti */}
-        {walk.path?.length > 1 && (
-          <Polyline
-            coordinates={walk.path.map((c: any) => ({
-              latitude: c.latitude,
-              longitude: c.longitude,
-            }))}
-            strokeColor={COLORS.primary}
-            strokeWidth={4}
-          />
-        )}
-        
-        {/* Aloituspiste */}
-        {walk.path?.length > 0 && (
-          <Marker
-            coordinate={{
-              latitude: walk.path[0].latitude,
-              longitude: walk.path[0].longitude,
-            }}
-            title="Aloitus"
-            pinColor="green"
-          />
-        )}
-
-        {/* Lopetuspiste */}
-        {walk.path?.length > 0 && (
-          <Marker
-            coordinate={{
-              latitude: walk.path[walk.path.length - 1].latitude,
-              longitude: walk.path[walk.path.length - 1].longitude,
-            }}
-            title="Lopetus"
-            pinColor="red"
-          />
-        )}
-      </MapView>
+        initialZoom={14}
+        markers={osmMarkers}
+      />
 
       {/* Näytä viesti jos ei reittidataa */}
       {(!walk.path || walk.path.length === 0) && (
