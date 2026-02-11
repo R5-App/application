@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, ScrollView, TouchableOpacity } from 'react-native';
-import { Text, Chip, ActivityIndicator, FAB, Portal, Modal, Button, TextInput } from 'react-native-paper';
+import { Text, Chip, ActivityIndicator, Portal, Modal, Button, TextInput } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { calendarStyles as styles } from '../styles/screenStyles';
@@ -8,16 +8,34 @@ import { COLORS, SPACING } from '../styles/theme';
 import apiClient from '../services/api';
 import calendarService from '../services/calendarService';
 import { visitsService } from '../services/visitsService';
-import { Pet, CalendarEvent } from '../types';
+import { Pet } from '../types';
+import { CalendarEvent } from '../services/calendarService';
+import { SwipeableCard } from '../components/SwipeableCard';
 
+interface Visit {
+  id: number;
+  pet_id: number;
+  visit_date: string;
+  location: string;
+  vet_name: string;
+  type_id: string;
+  notes?: string;
+  costs?: string;
+}
 
-const EVENT_TYPE_ICONS: Record<CalendarEvent['eventType'], any> = {
-  vaccination: 'needle',
-  veterinary: 'hospital-box',
-  medication: 'pill',
-  grooming: 'content-cut',
-  other: 'calendar-star'
-};
+interface DayEvent {
+  id: string;
+  petId: number;
+  title: string;
+  description?: string;
+  dateTime: string;
+  time?: string;
+  type: 'event' | 'visit';
+  eventType?: string;
+  typeName?: string;
+  location?: string;
+  vetName?: string;
+}
 
 const EVENT_TYPE_COLORS = {
   vaccination: COLORS.vaccination,
@@ -39,6 +57,7 @@ export default function CalendarScreen() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [visits, setVisits] = useState<Visit[]>([]);
   const [visitTypes, setVisitTypes] = useState<any[]>([]);
   const [selectedTypeId, setSelectedTypeId] = useState<number | null>(null);
   
@@ -47,15 +66,23 @@ export default function CalendarScreen() {
   const [selectedMonth, setSelectedMonth] = useState<number>(currentDate.getMonth());
   const [selectedYear, setSelectedYear] = useState<number>(currentDate.getFullYear());
   
-  // Modal state
+  // Day view modal state
+  const [dayViewVisible, setDayViewVisible] = useState<boolean>(false);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  
+  // Modal state for adding/editing events
   const [modalVisible, setModalVisible] = useState<boolean>(false);
   const [saving, setSaving] = useState<boolean>(false);
   const [showDatePicker, setShowDatePicker] = useState<boolean>(false);
+  const [showTimePicker, setShowTimePicker] = useState<boolean>(false);
+  const [editingEventId, setEditingEventId] = useState<number | null>(null);
+  const [isEditMode, setIsEditMode] = useState<boolean>(false);
   
   // Form state
   const [eventTitle, setEventTitle] = useState<string>('');
   const [eventDescription, setEventDescription] = useState<string>('');
   const [eventDate, setEventDate] = useState<Date>(new Date());
+  const [eventTime, setEventTime] = useState<Date>(new Date());
 
   // Fetch pets and events from the API
   useEffect(() => {
@@ -81,14 +108,21 @@ export default function CalendarScreen() {
           const fetchedEvents = await calendarService.getAllEvents();
           setEvents(fetchedEvents);
         } catch (eventsError) {
-          console.log('Events API not available yet, starting with empty list');
           setEvents([]);
+        }
+
+        // Fetch visits
+        try {
+          const fetchedVisits = await visitsService.getAllVisits();
+          setVisits(fetchedVisits);
+        } catch (visitsError) {
+          console.error('Failed to fetch visits:', visitsError);
+          setVisits([]);
         }
 
         // Fetch visit types
         try {
           const types = await visitsService.getVisitTypes();
-          console.log('Visit types fetched:', types);
           setVisitTypes(types);
         } catch (typesError) {
           console.error('Failed to fetch visit types:', typesError);
@@ -112,15 +146,22 @@ export default function CalendarScreen() {
       currentDate.getFullYear() - 1,
       currentDate.getFullYear(),
       currentDate.getFullYear() + 1,
-      ...events.map(event => new Date(event.date).getFullYear())
+      ...events
+        .filter(event => event.date)
+        .map(event => {
+          const [y] = event.date.substring(0, 10).split('-').map(Number);
+          return y;
+        })
     ])
   ).sort((a, b) => a - b);
 
   // Filter events for selected pet, month, and year
   const filteredEvents = events.filter(event => {
     if (event.petId !== selectedPetId) return false;
-    const eventDate = new Date(event.date);
-    return eventDate.getMonth() === selectedMonth && eventDate.getFullYear() === selectedYear;
+    if (!event.date) return false;
+    const dateStr = event.date.substring(0, 10); // Ensure YYYY-MM-DD format
+    const [y, m] = dateStr.split('-').map(Number);
+    return (m - 1) === selectedMonth && y === selectedYear;
   });
 
   // Get days in the current month
@@ -154,12 +195,73 @@ export default function CalendarScreen() {
     }
   };
 
-  // Check if a day has events
+  // Check if a day has events or visits
   const getEventsForDay = (day: number) => {
-    return filteredEvents.filter(event => {
-      const eventDate = new Date(event.date);
-      return eventDate.getDate() === day;
+    const dayEvents = filteredEvents.filter(event => {
+      const dateStr = event.date.substring(0, 10); // Ensure YYYY-MM-DD
+      const d = parseInt(dateStr.substring(8, 10), 10);
+      return d === day;
     });
+
+    const dayVisits = visits.filter(visit => {
+      if (visit.pet_id !== selectedPetId) return false;
+      const dateStr = visit.visit_date.substring(0, 10);
+      const [vy, vm, vd] = dateStr.split('-').map(Number);
+      return vd === day && (vm - 1) === selectedMonth && vy === selectedYear;
+    });
+
+    return [...dayEvents, ...dayVisits];
+  };
+
+  // Format date as YYYY-MM-DD in local time (avoiding timezone issues)
+  const formatLocalDate = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  // Get all day events (events + visits) for a specific date
+  const getDayEvents = (date: Date): DayEvent[] => {
+    const dayStr = formatLocalDate(date);
+    const dayEvents: DayEvent[] = [];
+
+    // Add calendar events
+    filteredEvents.forEach(event => {
+      const eventDateStr = event.date.substring(0, 10); // Ensure YYYY-MM-DD
+      if (eventDateStr === dayStr) {
+        dayEvents.push({
+          id: `event-${event.id}`,
+          petId: event.petId,
+          title: event.title,
+          description: event.description,
+          dateTime: event.date,
+          time: event.time,
+          type: 'event',
+          eventType: event.eventType,
+          typeName: event.typeName,
+        });
+      }
+    });
+
+    // Add visits
+    visits.forEach(visit => {
+      if (visit.pet_id === selectedPetId && visit.visit_date.startsWith(dayStr)) {
+        const visitType = visitTypes.find(t => t.id === parseInt(visit.type_id));
+        dayEvents.push({
+          id: `visit-${visit.id}`,
+          petId: visit.pet_id,
+          title: visitType?.name || 'Eläinlääkärissä',
+          description: visit.notes,
+          dateTime: visit.visit_date,
+          type: 'visit',
+          location: visit.location,
+          vetName: visit.vet_name,
+        });
+      }
+    });
+
+    return dayEvents.sort((a, b) => (a.time || '99:99').localeCompare(b.time || '99:99'));
   };
 
   // Check if day is today
@@ -170,16 +272,55 @@ export default function CalendarScreen() {
   };
 
   // Modal handlers
-  const handleOpenModal = () => {
+  const handleOpenModal = (date?: Date) => {
+    setIsEditMode(false);
+    setEditingEventId(null);
     setEventTitle('');
     setEventDescription('');
-    setEventDate(new Date());
+    const newDate = date || new Date();
+    setEventDate(newDate);
+    setEventTime(newDate);
     setSelectedTypeId(visitTypes.length > 0 ? visitTypes[0].id : null);
     setModalVisible(true);
   };
 
+  const handleEditEvent = (event: DayEvent) => {
+    if (event.type === 'visit') return; // Can't edit visits from calendar
+    
+    setIsEditMode(true);
+    setEditingEventId(parseInt(event.id.replace('event-', '')));
+    setEventTitle(event.title);
+    setEventDescription(event.description || '');
+    const eventDateTime = new Date(event.dateTime);
+    setEventDate(eventDateTime);
+    setEventTime(eventDateTime);
+    setSelectedTypeId(visitTypes.find(t => t.name.toLowerCase() === event.eventType)?.id || null);
+    setDayViewVisible(false);
+    setModalVisible(true);
+  };
+
+  const handleDeleteEvent = async (event: DayEvent) => {
+    if (event.type === 'visit') {
+      alert('Käyntejä ei voi poistaa kalenterista. Poista ne käynnit-näkymästä.');
+      return;
+    }
+
+    try {
+      const eventId = parseInt(event.id.replace('event-', ''));
+      await calendarService.deleteEvent(eventId);
+      const refreshedEvents = await calendarService.getAllEvents();
+      setEvents(refreshedEvents);
+    } catch (error) {
+      console.error('Failed to delete event:', error);
+      // Fallback: remove from local state
+      setEvents(events.filter(e => e.id !== parseInt(event.id.replace('event-', ''))));
+    }
+  };
+
   const handleCloseModal = () => {
     setModalVisible(false);
+    setIsEditMode(false);
+    setEditingEventId(null);
   };
 
   const handleSaveEvent = async () => {
@@ -201,36 +342,32 @@ export default function CalendarScreen() {
     try {
       setSaving(true);
 
+      // Format date as YYYY-MM-DD and time as HH:MM:SS
+      const dateStr = formatLocalDate(eventDate);
+      const hours = String(eventTime.getHours()).padStart(2, '0');
+      const minutes = String(eventTime.getMinutes()).padStart(2, '0');
+      const timeStr = `${hours}:${minutes}:00`;
+
       const eventData = {
         pet_id: selectedPetId,
-        visit_type_id: selectedTypeId,
+        type_id: selectedTypeId!,
         title: eventTitle.trim(),
         description: eventDescription.trim(),
-        date: eventDate.toISOString().split('T')[0],
-        completed: false,
+        date: dateStr,
+        time: timeStr,
       };
 
-      // Try to save to API, fall back to local state if API is not available
-      try {
-        const newEvent = await calendarService.createEvent(eventData);
-        if (newEvent) {
-          // Refresh events from API
-          const refreshedEvents = await calendarService.getAllEvents();
-          setEvents(refreshedEvents);
-        }
-      } catch (apiError) {
-        console.log('API not available, saving to local state:', apiError);
-        // For now, add to local state with a temporary ID
-        const localEvent: CalendarEvent = {
-          id: Date.now(),
-          petId: selectedPetId,
-          title: eventTitle.trim(),
-          description: eventDescription.trim(),
-          date: eventDate.toISOString().split('T')[0],
-          eventType: 'other', // Default for local storage
-          completed: false,
-        };
-        setEvents([...events, localEvent]);
+      if (isEditMode && editingEventId) {
+        // Update existing event
+        const { pet_id, ...updateData } = eventData;
+        await calendarService.updateEvent(editingEventId, updateData);
+        const refreshedEvents = await calendarService.getAllEvents();
+        setEvents(refreshedEvents);
+      } else {
+        // Create new event
+        await calendarService.createEvent(eventData);
+        const refreshedEvents = await calendarService.getAllEvents();
+        setEvents(refreshedEvents);
       }
       
       handleCloseModal();
@@ -249,15 +386,182 @@ export default function CalendarScreen() {
     }
   };
 
-  const getEventTypeLabel = (type: CalendarEvent['eventType']) => {
-    const labels = {
+  const handleTimeChange = (_event: any, selectedTime?: Date) => {
+    setShowTimePicker(false);
+    if (selectedTime) {
+      setEventTime(selectedTime);
+    }
+  };
+
+  const getEventTypeLabel = (type: string) => {
+    const labels: Record<string, string> = {
       vaccination: 'Rokotus',
       veterinary: 'Eläinlääkäri',
       medication: 'Lääkitys',
       grooming: 'Trimmaus',
-      other: 'Muu'
+      eläinlääkäri: 'Eläinlääkäri',
+      rokotus: 'Rokotus',
+      lääkitys: 'Lääkitys',
+      trimmaus: 'Trimmaus',
+      other: 'Muu',
     };
-    return labels[type];
+    // Try exact match, then lowercase, then return the raw type name capitalized
+    return labels[type] || labels[type.toLowerCase()] || type.charAt(0).toUpperCase() + type.slice(1);
+  };
+
+  // Render day view with event cards
+  const renderDayView = () => {
+    if (!selectedDate) return null;
+
+    const dayEvents = getDayEvents(selectedDate);
+    
+    // Separate events with and without time
+    const allDayEvents = dayEvents.filter(event => !event.time);
+    const timedEvents = dayEvents.filter(event => !!event.time)
+      .sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+
+    const renderEventCard = (event: DayEvent) => {
+      const eventTypeKey = event.eventType?.toLowerCase() || 'other';
+      const borderColor = event.type === 'visit' 
+        ? COLORS.primary 
+        : (EVENT_TYPE_COLORS[eventTypeKey] || EVENT_TYPE_COLORS['other']);
+
+      const cardContent = (
+        <View 
+          style={[
+            styles.dayViewEventCard,
+            { borderLeftWidth: 4, borderLeftColor: borderColor }
+          ]}
+        >
+          <Text variant="titleMedium" style={styles.eventCardTitle}>
+            {event.title}
+          </Text>
+          {event.type === 'event' && (event.time || event.description || event.eventType) && (
+            <View style={styles.visitCardDetails}>
+              {event.time && (
+                <View style={styles.visitDetailRow}>
+                  <MaterialCommunityIcons name="clock-outline" size={16} color={COLORS.onSurfaceVariant} />
+                  <Text variant="bodySmall" style={styles.visitCardDetailText}>
+                    {event.time.substring(0, 5)}
+                  </Text>
+                </View>
+              )}
+              {event.description && (
+                <View style={styles.visitDetailRow}>
+                  <MaterialCommunityIcons name="text-short" size={16} color={COLORS.onSurfaceVariant} />
+                  <Text variant="bodySmall" style={styles.visitCardDetailText}>
+                    {event.description}
+                  </Text>
+                </View>
+              )}
+              {event.eventType && (
+                <View style={styles.visitDetailRow}>
+                  <MaterialCommunityIcons name="tag-outline" size={16} color={COLORS.onSurfaceVariant} />
+                  <Text variant="bodySmall" style={styles.visitCardDetailText}>
+                    {getEventTypeLabel(event.eventType)}
+                  </Text>
+                </View>
+              )}
+            </View>
+          )}
+          {event.type === 'visit' && (
+            <View style={styles.visitCardDetails}>
+              {event.location && (
+                <View style={styles.visitDetailRow}>
+                  <MaterialCommunityIcons name="map-marker" size={16} color={COLORS.onSurfaceVariant} />
+                  <Text variant="bodySmall" style={styles.visitCardDetailText}>
+                    {event.location}
+                  </Text>
+                </View>
+              )}
+              {event.vetName && (
+                <View style={styles.visitDetailRow}>
+                  <MaterialCommunityIcons name="doctor" size={16} color={COLORS.onSurfaceVariant} />
+                  <Text variant="bodySmall" style={styles.visitCardDetailText}>
+                    {event.vetName}
+                  </Text>
+                </View>
+              )}
+            </View>
+          )}
+        </View>
+      );
+
+      // Wrap in SwipeableCard only for calendar events, not visits
+      if (event.type === 'visit') {
+        return <View key={event.id}>{cardContent}</View>;
+      }
+
+      return (
+        <SwipeableCard
+          key={event.id}
+          onEdit={() => handleEditEvent(event)}
+          onDelete={() => handleDeleteEvent(event)}
+        >
+          {cardContent}
+        </SwipeableCard>
+      );
+    };
+
+    return (
+      <View style={styles.dayViewContainer}>
+        <View style={styles.dayViewHeader}>
+          <Text variant="headlineSmall" style={styles.dayViewTitle}>
+            {selectedDate.getDate()}. {MONTHS[selectedDate.getMonth()]} {selectedDate.getFullYear()}
+          </Text>
+          <TouchableOpacity onPress={() => setDayViewVisible(false)}>
+            <MaterialCommunityIcons name="close" size={28} color={COLORS.onSurface} />
+          </TouchableOpacity>
+        </View>
+
+        <ScrollView style={styles.dayViewScroll} contentContainerStyle={styles.dayViewScrollContent}>
+          {/* All-day events section */}
+          {allDayEvents.length > 0 && (
+            <View style={styles.allDaySection}>
+              <Text variant="labelLarge" style={styles.daySectionTitle}>
+                Koko päivän tapahtumat
+              </Text>
+              {allDayEvents.map(renderEventCard)}
+            </View>
+          )}
+
+          {/* Timed events section */}
+          {timedEvents.length > 0 && (
+            <View style={styles.timedSection}>
+              <Text variant="labelLarge" style={styles.daySectionTitle}>
+                Ajastetut tapahtumat
+              </Text>
+              {timedEvents.map(renderEventCard)}
+            </View>
+          )}
+
+          {/* Empty state */}
+          {dayEvents.length === 0 && (
+            <View style={styles.emptyDayView}>
+              <MaterialCommunityIcons name="calendar-blank" size={64} color={COLORS.onSurfaceVariant} />
+              <Text variant="bodyLarge" style={styles.emptyDayText}>
+                Ei tapahtumia tänä päivänä
+              </Text>
+            </View>
+          )}
+        </ScrollView>
+
+        {/* Add Event Button */}
+        <View style={styles.dayViewFooter}>
+          <Button
+            mode="contained"
+            icon="plus"
+            onPress={() => {
+              setDayViewVisible(false);
+              handleOpenModal(selectedDate);
+            }}
+            style={styles.addEventButton}
+          >
+            Lisää tapahtuma
+          </Button>
+        </View>
+      </View>
+    );
   };
 
   // Render calendar grid
@@ -305,7 +609,9 @@ export default function CalendarScreen() {
                   today && styles.todayCell
                 ]}
                 onPress={() => {
-                  // TODO: Open day detail view or add event for that day
+                  const clickedDate = new Date(selectedYear, selectedMonth, day);
+                  setSelectedDate(clickedDate);
+                  setDayViewVisible(true);
                 }}
               >
                 <View style={styles.dayCellContent}>
@@ -320,15 +626,23 @@ export default function CalendarScreen() {
                   </Text>
                   {dayEvents.length > 0 && (
                     <View style={styles.eventIndicators}>
-                      {dayEvents.slice(0, 3).map((event, idx) => (
-                        <View
-                          key={`indicator-${event.id}-${idx}`}
-                          style={[
-                            styles.eventDot,
-                            { backgroundColor: EVENT_TYPE_COLORS[event.eventType] }
-                          ]}
-                        />
-                      ))}
+                      {dayEvents.slice(0, 3).map((event, idx) => {
+                        const isCalendarEvent = 'eventType' in event;
+                        let color = COLORS.primary;
+                        if (isCalendarEvent && event.eventType) {
+                          const typeKey = event.eventType.toLowerCase();
+                          color = EVENT_TYPE_COLORS[typeKey] || EVENT_TYPE_COLORS['other'];
+                        }
+                        return (
+                          <View
+                            key={`indicator-${idx}`}
+                            style={[
+                              styles.eventDot,
+                              { backgroundColor: color }
+                            ]}
+                          />
+                        );
+                      })}
                       {dayEvents.length > 3 && (
                         <Text style={styles.moreEventsText}>+{dayEvents.length - 3}</Text>
                       )}
@@ -343,63 +657,6 @@ export default function CalendarScreen() {
     );
   };
 
-  // Render events list for the selected month
-  const renderEventsList = () => {
-    if (filteredEvents.length === 0) {
-      return (
-        <View style={styles.emptyEventsContainer}>
-          <MaterialCommunityIcons name="calendar-blank" size={48} color={COLORS.onSurfaceVariant} />
-          <Text variant="bodyMedium" style={styles.emptyEventsText}>
-            Ei tapahtumia tässä kuussa
-          </Text>
-        </View>
-      );
-    }
-
-    // Sort events by date
-    const sortedEvents = [...filteredEvents].sort((a, b) => 
-      new Date(a.date).getTime() - new Date(b.date).getTime()
-    );
-
-    return (
-      <View style={styles.eventsList}>
-        <Text variant="titleMedium" style={styles.eventsListTitle}>
-          Tapahtumat
-        </Text>
-        {sortedEvents.map(event => (
-          <View key={event.id} style={styles.eventCard}>
-            <View style={styles.eventCardHeader}>
-              <MaterialCommunityIcons
-                name={EVENT_TYPE_ICONS[event.eventType] as any}
-                size={24}
-                color={EVENT_TYPE_COLORS[event.eventType]}
-              />
-              <View style={styles.eventCardContent}>
-                <Text variant="titleSmall" style={styles.eventTitle}>
-                  {event.title}
-                </Text>
-                <Text variant="bodySmall" style={styles.eventDate}>
-                  {new Date(event.date).getDate()}. {MONTHS[new Date(event.date).getMonth()]}
-                </Text>
-              </View>
-              <Chip
-                compact
-                style={[styles.eventTypeChip, { backgroundColor: EVENT_TYPE_COLORS[event.eventType] + '20' }]}
-                textStyle={{ color: EVENT_TYPE_COLORS[event.eventType] }}
-              >
-                {getEventTypeLabel(event.eventType)}
-              </Chip>
-            </View>
-            {event.description && (
-              <Text variant="bodySmall" style={styles.eventDescription}>
-                {event.description}
-              </Text>
-            )}
-          </View>
-        ))}
-      </View>
-    );
-  };
 
   if (loading) {
     return (
@@ -532,17 +789,18 @@ export default function CalendarScreen() {
         {/* Calendar Grid */}
         {renderCalendar()}
 
-        {/* Events List */}
-        {renderEventsList()}
       </ScrollView>
 
-      {/* Add Event FAB */}
-      <FAB
-        icon="plus"
-        style={styles.fab}
-        onPress={handleOpenModal}
-        label="Lisää Tapahtuma"
-      />
+      {/* Day View Modal */}
+      <Portal>
+        <Modal
+          visible={dayViewVisible}
+          onDismiss={() => setDayViewVisible(false)}
+          contentContainerStyle={styles.dayViewModal}
+        >
+          {renderDayView()}
+        </Modal>
+      </Portal>
 
       {/* Add Event Modal */}
       <Portal>
@@ -553,7 +811,7 @@ export default function CalendarScreen() {
         >
           <ScrollView>
             <Text variant="headlineSmall" style={styles.modalTitle}>
-              Lisää tapahtuma
+              {isEditMode ? 'Muokkaa tapahtumaa' : 'Lisää tapahtuma'}
             </Text>
 
             <TextInput
@@ -595,6 +853,30 @@ export default function CalendarScreen() {
                 mode="date"
                 display="default"
                 onChange={handleDateChange}
+              />
+            )}
+
+            <TouchableOpacity onPress={() => setShowTimePicker(true)}>
+              <TextInput
+                label="Aika"
+                value={eventTime ? eventTime.toLocaleTimeString('fi-FI', { hour: '2-digit', minute: '2-digit' }) : ''}
+                style={styles.input}
+                mode="outlined"
+                editable={false}
+                right={<TextInput.Icon icon="clock-outline" />}
+                placeholder="HH:MM"
+                placeholderTextColor="rgba(0, 0, 0, 0.3)"
+                textColor={COLORS.onSurface}
+                theme={{ colors: { onSurfaceVariant: 'rgba(0, 0, 0, 0.4)' } }}
+              />
+            </TouchableOpacity>
+
+            {showTimePicker && (
+              <DateTimePicker
+                value={eventTime || new Date()}
+                mode="time"
+                display="default"
+                onChange={handleTimeChange}
               />
             )}
 

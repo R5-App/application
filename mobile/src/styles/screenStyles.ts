@@ -1294,7 +1294,7 @@ export const calendarStyles = StyleSheet.create({
   },
 
   scrollContent: {
-    padding: SPACING.md,
+    padding: SPACING.lg,
     paddingBottom: 100,
   },
 
@@ -1303,12 +1303,12 @@ export const calendarStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: SPACING.md,
-    paddingHorizontal: SPACING.sm,
+    marginBottom: SPACING.lg,
+    paddingHorizontal: SPACING.xs,
   },
 
   navButton: {
-    padding: SPACING.xs,
+    padding: SPACING.sm,
     borderRadius: 8,
   },
 
@@ -1317,13 +1317,16 @@ export const calendarStyles = StyleSheet.create({
   },
 
   monthText: {
-    fontWeight: '600',
+    fontWeight: '700',
     color: COLORS.onSurface,
+    fontSize: 20,
   },
 
   yearText: {
     color: COLORS.onSurfaceVariant,
     marginTop: 2,
+    fontSize: 14,
+    fontWeight: '500',
   },
 
   // Year Selection
@@ -1434,37 +1437,45 @@ export const calendarStyles = StyleSheet.create({
 
   // Events List
   eventsList: {
-    marginTop: SPACING.md,
+    marginTop: SPACING.lg,
   },
 
   eventsListTitle: {
     marginBottom: SPACING.md,
-    fontWeight: '600',
-    color: COLORS.onSurface,
+    fontWeight: '700',
+    color: COLORS.primary,
+    fontSize: 13,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
 
   emptyEventsContainer: {
     alignItems: 'center',
-    paddingVertical: SPACING.xl,
+    paddingVertical: SPACING['2xl'],
   },
 
   emptyEventsText: {
-    marginTop: SPACING.sm,
+    marginTop: SPACING.md,
     color: COLORS.onSurfaceVariant,
+    textAlign: 'center',
   },
 
   eventCard: {
     backgroundColor: COLORS.surface,
     borderRadius: 12,
-    padding: SPACING.md,
-    marginBottom: SPACING.sm,
-    elevation: 1,
+    padding: SPACING.lg,
+    marginBottom: SPACING.md,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
   },
 
   eventCardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: SPACING.sm,
+    gap: SPACING.md,
   },
 
   eventCardContent: {
@@ -1472,23 +1483,27 @@ export const calendarStyles = StyleSheet.create({
   },
 
   eventTitle: {
-    fontWeight: '600',
+    fontWeight: '700',
     color: COLORS.onSurface,
+    fontSize: 15,
   },
 
   eventDate: {
-    color: COLORS.onSurfaceVariant,
-    marginTop: 2,
+    color: COLORS.primary,
+    marginTop: 4,
+    fontWeight: '500',
+    fontSize: 13,
   },
 
   eventTypeChip: {
-    height: 28,
+    height: 26,
   },
 
   eventDescription: {
     marginTop: SPACING.sm,
     color: COLORS.onSurfaceVariant,
     lineHeight: 20,
+    fontSize: 14,
   },
 
   // Modal
@@ -1566,5 +1581,172 @@ export const calendarStyles = StyleSheet.create({
 
   modalButton: {
     minWidth: 100,
+  },
+
+  // Day View Modal
+  dayViewModal: {
+    backgroundColor: COLORS.surface,
+    margin: SPACING.lg,
+    borderRadius: 16,
+    maxHeight: '90%',
+    flex: 1,
+    overflow: 'hidden',
+  },
+
+  dayViewContainer: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+  },
+
+  dayViewHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+    backgroundColor: COLORS.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.outlineVariant,
+  },
+
+  dayViewTitle: {
+    fontWeight: '700',
+    color: COLORS.onSurface,
+  },
+
+  dayViewScroll: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+  },
+
+  dayViewScrollContent: {
+    padding: SPACING.lg,
+    paddingBottom: SPACING.xl,
+  },
+
+  allDaySection: {
+    marginBottom: SPACING.xl,
+  },
+
+  timedSection: {
+    marginBottom: SPACING.md,
+  },
+
+  daySectionTitle: {
+    color: COLORS.primary,
+    fontWeight: '700',
+    marginBottom: SPACING.md,
+    fontSize: 13,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+
+  dayViewEventCard: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 12,
+    padding: SPACING.lg,
+    marginBottom: SPACING.md,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+  },
+
+  calendarEventCard: {
+    borderLeftWidth: 4,
+    borderLeftColor: COLORS.primary,
+  },
+
+  visitEventCard: {
+    borderLeftWidth: 4,
+    borderLeftColor: COLORS.primary,
+  },
+
+  eventCardRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: SPACING.md,
+  },
+
+  dayViewEventCardContent: {
+    flex: 1,
+  },
+
+  eventCardTitle: {
+    fontWeight: '700',
+    color: COLORS.onSurface,
+    fontSize: 16,
+    marginBottom: SPACING.xs,
+  },
+
+  eventCardTimeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: SPACING.sm,
+  },
+
+  eventCardTime: {
+    color: COLORS.primary,
+    fontWeight: '600',
+    fontSize: 14,
+  },
+
+  eventCardDescription: {
+    color: COLORS.onSurfaceVariant,
+    lineHeight: 20,
+    marginTop: SPACING.xs,
+    fontSize: 14,
+  },
+
+  visitCardDetails: {
+    marginTop: SPACING.md,
+    gap: SPACING.sm,
+    paddingTop: SPACING.sm,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.outlineVariant,
+  },
+
+  visitDetailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs,
+  },
+
+  visitCardDetailText: {
+    color: COLORS.onSurface,
+    flex: 1,
+    fontSize: 14,
+  },
+
+  eventTypeChipSmall: {
+    alignSelf: 'flex-start',
+    marginTop: SPACING.sm,
+    height: 26,
+  },
+
+  emptyDayView: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: SPACING['2xl'] * 2,
+  },
+
+  emptyDayText: {
+    color: COLORS.onSurfaceVariant,
+    marginTop: SPACING.md,
+    textAlign: 'center',
+  },
+
+  dayViewFooter: {
+    padding: SPACING.lg,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.outlineVariant,
+    backgroundColor: COLORS.surface,
+  },
+
+  addEventButton: {
+    borderRadius: 12,
+    elevation: 0,
   },
 });

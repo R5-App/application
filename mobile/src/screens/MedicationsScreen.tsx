@@ -8,6 +8,7 @@ import apiClient from '../services/api';
 import { medicationsService } from '../services/medicationsService';
 import { Pet } from '../types';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { SwipeableCard } from '../components/SwipeableCard';
 
 
 interface Medication {
@@ -211,8 +212,13 @@ export default function MedicationsScreen() {
     const isExpired = medication.expire_date ? new Date(medication.expire_date) < new Date() : false;
     
     return (
-      <Card key={medication.id} style={styles.medicationCard}>
-        <Card.Content>
+      <SwipeableCard
+        key={medication.id}
+        onEdit={() => handleEditMedication(medication)}
+        onDelete={() => handleDeleteMedication(medication)}
+      >
+        <Card style={styles.medicationCard}>
+          <Card.Content>
           <View style={styles.medicationHeader}>
             <Text variant="titleLarge" style={styles.medicationName}>
               {medication.med_name}
@@ -253,28 +259,18 @@ export default function MedicationsScreen() {
           <Divider style={styles.divider} />
 
           <View style={styles.bottomSection}>
-            {medication.notes ? (
+            {medication.notes && (
               <View style={styles.notesContainer}>
                 <MaterialCommunityIcons name="note-text" size={18} color={COLORS.onSurfaceVariant} />
                 <Text variant="bodySmall" style={styles.notesText}>
                   {medication.notes}
                 </Text>
               </View>
-            ) : (
-              <View style={{ flex: 1 }} />
             )}
-
-            <View style={styles.actionButtons}>
-              <TouchableOpacity onPress={() => handleEditMedication(medication)} style={styles.actionButton}>
-                <MaterialCommunityIcons name="pencil" size={25} color={COLORS.primary} />
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => handleDeleteMedication(medication)} style={styles.actionButton}>
-                <MaterialCommunityIcons name="delete" size={25} color={COLORS.error} />
-              </TouchableOpacity>
-            </View>
           </View>
         </Card.Content>
-      </Card>
+        </Card>
+      </SwipeableCard>
     );
   };
 

@@ -8,6 +8,7 @@ import apiClient from '../services/api';
 import { vaccinationsService } from '../services/vaccinationsService';
 import { Pet } from '../types';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { SwipeableCard } from '../components/SwipeableCard';
 
 interface Vaccination {
   id: number;
@@ -211,8 +212,13 @@ export default function VaccinationsScreen() {
     const isExpired = vaccination.expire_date ? new Date(vaccination.expire_date) < new Date() : false;
     
     return (
-      <Card key={vaccination.id} style={styles.vaccinationCard}>
-        <Card.Content>
+      <SwipeableCard
+        key={vaccination.id}
+        onEdit={() => handleEditVaccination(vaccination)}
+        onDelete={() => handleDeleteVaccination(vaccination)}
+      >
+        <Card style={styles.vaccinationCard}>
+          <Card.Content>
           <View style={styles.vaccinationHeader}>
             <Text variant="titleLarge" style={styles.vaccinationName}>
               {vaccination.vac_name}
@@ -253,28 +259,18 @@ export default function VaccinationsScreen() {
           <Divider style={styles.divider} />
 
           <View style={styles.bottomSection}>
-            {vaccination.notes ? (
+            {vaccination.notes && (
               <View style={styles.notesContainer}>
                 <MaterialCommunityIcons name="note-text" size={18} color={COLORS.onSurfaceVariant} />
                 <Text variant="bodySmall" style={styles.notesText}>
                   {vaccination.notes}
                 </Text>
               </View>
-            ) : (
-              <View style={{ flex: 1 }} />
             )}
-
-            <View style={styles.actionButtons}>
-              <TouchableOpacity onPress={() => handleEditVaccination(vaccination)} style={styles.actionButton}>
-                <MaterialCommunityIcons name="pencil" size={25} color={COLORS.primary} />
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => handleDeleteVaccination(vaccination)} style={styles.actionButton}>
-                <MaterialCommunityIcons name="delete" size={25} color={COLORS.error} />
-              </TouchableOpacity>
-            </View>
           </View>
         </Card.Content>
-      </Card>
+        </Card>
+      </SwipeableCard>
     );
   };
 
