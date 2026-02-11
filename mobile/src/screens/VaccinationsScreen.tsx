@@ -242,13 +242,13 @@ export default function VaccinationsScreen() {
               <MaterialCommunityIcons 
                 name={isExpired ? "calendar-alert" : "calendar-refresh"} 
                 size={20} 
-                color={isExpired ? '#D32F2F' : COLORS.onSurfaceVariant} 
+                color={isExpired ? COLORS.error : COLORS.onSurfaceVariant} 
               />
               <Text 
                 variant="bodyMedium" 
                 style={[
                   styles.dateText,
-                  isExpired && { color: '#D32F2F', fontWeight: '600' }
+                  isExpired && { color: COLORS.error, fontWeight: '600' }
                 ]}
               >
                 {isExpired ? 'Vanhentunut' : 'Uusittava'}: {formatDate(vaccination.expire_date)}
@@ -353,7 +353,7 @@ export default function VaccinationsScreen() {
               <MaterialCommunityIcons 
                 name="paw" 
                 size={18} 
-                color={selectedPetId === pet.id ? '#FFFFFF' : COLORS.onSurfaceVariant} 
+                  color={selectedPetId === pet.id ? COLORS.onPrimary : COLORS.onSurfaceVariant}
               />
             )}
           >
@@ -403,9 +403,9 @@ export default function VaccinationsScreen() {
               style={styles.input}
               mode="outlined"
               placeholder="Esim. Raivotautirokote"
-              placeholderTextColor="rgba(0, 0, 0, 0.3)"
+              placeholderTextColor={COLORS.placeholderText}
               textColor={COLORS.onSurface}
-              theme={{ colors: { onSurfaceVariant: 'rgba(0, 0, 0, 0.4)' } }}
+              theme={{ colors: { onSurfaceVariant: COLORS.onSurfaceVariant } }}
             />
 
             <TouchableOpacity onPress={() => setShowVaccinationDatePicker(true)}>
@@ -417,9 +417,9 @@ export default function VaccinationsScreen() {
                 editable={false}
                 right={<TextInput.Icon icon="calendar" />}
                 placeholder="PP-KK-VVVV"
-                placeholderTextColor="rgba(0, 0, 0, 0.3)"
+                placeholderTextColor={COLORS.placeholderText}
                 textColor={COLORS.onSurface}
-                theme={{ colors: { onSurfaceVariant: 'rgba(0, 0, 0, 0.4)' } }}
+                theme={{ colors: { onSurfaceVariant: COLORS.onSurfaceVariant } }}
               />
             </TouchableOpacity>
 
@@ -446,9 +446,9 @@ export default function VaccinationsScreen() {
                 editable={false}
                 right={<TextInput.Icon icon="calendar" />}
                 placeholder="PP-KK-VVVV (valinnainen)"
-                placeholderTextColor="rgba(0, 0, 0, 0.3)"
+                placeholderTextColor={COLORS.placeholderText}
                 textColor={COLORS.onSurface}
-                theme={{ colors: { onSurfaceVariant: 'rgba(0, 0, 0, 0.4)' } }}
+                theme={{ colors: { onSurfaceVariant: COLORS.onSurfaceVariant } }}
               />
             </TouchableOpacity>
 
@@ -474,9 +474,9 @@ export default function VaccinationsScreen() {
               mode="outlined"
               keyboardType="decimal-pad"
               placeholder=""
-              placeholderTextColor="rgba(0, 0, 0, 0.3)"
+              placeholderTextColor={COLORS.placeholderText}
               textColor={COLORS.onSurface}
-              theme={{ colors: { onSurfaceVariant: 'rgba(0, 0, 0, 0.4)' } }}
+              theme={{ colors: { onSurfaceVariant: COLORS.onSurfaceVariant } }}
               onFocus={() => {
                 setTimeout(() => {
                   scrollViewRef.current?.scrollToEnd({ animated: true });
@@ -493,9 +493,9 @@ export default function VaccinationsScreen() {
               multiline
               numberOfLines={4}
               placeholder="Vuosittainen tehoste"
-              placeholderTextColor="rgba(0, 0, 0, 0.3)"
+              placeholderTextColor={COLORS.placeholderText}
               textColor={COLORS.onSurface}
-              theme={{ colors: { onSurfaceVariant: 'rgba(0, 0, 0, 0.4)' } }}
+              theme={{ colors: { onSurfaceVariant: COLORS.onSurfaceVariant } }}
               onFocus={() => {
                 setTimeout(() => {
                   scrollViewRef.current?.scrollToEnd({ animated: true });

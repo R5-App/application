@@ -8,6 +8,7 @@ import { View, Animated, Easing, StyleSheet } from 'react-native';
 import { COLORS, SPACING, LAYOUT } from '../styles/theme';
 import HomeScreen from '@screens/HomeScreen';
 import PetsScreen from '@screens/PetsScreen';
+import PetProfileScreen from '@screens/PetProfileScreen';
 import SettingsScreen from '@screens/SettingsScreen';
 import ProfileScreen from '@screens/ProfileScreen';
 import LoginScreen from '@screens/LoginScreen';
@@ -22,7 +23,24 @@ import VaccinationsScreen from '../screens/VaccinationsScreen';
 import WeightManagementScreen from '../screens/WeightManagementScreen';
 import CalendarScreen from '@screens/CalendarScreen';
 
-const Stack = createNativeStackNavigator();
+// Added this root stack params list while trying to fix pet navigation issues
+export type RootStackParamList = {
+  HomeTabs: undefined;
+  PetProfile: { petId: string };
+  WalkHistory: undefined;
+  WalkDetail: { walkId: string };
+  Profile: undefined;
+  Health: undefined;
+  Visits: undefined;
+  Medications: undefined;
+  Vaccinations: undefined;
+  WeightManagement: undefined;
+  Login: undefined;
+  Register: undefined;
+};
+
+const Stack = createNativeStackNavigator<RootStackParamList>();
+//vanha: const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
 function LoadingScreen() {
@@ -97,8 +115,8 @@ function HomeTabs() {
         headerShown: false,
         tabBarStyle: route.name === 'MapTab' ? {
           position: 'absolute',
-          backgroundColor: 'rgba(255, 255, 255, 0.35)',
-          borderTopColor: 'rgba(0, 0, 0, 0.1)',
+          backgroundColor: COLORS.dialogBackground,
+          borderTopColor: COLORS.outlineVariant,
         } : {
           backgroundColor: COLORS.surface,
         },
@@ -156,6 +174,14 @@ export default function Navigation() {
               name="HomeTabs"
               component={HomeTabs}
               options={{ headerShown: false }}
+            />
+              <Stack.Screen
+              name="PetProfile"
+              component={PetProfileScreen}
+              options={{
+                title: 'Lemmikin profiili',
+                headerBackTitle: 'Takaisin',
+              }}
             />
             <Stack.Screen
               name="WalkHistory"

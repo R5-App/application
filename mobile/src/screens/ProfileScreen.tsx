@@ -647,7 +647,7 @@ export default function ProfileScreen() {
         <Dialog 
           visible={deleteSubUserDialogVisible} 
           onDismiss={() => setDeleteSubUserDialogVisible(false)}
-          style={{ backgroundColor: 'rgba(255, 255, 255, 0.95)' }}
+          style={{ backgroundColor: COLORS.dialogBackground }}
         >
           <Dialog.Title>Poista alikäyttäjä</Dialog.Title>
           <Dialog.Content>
@@ -673,7 +673,7 @@ export default function ProfileScreen() {
         <Dialog 
           visible={passwordValidationDialogVisible} 
           onDismiss={() => setPasswordValidationDialogVisible(false)}
-          style={{ backgroundColor: 'rgba(255, 255, 255, 0.95)' }}
+          style={{ backgroundColor: COLORS.dialogBackground }}
         >
           <Dialog.Title>{passwordValidationMessage.title}</Dialog.Title>
           <Dialog.Content>
@@ -691,7 +691,7 @@ export default function ProfileScreen() {
         <Dialog 
           visible={emailValidationDialogVisible} 
           onDismiss={() => setEmailValidationDialogVisible(false)}
-          style={{ backgroundColor: 'rgba(255, 255, 255, 0.95)' }}
+          style={{ backgroundColor: COLORS.dialogBackground }}
         >
           <Dialog.Title>{emailValidationMessage.title}</Dialog.Title>
           <Dialog.Content>
@@ -709,7 +709,7 @@ export default function ProfileScreen() {
         <Dialog 
           visible={logoutDialogVisible} 
           onDismiss={() => setLogoutDialogVisible(false)}
-          style={{ backgroundColor: 'rgba(255, 255, 255, 0.95)' }}
+          style={{ backgroundColor: COLORS.dialogBackground }}
         >
           <Dialog.Title>Kirjaudu ulos</Dialog.Title>
           <Dialog.Content>

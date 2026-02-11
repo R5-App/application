@@ -37,16 +37,12 @@ interface DayEvent {
   vetName?: string;
 }
 
-const EVENT_TYPE_COLORS: Record<string, string> = {
-  vaccination: '#4CAF50',
-  veterinary: '#2196F3',
-  medication: '#FF9800',
-  grooming: '#9C27B0',
-  eläinlääkäri: '#2196F3',
-  rokotus: '#4CAF50',
-  lääkitys: '#FF9800',
-  trimmaus: '#9C27B0',
-  other: '#607D8B',
+const EVENT_TYPE_COLORS = {
+  vaccination: COLORS.vaccination,
+  veterinary: COLORS.veterinary,
+  medication: COLORS.medication,
+  grooming: COLORS.grooming,
+  other: COLORS.other
 };
 
 const DAYS_OF_WEEK = ['Ma', 'Ti', 'Ke', 'To', 'Pe', 'La', 'Su'];
@@ -730,7 +726,7 @@ export default function CalendarScreen() {
               <MaterialCommunityIcons 
                 name="paw" 
                 size={18} 
-                color={selectedPetId === pet.id ? '#FFFFFF' : COLORS.onSurfaceVariant} 
+                color={selectedPetId === pet.id ? COLORS.onPrimary : COLORS.onSurfaceVariant} 
               />
             )}
           >
@@ -845,9 +841,9 @@ export default function CalendarScreen() {
                 editable={false}
                 right={<TextInput.Icon icon="calendar" />}
                 placeholder="PP-KK-VVVV"
-                placeholderTextColor="rgba(0, 0, 0, 0.3)"
+                placeholderTextColor={COLORS.placeholderText}
                 textColor={COLORS.onSurface}
-                theme={{ colors: { onSurfaceVariant: 'rgba(0, 0, 0, 0.4)' } }}
+                theme={{ colors: { onSurfaceVariant: COLORS.onSurfaceVariant } }}
               />
             </TouchableOpacity>
 
