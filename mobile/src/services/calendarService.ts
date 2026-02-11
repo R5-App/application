@@ -6,34 +6,45 @@ export interface CalendarEvent {
   petId: number;
   title: string;
   description?: string;
-  date: string;
-  eventType: 'vaccination' | 'veterinary' | 'medication' | 'grooming' | 'other';
-  completed: boolean;
-  notificationEnabled?: boolean;
-  notificationTime?: string; // Time before event to notify (e.g., '1 day', '1 hour')
+  date: string; // "YYYY-MM-DD" extracted from ISO
+  time?: string; // "HH:MM:SS"
+  typeId?: number;
+  typeName?: string;
+  eventType: string;
+  remindBeforeMin?: number;
 }
+
+// Helper to map a raw event object to CalendarEvent
+const mapEvent = (event: any, petId?: number): CalendarEvent => ({
+  id: event.id,
+  petId: petId ?? event.pet_id,
+  title: event.title,
+  description: event.description,
+  date: event.date ? event.date.substring(0, 10) : '',
+  time: event.time,
+  typeId: event.type_id,
+  typeName: event.type_name,
+  eventType: event.type_name || event.event_type || 'other',
+  remindBeforeMin: event.remind_before_min,
+});
 
 export interface CreateCalendarEventData {
   pet_id: number;
+  type_id: number;
   title: string;
   description?: string;
   date: string;
-  event_type?: CalendarEvent['eventType'];
-  visit_type_id?: number;
-  completed?: boolean;
-  notification_enabled?: boolean;
-  notification_time?: string;
+  time?: string; // Format: "HH:MM:SS"
+  remind_before_min?: number;
 }
 
 export interface UpdateCalendarEventData {
-  pet_id?: number;
+  type_id?: number;
   title?: string;
   description?: string;
   date?: string;
-  event_type?: CalendarEvent['eventType'];
-  completed?: boolean;
-  notification_enabled?: boolean;
-  notification_time?: string;
+  time?: string; // Format: "HH:MM:SS"
+  remind_before_min?: number;
 }
 
 export const calendarService = {
@@ -45,17 +56,16 @@ export const calendarService = {
       const response = await apiClient.get('/api/calendar-events');
       
       if (response.data.success && response.data.data) {
-        return response.data.data.map((event: any) => ({
-          id: event.id,
-          petId: event.pet_id,
-          title: event.title,
-          description: event.description,
-          date: event.date,
-          eventType: event.event_type,
-          completed: event.completed || false,
-          notificationEnabled: event.notification_enabled,
-          notificationTime: event.notification_time,
-        }));
+        // Response is grouped by pet: [{pet_id, pet_name, calendar_events: [...]}]
+        const allEvents: CalendarEvent[] = [];
+        for (const petGroup of response.data.data) {
+          if (petGroup.calendar_events && Array.isArray(petGroup.calendar_events)) {
+            for (const event of petGroup.calendar_events) {
+              allEvents.push(mapEvent(event, petGroup.pet_id));
+            }
+          }
+        }
+        return allEvents;
       }
       
       return [];
@@ -73,17 +83,22 @@ export const calendarService = {
       const response = await apiClient.get(`/api/calendar-events/pet/${petId}`);
       
       if (response.data.success && response.data.data) {
-        return response.data.data.map((event: any) => ({
-          id: event.id,
-          petId: event.pet_id,
-          title: event.title,
-          description: event.description,
-          date: event.date,
-          eventType: event.event_type,
-          completed: event.completed || false,
-          notificationEnabled: event.notification_enabled,
-          notificationTime: event.notification_time,
-        }));
+        // May be flat array or nested — handle both
+        const raw = response.data.data;
+        if (Array.isArray(raw) && raw.length > 0 && raw[0].calendar_events) {
+          // Nested by pet
+          const allEvents: CalendarEvent[] = [];
+          for (const petGroup of raw) {
+            if (petGroup.calendar_events && Array.isArray(petGroup.calendar_events)) {
+              for (const event of petGroup.calendar_events) {
+                allEvents.push(mapEvent(event, petGroup.pet_id));
+              }
+            }
+          }
+          return allEvents;
+        }
+        // Flat array of events
+        return raw.filter((e: any) => e.date).map((event: any) => mapEvent(event, petId));
       }
       
       return [];
@@ -101,18 +116,7 @@ export const calendarService = {
       const response = await apiClient.get(`/api/calendar-events/${eventId}`);
       
       if (response.data.success && response.data.data) {
-        const event = response.data.data;
-        return {
-          id: event.id,
-          petId: event.pet_id,
-          title: event.title,
-          description: event.description,
-          date: event.date,
-          eventType: event.event_type,
-          completed: event.completed || false,
-          notificationEnabled: event.notification_enabled,
-          notificationTime: event.notification_time,
-        };
+        return mapEvent(response.data.data);
       }
       
       return null;
@@ -130,18 +134,7 @@ export const calendarService = {
       const response = await apiClient.post('/api/calendar-events', eventData);
       
       if (response.data.success && response.data.data) {
-        const event = response.data.data;
-        return {
-          id: event.id,
-          petId: event.pet_id,
-          title: event.title,
-          description: event.description,
-          date: event.date,
-          eventType: event.event_type,
-          completed: event.completed || false,
-          notificationEnabled: event.notification_enabled,
-          notificationTime: event.notification_time,
-        };
+        return mapEvent(response.data.data);
       }
       
       return null;
@@ -159,18 +152,7 @@ export const calendarService = {
       const response = await apiClient.put(`/api/calendar-events/${eventId}`, eventData);
       
       if (response.data.success && response.data.data) {
-        const event = response.data.data;
-        return {
-          id: event.id,
-          petId: event.pet_id,
-          title: event.title,
-          description: event.description,
-          date: event.date,
-          eventType: event.event_type,
-          completed: event.completed || false,
-          notificationEnabled: event.notification_enabled,
-          notificationTime: event.notification_time,
-        };
+        return mapEvent(response.data.data);
       }
       
       return null;
@@ -194,20 +176,6 @@ export const calendarService = {
   },
 
   /**
-   * Mark an event as completed
-   */
-  async markEventCompleted(eventId: number): Promise<CalendarEvent | null> {
-    return this.updateEvent(eventId, { completed: true });
-  },
-
-  /**
-   * Mark an event as incomplete
-   */
-  async markEventIncomplete(eventId: number): Promise<CalendarEvent | null> {
-    return this.updateEvent(eventId, { completed: false });
-  },
-
-  /**
    * Get upcoming events (events in the future)
    */
   async getUpcomingEvents(petId?: number): Promise<CalendarEvent[]> {
@@ -220,8 +188,8 @@ export const calendarService = {
       today.setHours(0, 0, 0, 0);
       
       return events
-        .filter(event => new Date(event.date) >= today && !event.completed)
-        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        .filter(event => event.date >= today.toISOString().substring(0, 10))
+        .sort((a, b) => a.date.localeCompare(b.date));
     } catch (error: any) {
       console.error('Failed to fetch upcoming events:', error);
       throw error;

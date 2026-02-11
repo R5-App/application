@@ -93,9 +93,10 @@ export interface CalendarEvent {
   petId: number;
   title: string;
   description?: string;
-  date: string;
-  eventType: 'vaccination' | 'veterinary' | 'medication' | 'grooming' | 'other';
-  completed: boolean;
-  notificationEnabled?: boolean;
-  notificationTime?: string;
+  date: string; // "YYYY-MM-DD"
+  time?: string; // "HH:MM:SS"
+  typeId?: number;
+  typeName?: string;
+  eventType: string;
+  remindBeforeMin?: number;
 }
