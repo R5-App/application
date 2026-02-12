@@ -5,7 +5,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import petService from '../services/petService';
 import { Pet } from '../types';
-import { COLORS, SPACING, LAYOUT } from '../styles/theme';
+import { COLORS, LAYOUT } from '../styles/theme';
 import { calculateAge, formatDate, validatePetData } from '../helpers';
 import { petsStyles as styles } from '../styles/screenStyles';
 
@@ -158,7 +158,7 @@ export default function PetDetailsScreen() {
 
                   // Navigate back after showing dialog
                   setTimeout(() => {
-                    navigation.goBack();
+                    navigation.goBack?.();
                   }, 1000);
                 } else {
                   setMessageTitle('Virhe');
@@ -297,7 +297,7 @@ export default function PetDetailsScreen() {
         {/* Vaccinations*/}
         <Button 
           mode="contained-tonal" 
-          onPress={() => navigation.navigate('Vaccinations')}
+          onPress={() => navigation.navigate('Vaccinations' as never)}
           icon="needle"
           style={styles.actionButton}
           >
@@ -307,7 +307,7 @@ export default function PetDetailsScreen() {
         {/* Medications*/}
         <Button 
           mode="contained-tonal" 
-          onPress={() => navigation.navigate('Medications')}
+          onPress={() => navigation.navigate('Medications' as never)}
           icon="pill"
           style={styles.actionButton}
         >
@@ -317,7 +317,7 @@ export default function PetDetailsScreen() {
         {/* Weight*/}
         <Button 
           mode="contained-tonal" 
-          onPress={() => navigation.navigate('WeightManagement')}
+          onPress={() => navigation.navigate('WeightManagement' as never)}
           icon="scale"
           style={styles.actionButton}
         >
@@ -340,6 +340,58 @@ export default function PetDetailsScreen() {
       {/* EDIT (Modal popup)*/}
       {/* Portal --> dialog will open up above rest of the stuff*/}
       <Portal>
+        {/* Delete confirmation dialog */}
+        <Dialog
+          visible={messageDialogVisible && messageTitle === 'Poista lemmikki'}
+          onDismiss={() => setMessageDialogVisible(false)}
+        >
+          <Dialog.Title style={{ color: COLORS.error }}>{messageTitle}</Dialog.Title>
+          <Dialog.Content>
+            <Text>{messageContent}</Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setMessageDialogVisible(false)}>Peruuta</Button>
+            <Button
+              onPress={confirmDeletePet}
+              disabled={isDeleting}
+              textColor={COLORS.error}
+            >
+              {isDeleting ? 'Poistetaan...' : 'Poista'}
+            </Button>
+          </Dialog.Actions>
+        </Dialog>
+
+        {/* Generic message dialog for other messages (success/error) */}
+        <Dialog
+          visible={messageDialogVisible && messageTitle !== 'Poista lemmikki'}
+          onDismiss={() => setMessageDialogVisible(false)}
+        >
+          <Dialog.Title style={{ color: messageType === 'error' ? COLORS.error : COLORS.primary }}>
+            {messageTitle}
+          </Dialog.Title>
+          <Dialog.Content>
+            <Text>{messageContent}</Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setMessageDialogVisible(false)}>OK</Button>
+          </Dialog.Actions>
+        </Dialog>
+
+        {/* Validation error dialog */}
+        <Dialog
+          visible={validationDialogVisible}
+          onDismiss={() => setValidationDialogVisible(false)}
+        >
+          <Dialog.Title>Virhe</Dialog.Title>
+          <Dialog.Content>
+            <Text>{validationMessage}</Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setValidationDialogVisible(false)}>OK</Button>
+          </Dialog.Actions>
+        </Dialog>
+
+        {/* Edit dialog */}
         <Dialog 
           visible={editDialogVisible} // Show/hide based on state
           onDismiss={() => setEditDialogVisible(false)} // Close when tapping outside

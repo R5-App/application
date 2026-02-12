@@ -3,15 +3,13 @@ import { View, FlatList } from 'react-native';
 import { Text, Card, FAB, Portal, Button, Dialog } from 'react-native-paper';
 import { petsStyles as styles } from '../styles/screenStyles';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack'; 
 import petService from '../services/petService';
 import { Pet } from '../types';
-import { RootStackParamList } from '../navigation/Navigation';
 
 const SCREEN_NAME = 'PetsScreen';
 
 export default function PetsScreen() {
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const navigation = useNavigation();
   const [pets, setPets] = useState<Pet[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddPetInfoDialog, setShowAddPetInfoDialog] = useState(false);
@@ -46,7 +44,7 @@ export default function PetsScreen() {
 
   // NAVIGATE TO PET PROFILE 
   const handlePetPress = (petId: string) => {
-    navigation.navigate('PetProfile', {petId});
+    (navigation.navigate as any)('PetProfile', {petId});
   };
 
   // NAVIGATE TO ADD PET SCREEN
