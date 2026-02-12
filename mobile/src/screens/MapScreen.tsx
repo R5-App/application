@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Modal, Platform, Linking } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import MapView, { Marker, PROVIDER_DEFAULT, PROVIDER_GOOGLE } from 'react-native-maps';
+import { OSMView, type OSMViewRef } from 'expo-osm-sdk';
 import * as Location from 'expo-location';
 import { useWalk } from '@contexts/WalkContext';
 import { petService } from '@services/petService';
@@ -25,9 +25,8 @@ export default function MapScreen() {
   const [showPetSelector, setShowPetSelector] = useState(false);
   const [selectedPets, setSelectedPets] = useState<Pet[]>([]);
   const [pets, setPets] = useState<Pet[]>([]);
-  const [mapReady, setMapReady] = useState(false);
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
-  const mapRef = useRef<MapView>(null);
+  const mapRef = useRef<OSMViewRef>(null);
 
   // Fetch pets from backend
   const fetchPets = useCallback(async () => {
@@ -51,23 +50,22 @@ export default function MapScreen() {
     getCurrentLocation();
   }, [fetchPets]);
 
-  // Animoidaan kartta käyttäjän sijaintiin kun sijainti saadaan ja kartta on valmis
+  // Animoidaan kartta käyttäjän sijaintiin kun sijainti saadaan
   useEffect(() => {
-    if (userLocation && mapReady && mapRef.current) {
+    if (userLocation && mapRef.current) {
       setTimeout(() => {
         try {
-          mapRef.current?.animateToRegion({
-            latitude: userLocation.latitude,
-            longitude: userLocation.longitude,
-            latitudeDelta: 0.01,
-            longitudeDelta: 0.01,
-          }, 1000);
+          mapRef.current?.animateToLocation(
+            userLocation.latitude,
+            userLocation.longitude,
+            15
+          );
         } catch (error) {
           console.error('Map animation error:', error);
         }
-      }, 300);
+      }, 500);
     }
-  }, [userLocation, mapReady]);
+  }, [userLocation]);
 
   const getCurrentLocation = async () => {
     try {
@@ -93,7 +91,7 @@ export default function MapScreen() {
   };
 
   useEffect(() => {
-    if (currentCoordinates.length > 0 && mapReady) {
+    if (currentCoordinates.length > 0) {
       const latest = currentCoordinates[currentCoordinates.length - 1];
       
       // Päivitä käyttäjän sijainti myös userLocation tilaan (markerin liikuttamiseksi)
@@ -104,19 +102,20 @@ export default function MapScreen() {
       
       // Keskitä kartta käyttäjän sijaintiin - Android 15 turvallisuus
       if (mapRef.current && latest.latitude && latest.longitude) {
-        try {
-          mapRef.current.animateToRegion({
-            latitude: latest.latitude,
-            longitude: latest.longitude,
-            latitudeDelta: 0.01,
-            longitudeDelta: 0.01,
-          }, 1000);
-        } catch (error) {
-          console.error('Map animation error:', error);
-        }
+        setTimeout(() => {
+          try {
+            mapRef.current?.animateToLocation(
+              latest.latitude,
+              latest.longitude,
+              15
+            );
+          } catch (error) {
+            console.error('Map animation error:', error);
+          }
+        }, 1000);
       }
     }
-  }, [currentCoordinates, mapReady]);
+  }, [currentCoordinates]);
 
   const handleSelectPet = async () => {
     // Check location permission first
@@ -230,107 +229,81 @@ export default function MapScreen() {
     return `${(meters / 1000).toFixed(2)} km`;
   };
 
+  // Luo markerit OSMView:lle
+  const osmMarkers = React.useMemo(() => {
+    const markers = [];
+    
+    // Tassunjäljet reitillä
+    if (currentCoordinates.length > 1) {
+      currentCoordinates
+        .filter((_, index) => index > 0 && index < currentCoordinates.length - 1 && index % 8 === 0)
+        .forEach((coord, index) => {
+          markers.push({
+            id: `paw-${index}`,
+            coordinate: {
+              latitude: coord.latitude,
+              longitude: coord.longitude,
+            },
+            title: '🐾',
+          });
+        });
+    }
+    
+    // Aloituspiste - näkyy vain kun ei trackkausta käynnissä
+    if (!isTracking && currentCoordinates.length > 0) {
+      markers.push({
+        id: 'start',
+        coordinate: {
+          latitude: currentCoordinates[0].latitude,
+          longitude: currentCoordinates[0].longitude,
+        },
+        title: '🏁 Aloitus',
+      });
+    }
+    
+    // Nykyinen sijainti lenkin aikana
+    if (isTracking && selectedPets.length > 0) {
+      const currentLocation = currentCoordinates.length > 0 
+        ? currentCoordinates[currentCoordinates.length - 1]
+        : userLocation;
+      
+      if (currentLocation) {
+        markers.push({
+          id: 'current',
+          coordinate: {
+            latitude: currentLocation.latitude,
+            longitude: currentLocation.longitude,
+          },
+          title: selectedPets.map(p => p.name).join(', '),
+        });
+      }
+    }
+    
+    // Käyttäjän sijainti kun ei lenkkiä käynnissä
+    if (!isTracking && userLocation && currentCoordinates.length === 0) {
+      markers.push({
+        id: 'user',
+        coordinate: userLocation,
+        title: 'Sijaintisi',
+      });
+    }
+    
+    return markers;
+  }, [isTracking, currentCoordinates, userLocation, selectedPets]);
+
   return (
     <View style={styles.container}>
       {/* Kokoruutu kartta */}
-      <MapView
+      <OSMView
         ref={mapRef}
         style={styles.map}
-        provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : PROVIDER_DEFAULT}
-        mapType="standard"
-        initialRegion={{
+        initialCenter={{
           latitude: userLocation?.latitude || 60.1699,
           longitude: userLocation?.longitude || 24.9384,
-          latitudeDelta: 0.01,
-          longitudeDelta: 0.01,
         }}
-        showsUserLocation={false}
-        showsMyLocationButton={false}
-        followsUserLocation={false}
-        loadingEnabled={true}
-        loadingIndicatorColor={COLORS.primary}
-        loadingBackgroundColor={COLORS.background}
-        scrollEnabled={hasLocationPermission}
-        zoomEnabled={hasLocationPermission}
-        pitchEnabled={hasLocationPermission}
-        rotateEnabled={hasLocationPermission}
-        onMapReady={() => {
-          setMapReady(true);
-          // Päivitä sijainti kun kartta on valmis
-          if (!userLocation) {
-            getCurrentLocation();
-          }
-        }}
-      >
-        {/* Tassunjäljet reitillä */}
-        {currentCoordinates.length > 1 && currentCoordinates
-          .filter((_, index) => index > 0 && index < currentCoordinates.length - 1 && index % 8 === 0)
-          .map((coord, index) => (
-            <Marker
-              key={`paw-${index}`}
-              coordinate={{
-                latitude: coord.latitude,
-                longitude: coord.longitude,
-              }}
-              anchor={{ x: 0.5, y: 0.5 }}
-              flat={true}
-            >
-              <MaterialCommunityIcons name="paw" size={20} color={COLORS.primary} style={{ opacity: 0.6 }} />
-            </Marker>
-          ))
-        }
-        
-        {/* Aloituspiste - näkyy vain kun ei trackkausta käynnissä */}
-        {!isTracking && currentCoordinates.length > 0 && (
-          <Marker
-            coordinate={{
-              latitude: currentCoordinates[0].latitude,
-              longitude: currentCoordinates[0].longitude,
-            }}
-            title="Aloitus"
-            anchor={{ x: 0.5, y: 0.5 }}
-            flat={true}
-          >
-            <MaterialCommunityIcons name="flag-checkered" size={28} color={COLORS.success} />
-          </Marker>
-        )}
-        
-        {/* Nykyinen sijainti lenkin aikana - lemmikin ikoni (kissa/koira) */}
-        {isTracking && selectedPets.length > 0 && (
-          <Marker
-            coordinate={{
-              latitude: currentCoordinates.length > 0 
-                ? currentCoordinates[currentCoordinates.length - 1].latitude 
-                : userLocation?.latitude || 60.1699,
-              longitude: currentCoordinates.length > 0 
-                ? currentCoordinates[currentCoordinates.length - 1].longitude 
-                : userLocation?.longitude || 24.9384,
-            }}
-            title={selectedPets.map(p => p.name).join(', ')}
-            anchor={{ x: 0.5, y: 0.5 }}
-            flat={true}
-            tracksViewChanges={false}
-          >
-            <MaterialCommunityIcons 
-              name={selectedPets[0].type?.toLowerCase() === 'cat' ? 'cat' : 'dog'} 
-              size={48} 
-              color="#424242" 
-            />
-          </Marker>
-        )}
-        
-        {/* Käyttäjän sijainti kun ei lenkkiä käynnissä */}
-        {!isTracking && userLocation && (
-          <Marker
-            coordinate={userLocation}
-            title="Sijaintisi"
-            anchor={{ x: 0.5, y: 0.5 }}
-            flat={true}
-          >
-            <MaterialCommunityIcons name="circle" size={16} color={COLORS.primary} />
-          </Marker>
-        )}
-      </MapView>
+        initialZoom={15}
+        markers={osmMarkers}
+      />
 
       {/* Overlay kun ei sijaintilupaa */}
       {!hasLocationPermission && (
