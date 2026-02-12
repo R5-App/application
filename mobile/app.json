@@ -4,7 +4,6 @@
     "slug": "mypet",
     "version": "1.0.0",
     "orientation": "portrait",
-    "entryPoint": "./index.ts",
     "assetBundlePatterns": [
       "**/*"
     ],
@@ -19,27 +18,34 @@
         "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.ACCESS_BACKGROUND_LOCATION",
         "android.permission.ACTIVITY_RECOGNITION"
-      ]
+      ],
+      "config": {
+      }
     },
     "ios": {
       "bundleIdentifier": "com.mypet.mobile",
       "buildNumber": "1",
-      "supportsTabletMode": true,
-      "supportsSmallDevice": true,
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "Tarvitsemme sijaintitietojasi lenkkien seurantaan",
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "Tarvitsemme sijaintitietojasi lenkkien seurantaan taustalla",
-        "NSMotionUsageDescription": "Tarvitsemme liikeanturitietoja askeleiden laskemiseen"
+        "NSLocationWhenInUseUsageDescription": "MyPet tarvitsee sijaintitietosi lenkkien seurantaan ja reitin tallentamiseen.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "MyPet tarvitsee sijaintitietosi lenkkien seurantaan myös taustalla.",
+        "NSLocationAlwaysUsageDescription": "MyPet tarvitsee sijaintitietosi lenkkien seurantaan myös taustalla.",
+        "NSMotionUsageDescription": "MyPet tarvitsee liikeanturitietoja askeleiden laskemiseen lenkin aikana."
       }
     },
     "plugins": [
+      "expo-osm-sdk/plugin",
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "Tarvitsemme sijaintitietojasi lenkkien seurantaan.",
-          "locationAlwaysPermission": "Tarvitsemme sijaintitietojasi lenkkien seurantaan taustalla.",
-          "locationWhenInUsePermission": "Tarvitsemme sijaintitietojasi lenkkien seurantaan."
+          "locationAlwaysAndWhenInUsePermission": "MyPet tarvitsee sijaintitietosi lenkkien seurantaan ja reitin tallentamiseen.",
+          "locationAlwaysPermission": "MyPet tarvitsee sijaintitietosi lenkkien seurantaan myös taustalla.",
+          "locationWhenInUsePermission": "MyPet tarvitsee sijaintitietosi lenkkien seurantaan ja reitin tallentamiseen.",
+          "isAndroidBackgroundLocationEnabled": true,
+          "isIosBackgroundLocationEnabled": true
         }
+      ],
+      [
+        "expo-sensors"
       ]
     ],
     "web": {

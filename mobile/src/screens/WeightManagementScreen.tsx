@@ -9,6 +9,7 @@ import { COLORS, SPACING } from '../styles/theme';
 import apiClient from '../services/api';
 import { weightsService } from '../services/weightsService';
 import { Pet } from '../types';
+import { SwipeableCard } from '../components/SwipeableCard';
 
 interface WeightRecord {
   id: number;
@@ -226,56 +227,51 @@ export default function WeightManagementScreen() {
     const weightChange = calculateWeightChange(index);
     
     return (
-      <Card key={record.id} style={styles.weightCard}>
-        <Card.Content>
-          <View style={styles.weightHeader}>
-            <View style={styles.weightMainInfo}>
-              <Text variant="displaySmall" style={styles.weightValue}>
-                {formatWeight(record.weight)} kg
-              </Text>
-            </View>
-            {weightChange && (
-              <Chip
-                icon={weightChange.isIncrease ? 'arrow-up' : 'arrow-down'}
-                compact
-                style={[
-                  styles.changeChip,
-                  weightChange.isIncrease ? styles.increaseChip : styles.decreaseChip
-                ]}
-                textStyle={
-                  weightChange.isIncrease ? styles.increaseChipText : styles.decreaseChipText
-                }
-              >
-                {weightChange.isIncrease ? '+' : ''}{weightChange.change} kg ({weightChange.percentChange}%)
-              </Chip>
-            )}
-          </View>
-
-          <Divider style={styles.divider} />
-
-          <View style={styles.bottomSection}>
-            {record.date ? (
-              <View style={styles.dateContainer}>
-                <MaterialCommunityIcons name="calendar" size={18} color={COLORS.onSurfaceVariant} />
-                <Text variant="bodyMedium" style={styles.dateText}>
-                  {formatDate(record.date)}
+      <SwipeableCard
+        key={record.id}
+        onEdit={() => handleEditWeightRecord(record)}
+        onDelete={() => handleDeleteWeightRecord(record)}
+      >
+        <Card style={styles.weightCard}>
+          <Card.Content>
+            <View style={styles.weightHeader}>
+              <View style={styles.weightMainInfo}>
+                <Text variant="displaySmall" style={styles.weightValue}>
+                  {formatWeight(record.weight)} kg
                 </Text>
               </View>
-              ) : (  
-                <View style={{  flex: 1}} />
+              {weightChange && (
+                <Chip
+                  icon={weightChange.isIncrease ? 'arrow-up' : 'arrow-down'}
+                  compact
+                  style={[
+                    styles.changeChip,
+                    weightChange.isIncrease ? styles.increaseChip : styles.decreaseChip
+                  ]}
+                  textStyle={
+                    weightChange.isIncrease ? styles.increaseChipText : styles.decreaseChipText
+                  }
+                >
+                  {weightChange.isIncrease ? '+' : ''}{weightChange.change} kg ({weightChange.percentChange}%)
+                </Chip>
               )}
+            </View>
 
-              <View style={styles.actionButtons}>
-                <TouchableOpacity onPress={() => handleEditWeightRecord(record)} style={styles.actionButton}>
-                  <MaterialCommunityIcons name="pencil" size={25} color={COLORS.primary} />
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => handleDeleteWeightRecord(record)} style={styles.actionButton}>
-                  <MaterialCommunityIcons name="delete" size={25} color={COLORS.error} />
-                </TouchableOpacity>
-              </View>
-          </View>
-        </Card.Content>
-      </Card>
+            <Divider style={styles.divider} />
+
+            <View style={styles.bottomSection}>
+              {record.date && (
+                <View style={styles.dateContainer}>
+                  <MaterialCommunityIcons name="calendar" size={18} color={COLORS.onSurfaceVariant} />
+                  <Text variant="bodyMedium" style={styles.dateText}>
+                    {formatDate(record.date)}
+                  </Text>
+                </View>
+              )}
+            </View>
+          </Card.Content>
+        </Card>
+      </SwipeableCard>
     );
   };
 
@@ -449,7 +445,7 @@ export default function WeightManagementScreen() {
                     y1={0}
                     x2={svgWidth}
                     y2={0}
-                    stroke="#E0E0E0"
+                    stroke={COLORS.outlineVariant}
                     strokeWidth="1"
                   />
                   <Line
@@ -457,7 +453,7 @@ export default function WeightManagementScreen() {
                     y1={svgHeight / 2}
                     x2={svgWidth}
                     y2={svgHeight / 2}
-                    stroke="#E0E0E0"
+                    stroke={COLORS.outlineVariant}
                     strokeWidth="1"
                   />
                   <Line
@@ -465,7 +461,7 @@ export default function WeightManagementScreen() {
                     y1={svgHeight}
                     x2={svgWidth}
                     y2={svgHeight}
-                    stroke="#E0E0E0"
+                    stroke={COLORS.outlineVariant}
                     strokeWidth="1"
                   />
                   
@@ -480,7 +476,7 @@ export default function WeightManagementScreen() {
                         y1={0}
                         x2={x}
                         y2={svgHeight}
-                        stroke="#E0E0E0"
+                        stroke={COLORS.outlineVariant}
                         strokeWidth="1"
                         strokeDasharray="4,4"
                       />
@@ -528,7 +524,7 @@ export default function WeightManagementScreen() {
                           cx={x}
                           cy={y}
                           r="5"
-                          fill="#FFFFFF"
+                          fill={COLORS.surface}
                         />
                         {/* Colored stroke circle */}
                         <Circle
@@ -617,7 +613,7 @@ export default function WeightManagementScreen() {
                 <MaterialCommunityIcons 
                   name="paw" 
                   size={18} 
-                  color={selectedPetId === pet.id ? '#FFFFFF' : COLORS.onSurfaceVariant} 
+                  color={selectedPetId === pet.id ? COLORS.onPrimary : COLORS.onSurfaceVariant} 
                 />
               )}
             >
@@ -678,9 +674,9 @@ export default function WeightManagementScreen() {
               mode="outlined"
               keyboardType="decimal-pad"
               placeholder=""
-              placeholderTextColor="rgba(0, 0, 0, 0.3)"
+              placeholderTextColor={COLORS.placeholderText}
               textColor={COLORS.onSurface}
-              theme={{ colors: { onSurfaceVariant: 'rgba(0, 0, 0, 0.4)' } }}
+              theme={{ colors: { onSurfaceVariant: COLORS.onSurfaceVariant } }}
               onFocus={() => {
                 setTimeout(() => {
                   scrollViewRef.current?.scrollToEnd({ animated: true });
@@ -697,9 +693,9 @@ export default function WeightManagementScreen() {
                 editable={false}
                 right={<TextInput.Icon icon="calendar" />}
                 placeholder="PP-KK-VVVV"
-                placeholderTextColor="rgba(0, 0, 0, 0.3)"
+                placeholderTextColor={COLORS.placeholderText}
                 textColor={COLORS.onSurface}
-                theme={{ colors: { onSurfaceVariant: 'rgba(0, 0, 0, 0.4)' } }}
+                theme={{ colors: { onSurfaceVariant: COLORS.onSurfaceVariant } }}
               />
             </TouchableOpacity>
 

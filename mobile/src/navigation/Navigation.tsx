@@ -117,8 +117,8 @@ function HomeTabs() {
         headerShown: false,
         tabBarStyle: route.name === 'MapTab' ? {
           position: 'absolute',
-          backgroundColor: 'rgba(255, 255, 255, 0.35)',
-          borderTopColor: 'rgba(0, 0, 0, 0.1)',
+          backgroundColor: COLORS.dialogBackground,
+          borderTopColor: COLORS.outlineVariant,
         } : {
           backgroundColor: COLORS.surface,
         },

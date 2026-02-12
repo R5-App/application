@@ -8,6 +8,7 @@ import apiClient from '../services/api';
 import { vaccinationsService } from '../services/vaccinationsService';
 import { Pet } from '../types';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { SwipeableCard } from '../components/SwipeableCard';
 
 interface Vaccination {
   id: number;
@@ -211,8 +212,13 @@ export default function VaccinationsScreen() {
     const isExpired = vaccination.expire_date ? new Date(vaccination.expire_date) < new Date() : false;
     
     return (
-      <Card key={vaccination.id} style={styles.vaccinationCard}>
-        <Card.Content>
+      <SwipeableCard
+        key={vaccination.id}
+        onEdit={() => handleEditVaccination(vaccination)}
+        onDelete={() => handleDeleteVaccination(vaccination)}
+      >
+        <Card style={styles.vaccinationCard}>
+          <Card.Content>
           <View style={styles.vaccinationHeader}>
             <Text variant="titleLarge" style={styles.vaccinationName}>
               {vaccination.vac_name}
@@ -236,13 +242,13 @@ export default function VaccinationsScreen() {
               <MaterialCommunityIcons 
                 name={isExpired ? "calendar-alert" : "calendar-refresh"} 
                 size={20} 
-                color={isExpired ? '#D32F2F' : COLORS.onSurfaceVariant} 
+                color={isExpired ? COLORS.error : COLORS.onSurfaceVariant} 
               />
               <Text 
                 variant="bodyMedium" 
                 style={[
                   styles.dateText,
-                  isExpired && { color: '#D32F2F', fontWeight: '600' }
+                  isExpired && { color: COLORS.error, fontWeight: '600' }
                 ]}
               >
                 {isExpired ? 'Vanhentunut' : 'Uusittava'}: {formatDate(vaccination.expire_date)}
@@ -253,28 +259,18 @@ export default function VaccinationsScreen() {
           <Divider style={styles.divider} />
 
           <View style={styles.bottomSection}>
-            {vaccination.notes ? (
+            {vaccination.notes && (
               <View style={styles.notesContainer}>
                 <MaterialCommunityIcons name="note-text" size={18} color={COLORS.onSurfaceVariant} />
                 <Text variant="bodySmall" style={styles.notesText}>
                   {vaccination.notes}
                 </Text>
               </View>
-            ) : (
-              <View style={{ flex: 1 }} />
             )}
-
-            <View style={styles.actionButtons}>
-              <TouchableOpacity onPress={() => handleEditVaccination(vaccination)} style={styles.actionButton}>
-                <MaterialCommunityIcons name="pencil" size={25} color={COLORS.primary} />
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => handleDeleteVaccination(vaccination)} style={styles.actionButton}>
-                <MaterialCommunityIcons name="delete" size={25} color={COLORS.error} />
-              </TouchableOpacity>
-            </View>
           </View>
         </Card.Content>
-      </Card>
+        </Card>
+      </SwipeableCard>
     );
   };
 
@@ -357,7 +353,7 @@ export default function VaccinationsScreen() {
               <MaterialCommunityIcons 
                 name="paw" 
                 size={18} 
-                color={selectedPetId === pet.id ? '#FFFFFF' : COLORS.onSurfaceVariant} 
+                  color={selectedPetId === pet.id ? COLORS.onPrimary : COLORS.onSurfaceVariant}
               />
             )}
           >
@@ -407,9 +403,9 @@ export default function VaccinationsScreen() {
               style={styles.input}
               mode="outlined"
               placeholder="Esim. Raivotautirokote"
-              placeholderTextColor="rgba(0, 0, 0, 0.3)"
+              placeholderTextColor={COLORS.placeholderText}
               textColor={COLORS.onSurface}
-              theme={{ colors: { onSurfaceVariant: 'rgba(0, 0, 0, 0.4)' } }}
+              theme={{ colors: { onSurfaceVariant: COLORS.onSurfaceVariant } }}
             />
 
             <TouchableOpacity onPress={() => setShowVaccinationDatePicker(true)}>
@@ -421,9 +417,9 @@ export default function VaccinationsScreen() {
                 editable={false}
                 right={<TextInput.Icon icon="calendar" />}
                 placeholder="PP-KK-VVVV"
-                placeholderTextColor="rgba(0, 0, 0, 0.3)"
+                placeholderTextColor={COLORS.placeholderText}
                 textColor={COLORS.onSurface}
-                theme={{ colors: { onSurfaceVariant: 'rgba(0, 0, 0, 0.4)' } }}
+                theme={{ colors: { onSurfaceVariant: COLORS.onSurfaceVariant } }}
               />
             </TouchableOpacity>
 
@@ -450,9 +446,9 @@ export default function VaccinationsScreen() {
                 editable={false}
                 right={<TextInput.Icon icon="calendar" />}
                 placeholder="PP-KK-VVVV (valinnainen)"
-                placeholderTextColor="rgba(0, 0, 0, 0.3)"
+                placeholderTextColor={COLORS.placeholderText}
                 textColor={COLORS.onSurface}
-                theme={{ colors: { onSurfaceVariant: 'rgba(0, 0, 0, 0.4)' } }}
+                theme={{ colors: { onSurfaceVariant: COLORS.onSurfaceVariant } }}
               />
             </TouchableOpacity>
 
@@ -478,9 +474,9 @@ export default function VaccinationsScreen() {
               mode="outlined"
               keyboardType="decimal-pad"
               placeholder=""
-              placeholderTextColor="rgba(0, 0, 0, 0.3)"
+              placeholderTextColor={COLORS.placeholderText}
               textColor={COLORS.onSurface}
-              theme={{ colors: { onSurfaceVariant: 'rgba(0, 0, 0, 0.4)' } }}
+              theme={{ colors: { onSurfaceVariant: COLORS.onSurfaceVariant } }}
               onFocus={() => {
                 setTimeout(() => {
                   scrollViewRef.current?.scrollToEnd({ animated: true });
@@ -497,9 +493,9 @@ export default function VaccinationsScreen() {
               multiline
               numberOfLines={4}
               placeholder="Vuosittainen tehoste"
-              placeholderTextColor="rgba(0, 0, 0, 0.3)"
+              placeholderTextColor={COLORS.placeholderText}
               textColor={COLORS.onSurface}
-              theme={{ colors: { onSurfaceVariant: 'rgba(0, 0, 0, 0.4)' } }}
+              theme={{ colors: { onSurfaceVariant: COLORS.onSurfaceVariant } }}
               onFocus={() => {
                 setTimeout(() => {
                   scrollViewRef.current?.scrollToEnd({ animated: true });

@@ -8,6 +8,7 @@ import apiClient from '../services/api';
 import { visitsService } from '../services/visitsService';
 import { Pet } from '../types';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { SwipeableCard } from '../components/SwipeableCard';
 
 interface Visit {
   id: number;
@@ -255,8 +256,13 @@ export default function VisitsScreen() {
   };
 
   const renderVisitCard = (visit: Visit) => (
-    <Card key={visit.id} style={styles.visitCard}>
-      <Card.Content>
+    <SwipeableCard
+      key={visit.id}
+      onEdit={() => handleEditVisit(visit)}
+      onDelete={() => handleDeleteVisit(visit)}
+    >
+      <Card style={styles.visitCard}>
+        <Card.Content>
         <View style={styles.visitHeader}>
           <View style={styles.dateContainer}>
             <MaterialCommunityIcons name="calendar" size={20} color={COLORS.primary} />
@@ -297,28 +303,18 @@ export default function VisitsScreen() {
         <Divider style={styles.divider} />
         
         <View style={styles.bottomSection}>
-          {visit.notes ? (
+          {visit.notes && (
             <View style={styles.notesContainer}>
               <MaterialCommunityIcons name="note-text" size={18} color={COLORS.onSurfaceVariant} />
               <Text variant="bodySmall" style={styles.notesText}>
                 {visit.notes}
               </Text>
             </View>
-          ) : (
-            <View style={{ flex: 1 }} />
           )}
-          
-          <View style={styles.actionButtons}>
-            <TouchableOpacity onPress={() => handleEditVisit(visit)} style={styles.actionButton}>
-              <MaterialCommunityIcons name="pencil" size={25} color={COLORS.primary} />
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => handleDeleteVisit(visit)} style={styles.actionButton}>
-              <MaterialCommunityIcons name="delete" size={25} color={COLORS.error} />
-            </TouchableOpacity>
-          </View>
         </View>
       </Card.Content>
-    </Card>
+      </Card>
+    </SwipeableCard>
   );
 
   const renderEmptyState = () => (
@@ -400,7 +396,7 @@ export default function VisitsScreen() {
               <MaterialCommunityIcons 
                 name="paw" 
                 size={18} 
-                color={selectedPetId === pet.id ? '#FFFFFF' : COLORS.onSurfaceVariant} 
+                color={selectedPetId === pet.id ? COLORS.onPrimary : COLORS.onSurfaceVariant} 
               />
             )}
           >
@@ -452,9 +448,9 @@ export default function VisitsScreen() {
                 editable={false}
                 right={<TextInput.Icon icon="calendar" />}
                 placeholder="PP-KK-VVVV"
-                placeholderTextColor="rgba(0, 0, 0, 0.3)"
+                placeholderTextColor={COLORS.placeholderText}
                 textColor={COLORS.onSurface}
-                theme={{ colors: { onSurfaceVariant: 'rgba(0, 0, 0, 0.4)' } }}
+                theme={{ colors: { onSurfaceVariant: COLORS.onSurfaceVariant } }}
               />
             </TouchableOpacity>
 
@@ -479,9 +475,9 @@ export default function VisitsScreen() {
               style={styles.input}
               mode="outlined"
               placeholder="Ell. Virtanen"
-              placeholderTextColor="rgba(0, 0, 0, 0.3)"
+              placeholderTextColor={COLORS.placeholderText}
               textColor={COLORS.onSurface}
-              theme={{ colors: { onSurfaceVariant: 'rgba(0, 0, 0, 0.4)' } }}
+              theme={{ colors: { onSurfaceVariant: COLORS.onSurfaceVariant } }}
             />
 
             <TextInput
@@ -491,9 +487,9 @@ export default function VisitsScreen() {
               style={styles.input}
               mode="outlined"
               placeholder="Eläinklinikka Keskusta"
-              placeholderTextColor="rgba(0, 0, 0, 0.3)"
+              placeholderTextColor={COLORS.placeholderText}
               textColor={COLORS.onSurface}
-              theme={{ colors: { onSurfaceVariant: 'rgba(0, 0, 0, 0.4)' } }}
+              theme={{ colors: { onSurfaceVariant: COLORS.onSurfaceVariant } }}
             />
 
 
@@ -542,9 +538,9 @@ export default function VisitsScreen() {
               mode="outlined"
               keyboardType="decimal-pad"
               placeholder=""
-              placeholderTextColor="rgba(0, 0, 0, 0.3)"
+              placeholderTextColor={COLORS.placeholderText}
               textColor={COLORS.onSurface}
-              theme={{ colors: { onSurfaceVariant: 'rgba(0, 0, 0, 0.4)' } }}
+              theme={{ colors: { onSurfaceVariant: COLORS.onSurfaceVariant } }}
               onFocus={() => {
                 setTimeout(() => {
                   scrollViewRef.current?.scrollToEnd({ animated: true });
@@ -562,9 +558,9 @@ export default function VisitsScreen() {
               multiline
               numberOfLines={4}
               placeholder="Lisää muistiinpanoja..."
-              placeholderTextColor="rgba(0, 0, 0, 0.3)"
+              placeholderTextColor={COLORS.placeholderText}
               textColor={COLORS.onSurface}
-              theme={{ colors: { onSurfaceVariant: 'rgba(0, 0, 0, 0.4)' } }}
+              theme={{ colors: { onSurfaceVariant: COLORS.onSurfaceVariant } }}
               onFocus={() => {
                 setTimeout(() => {
                   scrollViewRef.current?.scrollToEnd({ animated: true });

@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Modal, Platform } from 'react-native';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Modal, Platform, Linking } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import MapView, { Marker, Polyline, PROVIDER_DEFAULT } from 'react-native-maps';
+import { OSMView, type OSMViewRef } from 'expo-osm-sdk';
 import * as Location from 'expo-location';
 import { useWalk } from '@contexts/WalkContext';
+import { petService } from '@services/petService';
 import { Pet } from '../types';
 import { COLORS, SPACING, TYPOGRAPHY, LAYOUT } from '../styles/theme';
 
@@ -24,22 +25,47 @@ export default function MapScreen() {
   const [showPetSelector, setShowPetSelector] = useState(false);
   const [selectedPets, setSelectedPets] = useState<Pet[]>([]);
   const [pets, setPets] = useState<Pet[]>([]);
-  const mapRef = useRef<MapView>(null);
+  const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const mapRef = useRef<OSMViewRef>(null);
+
+  // Fetch pets from backend
+  const fetchPets = useCallback(async () => {
+    try {
+      const result = await petService.getUserPets();
+      if (result.success && result.pets) {
+        const appPets = result.pets.map(petService.convertToAppPet);
+        setPets(appPets);
+      }
+    } catch (error) {
+      console.error('Failed to fetch pets:', error);
+    }
+  }, []);
 
   useEffect(() => {
     if (!hasLocationPermission) {
       requestLocationPermission();
     }
-    // TODO: Hae lemmikit backendistä
-    // Väliaikaisesti kovakoodatut lemmikit
-    setPets([
-      { id: 1, name: 'Macho', breed: 'Akita', age: 12, weight: 44, dateOfBirth: '2013-10-01' },
-      { id: 2, name: 'Mirri', breed: 'Sekarotuinen', age: 2, weight: 15, dateOfBirth: '2022-06-15' },
-    ]);
-    
-    // Hae käyttäjän sijainti heti
+    fetchPets();
+    // Hae sijainti heti kun komponentti mounttaa
     getCurrentLocation();
-  }, []);
+  }, [fetchPets]);
+
+  // Animoidaan kartta käyttäjän sijaintiin kun sijainti saadaan
+  useEffect(() => {
+    if (userLocation && mapRef.current) {
+      setTimeout(() => {
+        try {
+          mapRef.current?.animateToLocation(
+            userLocation.latitude,
+            userLocation.longitude,
+            15
+          );
+        } catch (error) {
+          console.error('Map animation error:', error);
+        }
+      }, 500);
+    }
+  }, [userLocation]);
 
   const getCurrentLocation = async () => {
     try {
@@ -57,15 +83,8 @@ export default function MapScreen() {
         longitude: location.coords.longitude,
       };
 
-      // Keskitä kartta käyttäjän sijaintiin
-      if (mapRef.current) {
-        mapRef.current.animateToRegion({
-          latitude: userPos.latitude,
-          longitude: userPos.longitude,
-          latitudeDelta: 0.01,
-          longitudeDelta: 0.01,
-        }, 1000);
-      }
+      // Päivitä käyttäjän sijainti (useEffect hoitaa animoinnin)
+      setUserLocation(userPos);
     } catch (error) {
       console.error('Error getting location:', error);
     }
@@ -75,21 +94,54 @@ export default function MapScreen() {
     if (currentCoordinates.length > 0) {
       const latest = currentCoordinates[currentCoordinates.length - 1];
       
-      // Keskitä kartta käyttäjän sijaintiin
-      if (mapRef.current) {
-        mapRef.current.animateToRegion({
-          latitude: latest.latitude,
-          longitude: latest.longitude,
-          latitudeDelta: 0.01,
-          longitudeDelta: 0.01,
+      // Päivitä käyttäjän sijainti myös userLocation tilaan (markerin liikuttamiseksi)
+      setUserLocation({
+        latitude: latest.latitude,
+        longitude: latest.longitude,
+      });
+      
+      // Keskitä kartta käyttäjän sijaintiin - Android 15 turvallisuus
+      if (mapRef.current && latest.latitude && latest.longitude) {
+        setTimeout(() => {
+          try {
+            mapRef.current?.animateToLocation(
+              latest.latitude,
+              latest.longitude,
+              15
+            );
+          } catch (error) {
+            console.error('Map animation error:', error);
+          }
         }, 1000);
       }
     }
   }, [currentCoordinates]);
 
-  const handleSelectPet = () => {
+  const handleSelectPet = async () => {
+    // Check location permission first
+    if (!hasLocationPermission) {
+      Alert.alert(
+        'Sijaintitiedot tarvitaan',
+        'Anna sovellukselle lupa käyttää sijaintitietoja lenkin seuraamiseksi.',
+        [
+          { text: 'Peruuta', style: 'cancel' },
+          {
+            text: 'Avaa asetukset',
+            onPress: () => {
+              if (Platform.OS === 'ios') {
+                Linking.openURL('app-settings:');
+              } else {
+                Linking.openSettings();
+              }
+            },
+          },
+        ]
+      );
+      return;
+    }
+
     if (pets.length === 0) {
-      Alert.alert('Ei lemmikkejä', 'Lisää ensin lemmikki profiilissa');
+      Alert.alert('Ei lemmikkeitä', 'Lisää ensin lemmikki profiilissa');
       return;
     }
     setShowPetSelector(true);
@@ -158,6 +210,7 @@ export default function MapScreen() {
   };
 
   const formatDuration = (seconds: number): string => {
+    if (!seconds || isNaN(seconds)) return '0:00';
     const hrs = Math.floor(seconds / 3600);
     const mins = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;
@@ -169,57 +222,130 @@ export default function MapScreen() {
   };
 
   const formatDistance = (meters: number): string => {
+    if (!meters || isNaN(meters)) return '0 m';
     if (meters < 1000) {
       return `${Math.round(meters)} m`;
     }
     return `${(meters / 1000).toFixed(2)} km`;
   };
 
+  // Luo markerit OSMView:lle
+  const osmMarkers = React.useMemo(() => {
+    const markers = [];
+    
+    // Tassunjäljet reitillä
+    if (currentCoordinates.length > 1) {
+      currentCoordinates
+        .filter((_, index) => index > 0 && index < currentCoordinates.length - 1 && index % 8 === 0)
+        .forEach((coord, index) => {
+          markers.push({
+            id: `paw-${index}`,
+            coordinate: {
+              latitude: coord.latitude,
+              longitude: coord.longitude,
+            },
+            title: '🐾',
+          });
+        });
+    }
+    
+    // Aloituspiste - näkyy vain kun ei trackkausta käynnissä
+    if (!isTracking && currentCoordinates.length > 0) {
+      markers.push({
+        id: 'start',
+        coordinate: {
+          latitude: currentCoordinates[0].latitude,
+          longitude: currentCoordinates[0].longitude,
+        },
+        title: '🏁 Aloitus',
+      });
+    }
+    
+    // Nykyinen sijainti lenkin aikana
+    if (isTracking && selectedPets.length > 0) {
+      const currentLocation = currentCoordinates.length > 0 
+        ? currentCoordinates[currentCoordinates.length - 1]
+        : userLocation;
+      
+      if (currentLocation) {
+        markers.push({
+          id: 'current',
+          coordinate: {
+            latitude: currentLocation.latitude,
+            longitude: currentLocation.longitude,
+          },
+          title: selectedPets.map(p => p.name).join(', '),
+        });
+      }
+    }
+    
+    // Käyttäjän sijainti kun ei lenkkiä käynnissä
+    if (!isTracking && userLocation && currentCoordinates.length === 0) {
+      markers.push({
+        id: 'user',
+        coordinate: userLocation,
+        title: 'Sijaintisi',
+      });
+    }
+    
+    return markers;
+  }, [isTracking, currentCoordinates, userLocation, selectedPets]);
+
   return (
     <View style={styles.container}>
       {/* Kokoruutu kartta */}
-      <MapView
+      <OSMView
         ref={mapRef}
         style={styles.map}
-        provider={PROVIDER_DEFAULT}
-        mapType="standard"
-        initialRegion={{
-          latitude: 60.1699,
-          longitude: 24.9384,
-          latitudeDelta: 0.0922,
-          longitudeDelta: 0.0421,
+        initialCenter={{
+          latitude: userLocation?.latitude || 60.1699,
+          longitude: userLocation?.longitude || 24.9384,
         }}
-        showsUserLocation={true}
-        showsMyLocationButton={true}
-        followsUserLocation={isTracking}
-        loadingEnabled={true}
-        loadingIndicatorColor={COLORS.primary}
-        loadingBackgroundColor={COLORS.background}
-      >
-        {/* Lenkin reitti */}
-        {currentCoordinates.length > 1 && (
-          <Polyline
-            coordinates={currentCoordinates.map(c => ({
-              latitude: c.latitude,
-              longitude: c.longitude,
-            }))}
-            strokeColor={COLORS.primary}
-            strokeWidth={4}
-          />
-        )}
-        
-        {/* Aloituspiste */}
-        {currentCoordinates.length > 0 && (
-          <Marker
-            coordinate={{
-              latitude: currentCoordinates[0].latitude,
-              longitude: currentCoordinates[0].longitude,
-            }}
-            title="Aloitus"
-            pinColor="green"
-          />
-        )}
-      </MapView>
+        initialZoom={15}
+        markers={osmMarkers}
+      />
+
+      {/* Overlay kun ei sijaintilupaa */}
+      {!hasLocationPermission && (
+        <View style={styles.mapOverlay}>
+          <View style={styles.overlayContent}>
+            <MaterialCommunityIcons name="map-marker-off" size={64} color={COLORS.onSurfaceVariant} />
+            <Text style={styles.overlayTitle}>Sijaintitiedot tarvitaan</Text>
+            <Text style={styles.overlayText}>
+              Anna sovellukselle lupa käyttää sijaintitietoja nähdäksesi kartan ja aloittaaksesi lenkin seuraamisen.
+            </Text>
+            <TouchableOpacity
+              style={styles.overlayButton}
+              onPress={async () => {
+                const granted = await requestLocationPermission();
+                if (granted) {
+                  getCurrentLocation();
+                } else {
+                  Alert.alert(
+                    'Sijaintilupa evätty',
+                    'Voit myöhemmin sallia sijaintitiedot laitteen asetuksista.',
+                    [
+                      { text: 'OK', style: 'cancel' },
+                      {
+                        text: 'Avaa asetukset',
+                        onPress: () => {
+                          if (Platform.OS === 'ios') {
+                            Linking.openURL('app-settings:');
+                          } else {
+                            Linking.openSettings();
+                          }
+                        },
+                      },
+                    ]
+                  );
+                }
+              }}
+            >
+              <Text style={styles.overlayButtonText}>Salli sijaintitiedot</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
 
       {/* Yläosan tilastopalkki */}
       {isTracking && (
@@ -297,16 +423,24 @@ export default function MapScreen() {
       {!isTracking && (
         <View style={styles.controlPanel}>
           <TouchableOpacity 
-            style={styles.startButton} 
+            style={[
+              styles.startButton,
+              !hasLocationPermission && styles.startButtonDisabled
+            ]} 
             onPress={handleSelectPet}
             activeOpacity={0.8}
           >
             <MaterialCommunityIcons 
               name="paw" 
               size={LAYOUT.iconXl} 
-              color={COLORS.onPrimary} 
+              color={hasLocationPermission ? COLORS.onPrimary : COLORS.onSurfaceVariant} 
             />
-            <Text style={styles.startButtonText}>Aloita lenkki</Text>
+            <Text style={[
+              styles.startButtonText,
+              !hasLocationPermission && styles.startButtonTextDisabled
+            ]}>
+              {hasLocationPermission ? 'Aloita lenkki' : 'Sijaintilupa tarvitaan'}
+            </Text>
           </TouchableOpacity>
         </View>
       )}
@@ -378,6 +512,83 @@ const styles = StyleSheet.create({
   },
   map: {
     flex: 1,
+  },
+  mapOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: SPACING.xl,
+  },
+  overlayContent: {
+    backgroundColor: COLORS.surface,
+    borderRadius: LAYOUT.radiusLg,
+    padding: SPACING.xl,
+    alignItems: 'center',
+    maxWidth: 400,
+    width: '100%',
+    elevation: 8,
+    shadowColor: COLORS.shadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  },
+  overlayTitle: {
+    ...TYPOGRAPHY.titleLarge,
+    color: COLORS.onSurface,
+    marginTop: SPACING.md,
+    marginBottom: SPACING.sm,
+    textAlign: 'center',
+  },
+  overlayText: {
+    ...TYPOGRAPHY.bodyMedium,
+    color: COLORS.onSurfaceVariant,
+    textAlign: 'center',
+    marginBottom: SPACING.lg,
+  },
+  overlayButton: {
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: SPACING.xl,
+    paddingVertical: SPACING.md,
+    borderRadius: LAYOUT.radiusMd,
+    elevation: 2,
+    shadowColor: COLORS.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+  },
+  overlayButtonText: {
+    ...TYPOGRAPHY.labelLarge,
+    color: COLORS.onPrimary,
+    fontWeight: '600',
+  },
+  markerContainer: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 20,
+    padding: SPACING.xs,
+    elevation: 4,
+    shadowColor: COLORS.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+  },
+  currentLocationMarker: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  userLocationMarker: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.surface,
+    borderRadius: 15,
+    padding: 4,
+    borderWidth: 2,
+    borderColor: COLORS.primary,
+    elevation: 2,
+    shadowColor: COLORS.shadow,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
   },
   statsPanel: {
     backgroundColor: COLORS.surface,
@@ -481,6 +692,13 @@ const styles = StyleSheet.create({
     marginLeft: SPACING.sm,
     fontWeight: '600',
   },
+  startButtonDisabled: {
+    backgroundColor: COLORS.surfaceVariant,
+    opacity: 0.6,
+  },
+  startButtonTextDisabled: {
+    color: COLORS.onSurfaceVariant,
+  },
   bottomControls: {
     position: 'absolute',
     bottom: 90,
@@ -545,7 +763,7 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: COLORS.backdrop,
     justifyContent: 'flex-end',
   },
   modalContent: {

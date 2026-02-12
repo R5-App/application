@@ -61,6 +61,16 @@ export const COLORS = {
   // Utilities
   shadow: 'rgba(0, 0, 0, 0.15)',
   scrim: 'rgba(0, 0, 0, 0.32)',
+  backdrop: 'rgba(0, 0, 0, 0.5)',
+  dialogBackground: 'rgba(255, 255, 255, 0.95)',
+  placeholderText: 'rgba(0, 0, 0, 0.3)',
+  
+  // Calendar Event Colors (MD3-yhteensopivat)
+  vaccination: '#4CAF50',
+  veterinary: '#2196F3',
+  medication: '#FF9800',
+  grooming: '#9C27B0',
+  other: '#607D8B',
 };
 
 // ============================================

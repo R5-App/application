@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import MapView, { Marker, Polyline, PROVIDER_DEFAULT } from 'react-native-maps';
+import { OSMView, type OSMViewRef } from 'expo-osm-sdk';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { Walk } from '../types';
 import { COLORS, SPACING, TYPOGRAPHY, LAYOUT } from '../styles/theme';
@@ -10,24 +10,25 @@ export default function WalkDetailScreen() {
   const route = useRoute();
   const navigation = useNavigation();
   const { walk } = route.params as { walk: Walk };
-  const mapRef = useRef<MapView>(null);
+  const mapRef = useRef<OSMViewRef>(null);
 
   useEffect(() => {
-    if (walk.coordinates.length > 0 && mapRef.current) {
-      // Keskitä kartta lenkin reitille
-      const coords = walk.coordinates.map(c => ({
-        latitude: c.latitude,
-        longitude: c.longitude,
-      }));
+    if (walk.path?.length > 0 && mapRef.current) {
+      // Laske reitin keskipiste
+      const latSum = walk.path.reduce((sum: number, p: any) => sum + p.latitude, 0);
+      const lngSum = walk.path.reduce((sum: number, p: any) => sum + p.longitude, 0);
+      const centerLat = latSum / walk.path.length;
+      const centerLng = lngSum / walk.path.length;
       
-      mapRef.current.fitToCoordinates(coords, {
-        edgePadding: { top: 150, right: 50, bottom: 50, left: 50 },
-        animated: true,
-      });
+      // Animoi kartalle keskipisteeseen
+      setTimeout(() => {
+        mapRef.current?.animateToLocation(centerLat, centerLng, 14);
+      }, 500);
     }
   }, [walk]);
 
   const formatDuration = (seconds: number): string => {
+    if (!seconds || isNaN(seconds)) return '0 min';
     const hrs = Math.floor(seconds / 3600);
     const mins = Math.floor((seconds % 3600) / 60);
     
@@ -38,6 +39,7 @@ export default function WalkDetailScreen() {
   };
 
   const formatDistance = (meters: number): string => {
+    if (!meters || isNaN(meters)) return '0 m';
     if (meters < 1000) {
       return `${Math.round(meters)} m`;
     }
@@ -46,66 +48,74 @@ export default function WalkDetailScreen() {
 
   const formatDate = (timestamp: number): string => {
     const date = new Date(timestamp);
-    return date.toLocaleDateString('fi-FI', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+    return date.toLocaleDateString('fi-FI');
   };
+
+  // Luo markerit OSMView:lle
+  const osmMarkers = React.useMemo(() => {
+    const markers = [];
+    
+    if (walk.path && walk.path.length > 0) {
+      // Aloituspiste
+      markers.push({
+        id: 'start',
+        coordinate: {
+          latitude: walk.path[0].latitude,
+          longitude: walk.path[0].longitude,
+        },
+        title: '🟢 Aloitus',
+      });
+      
+      // Lopetuspiste
+      markers.push({
+        id: 'end',
+        coordinate: {
+          latitude: walk.path[walk.path.length - 1].latitude,
+          longitude: walk.path[walk.path.length - 1].longitude,
+        },
+        title: '🔴 Lopetus',
+      });
+      
+      // Lisää välipisteitä reitille (joka 10. piste tassunjälki)
+      walk.path
+        .filter((_, index) => index > 0 && index < walk.path.length - 1 && index % 10 === 0)
+        .forEach((point: any, index: number) => {
+          markers.push({
+            id: `paw-${index}`,
+            coordinate: {
+              latitude: point.latitude,
+              longitude: point.longitude,
+            },
+            title: '🐾',
+          });
+        });
+    }
+    
+    return markers;
+  }, [walk.path]);
 
   return (
     <View style={styles.container}>
       {/* Kokoruutu kartta */}
-      <MapView
+      <OSMView
         ref={mapRef}
         style={styles.map}
-        provider={PROVIDER_DEFAULT}
-        mapType="standard"
-        initialRegion={{
-          latitude: walk.coordinates[0]?.latitude || 60.1699,
-          longitude: walk.coordinates[0]?.longitude || 24.9384,
-          latitudeDelta: 0.05,
-          longitudeDelta: 0.05,
+        initialCenter={{
+          latitude: walk.path?.[0]?.latitude || 60.1699,
+          longitude: walk.path?.[0]?.longitude || 24.9384,
         }}
-      >
-        {/* Lenkin reitti */}
-        {walk.coordinates.length > 1 && (
-          <Polyline
-            coordinates={walk.coordinates.map(c => ({
-              latitude: c.latitude,
-              longitude: c.longitude,
-            }))}
-            strokeColor={COLORS.primary}
-            strokeWidth={4}
-          />
-        )}
-        
-        {/* Aloituspiste */}
-        {walk.coordinates.length > 0 && (
-          <Marker
-            coordinate={{
-              latitude: walk.coordinates[0].latitude,
-              longitude: walk.coordinates[0].longitude,
-            }}
-            title="Aloitus"
-            pinColor="green"
-          />
-        )}
+        initialZoom={14}
+        markers={osmMarkers}
+      />
 
-        {/* Lopetuspiste */}
-        {walk.coordinates.length > 0 && (
-          <Marker
-            coordinate={{
-              latitude: walk.coordinates[walk.coordinates.length - 1].latitude,
-              longitude: walk.coordinates[walk.coordinates.length - 1].longitude,
-            }}
-            title="Lopetus"
-            pinColor="red"
-          />
-        )}
-      </MapView>
+      {/* Näytä viesti jos ei reittidataa */}
+      {(!walk.path || walk.path.length === 0) && (
+        <View style={styles.noDataOverlay}>
+          <MaterialCommunityIcons name="map-marker-off" size={64} color={COLORS.onSurfaceVariant} />
+          <Text style={styles.noDataText}>Ei reittidataa saatavilla</Text>
+          <Text style={styles.noDataSubtext}>Tämä lenkki tallennettiin ilman sijaintitietoja</Text>
+        </View>
+      )}
 
       {/* Yläosan tilastopalkki */}
       <View style={styles.topBar}>
@@ -125,28 +135,30 @@ export default function WalkDetailScreen() {
         <View style={styles.statsBar}>
           <View style={styles.statItem}>
             <MaterialCommunityIcons name="map-marker-distance" size={20} color={COLORS.onPrimary} />
-            <Text style={styles.statValue}>{formatDistance(walk.stats.distance)}</Text>
+            <Text style={styles.statValue}>{formatDistance(walk.distance)}</Text>
           </View>
           
           <View style={styles.statDivider} />
           
           <View style={styles.statItem}>
             <MaterialCommunityIcons name="clock-outline" size={20} color={COLORS.onPrimary} />
-            <Text style={styles.statValue}>{formatDuration(walk.stats.duration)}</Text>
+            <Text style={styles.statValue}>{formatDuration(walk.duration)}</Text>
           </View>
           
           <View style={styles.statDivider} />
           
           <View style={styles.statItem}>
             <MaterialCommunityIcons name="speedometer" size={20} color={COLORS.onPrimary} />
-            <Text style={styles.statValue}>{walk.stats.averageSpeed.toFixed(1)} km/h</Text>
+            <Text style={styles.statValue}>
+              {typeof walk.averageSpeed === 'number' ? walk.averageSpeed.toFixed(1) : '0.0'} km/h
+            </Text>
           </View>
           
           <View style={styles.statDivider} />
           
           <View style={styles.statItem}>
             <MaterialCommunityIcons name="walk" size={20} color={COLORS.onPrimary} />
-            <Text style={styles.statValue}>{walk.stats.steps || 0}</Text>
+            <Text style={styles.statValue}>{walk.steps || 0}</Text>
           </View>
         </View>
 
@@ -227,5 +239,27 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: SPACING.sm,
     opacity: 0.9,
+  },
+  noDataOverlay: {
+    position: 'absolute',
+    top: '40%',
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: SPACING.xl,
+  },
+  noDataText: {
+    ...TYPOGRAPHY.titleMedium,
+    color: COLORS.onSurfaceVariant,
+    marginTop: SPACING.md,
+    textAlign: 'center',
+  },
+  noDataSubtext: {
+    ...TYPOGRAPHY.bodyMedium,
+    color: COLORS.onSurfaceVariant,
+    marginTop: SPACING.xs,
+    textAlign: 'center',
+    opacity: 0.7,
   },
 });

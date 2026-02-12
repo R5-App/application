@@ -1,132 +1,126 @@
+// Pet service for backend communication
 import apiClient from './api';
 import { Pet } from '../types';
 
+export interface PetResponse {
+  id: number;
+  owner_id: string;
+  name: string;
+  type: string;
+  breed: string;
+  sex: string;
+  birthdate: string;
+  notes?: string;
+  age_years?: number;
+  created_at: string;
+}
+
 export const petService = {
-  // Fetch all pets for the authenticated user
-  async getUserPets(): Promise<{ success: boolean; data?: Pet[]; message?: string }> {
+  /**
+   * Get all user's pets (owned and shared)
+   */
+  async getUserPets(): Promise<{ success: boolean; pets?: PetResponse[]; message?: string }> {
     try {
-      const response = await apiClient.get('/api/pets');
-      
+      const response = await apiClient.get<{ success: boolean; message: string; data: PetResponse[]; count: number }>(
+        '/api/pets'
+      );
+
       if (response.data.success) {
-        return {
-          success: true,
-          data: response.data.data,
-        };
+        return { success: true, pets: response.data.data };
       }
-      
-      return {
-        success: false,
-        message: 'Lemmikkien haku epäonnistui',
-      };
+
+      return { success: false, message: response.data.message };
     } catch (error: any) {
-      console.error('Error fetching user pets:', error);
+      console.error('Get user pets error:', error);
       return {
         success: false,
-        message: 'Lemmikkien lataus epäonnistui',
+        message: error.response?.data?.message || 'Lemmikkien haku epäonnistui',
       };
     }
   },
 
-  // Fetch a pet by ID
-  async getPetById(petId: string): Promise<{ success: boolean; data?: Pet; message?: string }> {
+  /**
+   * Get complete pet data including all records
+   */
+  async getCompletePetData(petId: number): Promise<{ success: boolean; pet?: any; message?: string }> {
     try {
-      const response = await apiClient.get(`/api/pets/${petId}`);
-      
+      const response = await apiClient.get<{ success: boolean; message: string; data: any }>(
+        `/api/pets/${petId}/complete`
+      );
+
       if (response.data.success) {
-        return {
-          success: true,
-          data: response.data.data,
-        };
+        return { success: true, pet: response.data.data };
       }
-      
-      return {
-        success: false,
-        message: 'Lemmikin tietojen haku epäonnistui',
-      };
+
+      return { success: false, message: response.data.message };
     } catch (error: any) {
-      console.error('Error fetching pet details:', error);
+      console.error('Get complete pet data error:', error);
       return {
         success: false,
-        message: 'Lemmikin tietojen lataus epäonnistui',
+        message: error.response?.data?.message || 'Lemmikin tietojen haku epäonnistui',
       };
     }
   },
 
-  // Create a new pet
-  async createPet(petData: Omit<Pet, 'id'>): Promise<{ success: boolean; data?: Pet; message?: string }> {
+  /**
+   * Create a new pet
+   */
+  async createPet(petData: { name: string; type?: string; breed?: string; birthdate?: string; sex?: string; notes?: string }): Promise<{ success: boolean; pet?: PetResponse; message?: string }> {
     try {
-      const response = await apiClient.post('/api/pets', petData);
-      
+      const response = await apiClient.post<{ success: boolean; message: string; data: PetResponse }>(
+        '/api/pets',
+        petData
+      );
+
       if (response.data.success) {
-        return {
-          success: true,
-          data: response.data.data,
-          message: 'Lemmikki lisätty onnistuneesti',
-        };
+        return { success: true, pet: response.data.data };
       }
-      
-      return {
-        success: false,
-        message: 'Lemmikin lisääminen epäonnistui',
-      };
+
+      return { success: false, message: response.data.message };
     } catch (error: any) {
-      console.error('Error creating pet:', error);
+      console.error('Create pet error:', error);
       return {
         success: false,
-        message: 'Lemmikin lisääminen epäonnistui',
+        message: error.response?.data?.message || 'Lemmikin luonti epäonnistui',
       };
     }
   },
 
-  // Update an existing pet
-  async updatePet(petId: string, petData: Partial<Pet>): Promise<{ success: boolean; data?: Pet; message?: string }> {
+  /**
+   * Delete a pet
+   */
+  async deletePet(petId: number): Promise<{ success: boolean; message?: string }> {
     try {
-      const response = await apiClient.put(`/api/pets/${petId}`, petData);
-      
-      if (response.data.success) {
-        return {
-          success: true,
-          data: response.data.data,
-          message: 'Lemmikin tiedot päivitetty onnistuneesti',
-        };
-      }
-      
-      return {
-        success: false,
-        message: 'Päivitys epäonnistui',
-      };
+      const response = await apiClient.delete<{ success: boolean; message: string }>(
+        `/api/pets/${petId}`
+      );
+
+      return { success: response.data.success, message: response.data.message };
     } catch (error: any) {
-      console.error('Error updating pet:', error);
+      console.error('Delete pet error:', error);
       return {
         success: false,
-        message: 'Päivitys epäonnistui',
+        message: error.response?.data?.message || 'Lemmikin poisto epäonnistui',
       };
     }
   },
 
-  // Delete a pet
-  async deletePet(petId: string): Promise<{ success: boolean; message?: string }> {
-    try {
-      const response = await apiClient.delete(`/api/pets/${petId}`);
-      
-      if (response.data.success) {
-        return {
-          success: true,
-          message: 'Lemmikki poistettu onnistuneesti',
-        };
-      }
-      
-      return {
-        success: false,
-        message: 'Poistaminen epäonnistui',
-      };
-    } catch (error: any) {
-      console.error('Error deleting pet:', error);
-      return {
-        success: false,
-        message: 'Poistaminen epäonnistui',
-      };
-    }
+  /**
+   * Convert backend pet to app Pet format
+   */
+  convertToAppPet(backendPet: PetResponse): Pet {
+    const birthdate = new Date(backendPet.birthdate);
+    const age = new Date().getFullYear() - birthdate.getFullYear();
+
+    return {
+      id: backendPet.id,
+      name: backendPet.name,
+      type: backendPet.type,
+      breed: backendPet.breed || 'Tuntematon',
+      age: backendPet.age_years || age,
+      weight: 0, // Weight needs to be fetched separately
+      dateOfBirth: backendPet.birthdate,
+    };
   },
 };
 

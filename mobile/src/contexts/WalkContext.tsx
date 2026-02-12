@@ -4,6 +4,7 @@ import { Pedometer } from 'expo-sensors';
 import { Walk, Coordinate, WalkStats, WalkSettings } from '../types';
 import { storageService } from '../services/storageService';
 import { locationService } from '../services/locationService';
+import { routeService } from '../services/routeService';
 
 interface WalkContextType {
   // Current walk state
@@ -27,6 +28,10 @@ interface WalkContextType {
   deleteWalk: (id: string) => Promise<void>;
   refreshWalks: () => Promise<void>;
   
+  // Sync
+  syncWalk: (walk: Walk) => Promise<{ success: boolean; message?: string }>;
+  syncAllWalks: () => Promise<{ synced: number; failed: number }>;
+  
   // Permission
   hasLocationPermission: boolean;
   requestLocationPermission: () => Promise<boolean>;
@@ -44,13 +49,14 @@ export function WalkProvider({ children }: { children: ReactNode }) {
     duration: 0,
     averageSpeed: 0,
     steps: 0,
-    calories: 0,
   });
   const [walks, setWalks] = useState<Walk[]>([]);
   const [settings, setSettings] = useState<WalkSettings>({
     enableSync: false,
     autoStartOnMovement: false,
     trackSteps: true,
+    syncOnlyOnWifi: false,
+    syncedOnce: false,
   });
   const [hasLocationPermission, setHasLocationPermission] = useState(false);
   const [currentPetId, setCurrentPetId] = useState<string>('');
@@ -125,7 +131,6 @@ export function WalkProvider({ children }: { children: ReactNode }) {
       duration: 0,
       averageSpeed: 0,
       steps: 0,
-      calories: 0,
     });
 
     // Start location tracking
@@ -159,11 +164,9 @@ export function WalkProvider({ children }: { children: ReactNode }) {
       if (isPedometerAvailable) {
         const subscription = Pedometer.watchStepCount(result => {
           const steps = result.steps;
-          const calories = steps * 0.04; // Approximate calories
           setCurrentStats((prev: WalkStats) => ({
             ...prev,
             steps,
-            calories: Math.round(calories),
           }));
         });
         setPedometerSubscription(subscription);
@@ -185,15 +188,25 @@ export function WalkProvider({ children }: { children: ReactNode }) {
       setPedometerSubscription(null);
     }
 
+    // Calculate final duration and stats
+    const finalDuration = Math.floor((endTime - startTime) / 1000);
+    const finalDistance = Math.round(currentStats.distance || 0);
+    const finalAverageSpeed = finalDuration > 0 
+      ? Math.round(((finalDistance / 1000) / (finalDuration / 3600)) * 100) / 100 
+      : 0;
+
     // Create walk object
     const walk: Walk = {
       id: `walk_${endTime}`,
-      startTime,
-      endTime,
-      coordinates: currentCoordinates,
-      stats: currentStats,
       petId: currentPetId,
       petName: currentPetName,
+      startTime,
+      endTime,
+      distance: finalDistance,
+      duration: finalDuration,
+      averageSpeed: finalAverageSpeed,
+      steps: Math.round(currentStats.steps || 0),
+      path: currentCoordinates || [],
       synced: false,
     };
 
@@ -205,6 +218,15 @@ export function WalkProvider({ children }: { children: ReactNode }) {
     setIsTracking(false);
     setIsPaused(false);
     setCurrentWalk(walk);
+
+    // Auto-sync if enabled and path has coordinates
+    if (settings.enableSync && walk.path.length > 0) {
+      try {
+        await routeService.syncWalk(walk);
+      } catch (error) {
+        console.error('Auto-sync failed:', error);
+      }
+    }
   };
 
   const pauseWalk = () => {
@@ -216,12 +238,64 @@ export function WalkProvider({ children }: { children: ReactNode }) {
   };
 
   const deleteWalk = async (id: string) => {
+    const walk = walks.find(w => w.id === id);
+    
+    // Delete from backend if it has been synced
+    if (walk?.backendId && settings.enableSync) {
+      try {
+        await routeService.deleteRoute(parseInt(walk.backendId));
+      } catch (error) {
+        console.error('Failed to delete walk from backend:', error);
+        // Don't throw error, continue with local deletion
+      }
+    }
+    
+    // Delete from local storage
     await storageService.deleteWalk(id);
     setWalks(prev => prev.filter(walk => walk.id !== id));
   };
 
   const refreshWalks = async () => {
     await loadWalks();
+    
+    // Merge with backend routes if sync is enabled
+    if (settings.enableSync) {
+      try {
+        await routeService.mergeRoutes();
+        await loadWalks(); // Reload after merge
+      } catch (error) {
+        console.error('Failed to merge routes:', error);
+        // Don't throw, just log the error
+      }
+    }
+  };
+
+  const syncWalk = async (walk: Walk) => {
+    try {
+      if (!walk.path || !Array.isArray(walk.path) || walk.path.length === 0) {
+        return { success: false, message: 'Kävelyllä ei ole reittitietoja' };
+      }
+      
+      const result = await routeService.syncWalk(walk);
+      if (result.success) {
+        await loadWalks(); // Reload to get updated sync status
+      }
+      return result;
+    } catch (error: any) {
+      console.error('Sync walk error:', error);
+      return { success: false, message: error.message || 'Synkronointi epäonnistui' };
+    }
+  };
+
+  const syncAllWalks = async () => {
+    try {
+      const result = await routeService.syncAllWalks();
+      await loadWalks(); // Reload to get updated sync status
+      return result;
+    } catch (error) {
+      console.error('Sync all walks error:', error);
+      return { synced: 0, failed: 0 };
+    }
   };
 
   return (
@@ -240,6 +314,8 @@ export function WalkProvider({ children }: { children: ReactNode }) {
         resumeWalk,
         deleteWalk,
         refreshWalks,
+        syncWalk,
+        syncAllWalks,
         hasLocationPermission,
         requestLocationPermission,
       }}
