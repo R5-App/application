@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, ScrollView } from 'react-native';
 import { Text, Card, Button, Dialog, Portal, TextInput } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRoute, useNavigation } from '@react-navigation/native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import petService from '../services/petService';
 import { Pet } from '../types';
 import { COLORS, LAYOUT } from '../styles/theme';
@@ -13,12 +14,12 @@ export default function PetDetailsScreen() {
   const route = useRoute(); // access to route params
   const navigation = useNavigation();
   const { petId } = route.params as { petId: string };  // Extract the petId from route params
+  const scrollViewRef = useRef<ScrollView>(null);
 
   const [pet, setPet] = useState<Pet | null>(null);  // Storing pet object that we got from API (null until loaded)
   const [loading, setLoading] = useState(true);   // Tracks whether data is still being fetched from the API
   const [editDialogVisible, setEditDialogVisible] = useState(false); // modal popip visibility
   const [error, setError] = useState<string | null>(null);
-  const [deleteDialogVisible, setDeleteDialogVisible] = useState(false);
 
   // For editing pet name, breed,age etc:
   const [editName, setEditName] = useState('');
@@ -27,6 +28,7 @@ export default function PetDetailsScreen() {
   const [editSex, setEditSex] = useState('');
   const [editBirthdate, setEditBirthdate] = useState('');
   const [editNotes, setEditNotes] = useState('');
+  const [showBirthdatePicker, setShowBirthdatePicker] = useState(false);
   
   const [isSaving, setIsSaving] = useState(false); // track saving (prevent double clicks)
   const [isDeleting, setIsDeleting] = useState(false); // same as above but for deleting
@@ -398,6 +400,11 @@ export default function PetDetailsScreen() {
         >
           <Dialog.Title>Muokkaa lemmikin tietoja</Dialog.Title>
           <Dialog.Content>
+            <ScrollView 
+              ref={scrollViewRef}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+            >
             
             {/* Pet name field */}
             <TextInput
@@ -436,14 +443,31 @@ export default function PetDetailsScreen() {
               placeholder="Uros tai Naaras"
             />
 
-            <TextInput
-              label="Syntymäpäivä (VVVV-KK-PP)"
-              value={editBirthdate}
-              onChangeText={setEditBirthdate} // Update state as user types
-              mode="outlined"
-              style={styles.editInput}
-              placeholder="2020-03-15"
-            />
+            {/* Pet birthdate field with calendar picker */}
+            <View onTouchStart={() => setShowBirthdatePicker(true)}>
+              <TextInput
+                label="Syntymäpäivä *"
+                value={new Date(editBirthdate).toLocaleDateString('fi-FI')}
+                mode="outlined"
+                editable={false}
+                style={styles.editInput}
+                right={<TextInput.Icon icon="calendar" />}
+              />
+            </View>
+
+            {showBirthdatePicker && (
+              <DateTimePicker
+                value={new Date(editBirthdate)}
+                mode="date"
+                onChange={(_, selectedDate) => {
+                  setShowBirthdatePicker(false);
+                  if (selectedDate) {
+                    const dateString = selectedDate.toISOString().split('T')[0];
+                    setEditBirthdate(dateString);
+                  }
+                }}
+              />
+            )}
 
             {/* Pet notes field*/}
             <TextInput
@@ -455,7 +479,13 @@ export default function PetDetailsScreen() {
               numberOfLines={4} // Show 4 lines initially
               placeholder="Lisää muistiinpanoja lemmikistä..."
               style={styles.editInput}
+              onFocus={() => {
+                setTimeout(() => {
+                  scrollViewRef.current?.scrollToEnd({ animated: true });
+                }, 200);
+              }}
             />
+            </ScrollView>
           </Dialog.Content>
           
           {/* Dialog action buttons */}
