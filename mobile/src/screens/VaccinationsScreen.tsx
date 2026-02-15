@@ -23,7 +23,7 @@ interface Vaccination {
 export default function VaccinationsScreen() {
   const [pets, setPets] = useState<Pet[]>([]);
   const [vaccinations, setVaccinations] = useState<Vaccination[]>([]);
-  const [selectedPetId, setSelectedPetId] = useState<number | null>(null);
+  const [selectedPetId, setSelectedPetId] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [modalVisible, setModalVisible] = useState<boolean>(false);
@@ -77,7 +77,7 @@ export default function VaccinationsScreen() {
   }, []);
 
   const selectedPetVaccinations = vaccinations
-    .filter(vac => vac.pet_id === selectedPetId)
+    .filter(vac => selectedPetId && vac.pet_id === parseInt(selectedPetId))
     .sort((a, b) => new Date(b.vaccination_date).getTime() - new Date(a.vaccination_date).getTime());
 
   const handleOpenModal = () => {
@@ -110,7 +110,7 @@ export default function VaccinationsScreen() {
       if (isEditMode && editingVaccinationId) {
       
         const vaccinationData = {
-          pet_id: selectedPetId,
+          pet_id: parseInt(selectedPetId!),
           vac_name: vacName,
           vaccination_date: vaccinationDate,
           expire_date: expireDate || undefined,
@@ -134,7 +134,7 @@ export default function VaccinationsScreen() {
         }
 
         const vaccinationData = {
-          pet_id: selectedPetId,
+          pet_id: parseInt(selectedPetId),
           vac_name: vacName,
           vaccination_date: vaccinationDate,
           expire_date: expireDate || undefined,

@@ -24,7 +24,7 @@ interface Medication {
 export default function MedicationsScreen() {
   const [pets, setPets] = useState<Pet[]>([]);
   const [medications, setMedications] = useState<Medication[]>([]);
-  const [selectedPetId, setSelectedPetId] = useState<number | null>(null);
+  const [selectedPetId, setSelectedPetId] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [modalVisible, setModalVisible] = useState<boolean>(false);
@@ -78,7 +78,7 @@ export default function MedicationsScreen() {
   }, []);
 
   const selectedPetMedications = medications
-    .filter(med => med.pet_id === selectedPetId)
+    .filter(med => selectedPetId && med.pet_id === parseInt(selectedPetId))
     .sort((a, b) => new Date(b.medication_date).getTime() - new Date(a.medication_date).getTime());
 
   const handleOpenModal = () => {
@@ -133,7 +133,7 @@ export default function MedicationsScreen() {
         }
       
         const medicationData = {
-          pet_id: selectedPetId,
+          pet_id: parseInt(selectedPetId),
           med_name: medName,
           medication_date: medicationDate,
           expire_date: expireDate || undefined,

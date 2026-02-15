@@ -37,7 +37,7 @@ interface DayEvent {
   vetName?: string;
 }
 
-const EVENT_TYPE_COLORS = {
+const EVENT_TYPE_COLORS: Record<string, string> = {
   vaccination: COLORS.vaccination,
   veterinary: COLORS.veterinary,
   medication: COLORS.medication,
@@ -53,7 +53,7 @@ const MONTHS = [
 
 export default function CalendarScreen() {
   const [pets, setPets] = useState<Pet[]>([]);
-  const [selectedPetId, setSelectedPetId] = useState<number | null>(null);
+  const [selectedPetId, setSelectedPetId] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
@@ -157,7 +157,7 @@ export default function CalendarScreen() {
 
   // Filter events for selected pet, month, and year
   const filteredEvents = events.filter(event => {
-    if (event.petId !== selectedPetId) return false;
+    if (!selectedPetId || event.petId !== parseInt(selectedPetId)) return false;
     if (!event.date) return false;
     const dateStr = event.date.substring(0, 10); // Ensure YYYY-MM-DD format
     const [y, m] = dateStr.split('-').map(Number);
@@ -204,7 +204,7 @@ export default function CalendarScreen() {
     });
 
     const dayVisits = visits.filter(visit => {
-      if (visit.pet_id !== selectedPetId) return false;
+      if (!selectedPetId || visit.pet_id !== parseInt(selectedPetId)) return false;
       const dateStr = visit.visit_date.substring(0, 10);
       const [vy, vm, vd] = dateStr.split('-').map(Number);
       return vd === day && (vm - 1) === selectedMonth && vy === selectedYear;
@@ -246,7 +246,7 @@ export default function CalendarScreen() {
 
     // Add visits
     visits.forEach(visit => {
-      if (visit.pet_id === selectedPetId && visit.visit_date.startsWith(dayStr)) {
+      if (selectedPetId && visit.pet_id === parseInt(selectedPetId) && visit.visit_date.startsWith(dayStr)) {
         const visitType = visitTypes.find(t => t.id === parseInt(visit.type_id));
         dayEvents.push({
           id: `visit-${visit.id}`,
@@ -349,7 +349,7 @@ export default function CalendarScreen() {
       const timeStr = `${hours}:${minutes}:00`;
 
       const eventData = {
-        pet_id: selectedPetId,
+        pet_id: parseInt(selectedPetId!),
         type_id: selectedTypeId!,
         title: eventTitle.trim(),
         description: eventDescription.trim(),

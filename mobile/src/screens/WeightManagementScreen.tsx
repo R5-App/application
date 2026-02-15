@@ -24,7 +24,7 @@ interface WeightRecord {
 export default function WeightManagementScreen() {
   const [pets, setPets] = useState<Pet[]>([]);
   const [weightRecords, setWeightRecords] = useState<WeightRecord[]>([]);
-  const [selectedPetId, setSelectedPetId] = useState<number | null>(null);
+  const [selectedPetId, setSelectedPetId] = useState<string | null>(null);
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -77,7 +77,7 @@ export default function WeightManagementScreen() {
     fetchData();
   }, []);
   const selectedPetWeights = weightRecords
-    .filter(record => record.petId === selectedPetId)
+    .filter(record => selectedPetId && record.petId === parseInt(selectedPetId))
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   // Get unique years from selected pet's weights
@@ -116,7 +116,7 @@ export default function WeightManagementScreen() {
       if (isEditMode && editingWeightId) {
 
         const weightData = {
-          pet_id: selectedPetId,
+          pet_id: parseInt(selectedPetId!),
           weight: parseFloat(weight),
           date: date
         };
@@ -137,7 +137,7 @@ export default function WeightManagementScreen() {
         }
       
         const weightData = {
-          pet_id: selectedPetId,
+          pet_id: parseInt(selectedPetId),
           weight: parseFloat(weight),
           date: date
         };
