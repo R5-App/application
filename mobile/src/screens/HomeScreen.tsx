@@ -102,10 +102,10 @@ export default function HomeScreen() {
           </Card.Content>
         </Card>
 
-        <Card style={styles.card} onPress={() => console.log('Sijainti')}>
+        <Card style={styles.card} onPress={() => navigation.navigate('Maps' as never)}>
           <Card.Content style={{ alignItems: 'center' }}>
-            <MaterialCommunityIcons name="map-marker" size={64} color={COLORS.primary} />
-            <Text variant="titleLarge" style={{ marginTop: SPACING.md }}>Sijainti</Text>
+            <MaterialCommunityIcons name="map" size={64} color={COLORS.primary} />
+            <Text variant="titleLarge" style={{ marginTop: SPACING.md }}>Kartta</Text>
             <Text variant="bodyMedium" style={[styles.cardText, { textAlign: 'center' }]}>
               Eläinlääkärit ja palvelut
             </Text>

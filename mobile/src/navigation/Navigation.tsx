@@ -1,7 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '@contexts/AuthContext';
 import { View, Animated, Easing, StyleSheet } from 'react-native';
@@ -26,7 +25,7 @@ import CalendarScreen from '@screens/CalendarScreen';
 
 // Added this root stack params list while trying to fix pet navigation issues
 export type RootStackParamList = {
-  HomeTabs: undefined;
+  Home: undefined;
   PetProfile: { petId: string };
   AddPet: undefined;
   WalkHistory: undefined;
@@ -34,6 +33,10 @@ export type RootStackParamList = {
   Profile: undefined;
   Health: undefined;
   Visits: undefined;
+  Settings: undefined;
+  Calendar: undefined;
+  Pets: undefined;
+  Maps: undefined;
   Medications: undefined;
   Vaccinations: undefined;
   WeightManagement: undefined;
@@ -42,8 +45,7 @@ export type RootStackParamList = {
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
-//vanha: const Stack = createNativeStackNavigator();
-const Tab = createBottomTabNavigator();
+
 
 function LoadingScreen() {
   const paw1 = useRef(new Animated.Value(-50)).current;
@@ -90,75 +92,7 @@ function LoadingScreen() {
   );
 }
 
-function HomeTabs() {
-  return (
-    <Tab.Navigator
-      screenOptions={({ route }) => ({
-        tabBarIcon: ({ color, size }) => {
-          let iconName: keyof typeof MaterialCommunityIcons.glyphMap = 'home';
-
-
-          if (route.name === 'HomeTab') {
-            iconName = 'home';
-          } else if (route.name === 'PetsTab') {
-            iconName = 'paw';
-          } else if (route.name === 'MapTab') {
-            iconName = 'map-marker-path';
-          } else if (route.name === 'SettingsTab') {
-            iconName = 'cog';
-          } else {
-            iconName = 'help';
-          }
-
-          return <MaterialCommunityIcons name={iconName} size={size} color={color} />;
-        },
-        tabBarActiveTintColor: COLORS.primary,
-        tabBarInactiveTintColor: COLORS.onSurfaceVariant,
-        headerShown: false,
-        tabBarStyle: route.name === 'MapTab' ? {
-          position: 'absolute',
-          backgroundColor: COLORS.dialogBackground,
-          borderTopColor: COLORS.outlineVariant,
-        } : {
-          backgroundColor: COLORS.surface,
-        },
-      })}
-    >
-      <Tab.Screen
-        name="HomeTab"
-        component={HomeScreen}
-        options={{
-          title: 'Koti',
-          tabBarLabel: 'Koti',
-        }}
-      />
-      <Tab.Screen
-        name="PetsTab"
-        component={PetsScreen}
-        options={{
-          title: 'Lemmikki',
-          tabBarLabel: 'Lemmikki',
-        }}
-      />
-      <Tab.Screen
-        name="MapTab"
-        component={MapScreen}
-        options={{
-          title: 'Kartta',
-          tabBarLabel: 'Kartta',
-        }}
-      />
-      <Tab.Screen
-        name="SettingsTab"
-        component={SettingsScreen}
-        options={{
-          title: 'Asetukset',
-          tabBarLabel: 'Asetukset',
-        }}
-      />
-    </Tab.Navigator>
-  );
-}
+ 
 
 export default function Navigation() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -173,9 +107,12 @@ export default function Navigation() {
         {isAuthenticated ? (
           <>
             <Stack.Screen
-              name="HomeTabs"
-              component={HomeTabs}
-              options={{ headerShown: false }}
+              name="Home"
+              component={HomeScreen}
+              options={{ 
+                title: 'Koti',
+                headerBackTitle: 'Takaisin',
+               }}
             />
               <Stack.Screen
               name="PetProfile"
@@ -270,6 +207,14 @@ export default function Navigation() {
               component={AddPetScreen}
               options={{
                 title: 'Lisää lemmikki',
+                headerBackTitle: 'Takaisin',
+                }}
+            />
+            <Stack.Screen
+              name="Maps"
+              component={MapScreen}
+              options={{
+                title: 'Kartta',
                 headerBackTitle: 'Takaisin',
                 }}
             />
