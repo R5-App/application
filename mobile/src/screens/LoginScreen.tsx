@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { View, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
-import { TextInput, Button, Text, Checkbox, Surface } from 'react-native-paper';
+import { View, ScrollView, KeyboardAvoidingView, Platform, Image } from 'react-native';
+import { TextInput, Button, Text, Checkbox } from 'react-native-paper';
 import { useAuth } from '@contexts/AuthContext';
 import { useSnackbar } from '@contexts/SnackbarContext';
 import { authStyles } from '../styles/authStyles';
@@ -49,9 +49,13 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
         contentContainerStyle={authStyles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
-        <Surface style={authStyles.logoContainer}>
-          <Text style={authStyles.logoText}>Logo</Text>
-        </Surface>
+        <View style={authStyles.logoContainer}>
+          <Image
+            source={require('../assets/images/image.png')}
+            style={authStyles.logoImage}
+            resizeMode="contain"
+          />
+        </View>
 
         <TextInput
           label="Nimimerkki"
