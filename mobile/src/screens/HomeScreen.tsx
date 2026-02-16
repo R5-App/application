@@ -39,15 +39,12 @@ export default function HomeScreen() {
     <ScrollView style={styles.container}>
       <View style={styles.header}>
         <View style={{ flexDirection: 'row', justifyContent: 'center', marginBottom: SPACING.md }}>
-          <Animated.Text style={{ fontSize: 32, opacity: paw1, transform: [{ scale: paw1 }] }}>🐾</Animated.Text>
-          <Animated.Text style={{ fontSize: 32, opacity: paw2, transform: [{ scale: paw2 }], marginHorizontal: SPACING.sm }}>🐾</Animated.Text>
-          <Animated.Text style={{ fontSize: 32, opacity: paw3, transform: [{ scale: paw3 }] }}>🐾</Animated.Text>
+          <Animated.Text style={{ fontSize: 24, opacity: paw1, transform: [{ scale: paw1 }] }}>🐾</Animated.Text>
+          <Animated.Text style={{ fontSize: 24, opacity: paw2, transform: [{ scale: paw2 }], marginHorizontal: SPACING.sm }}>🐾</Animated.Text>
+          <Animated.Text style={{ fontSize: 24, opacity: paw3, transform: [{ scale: paw3 }] }}>🐾</Animated.Text>
         </View>
         <Text variant="displaySmall" style={styles.title}>
           Hei, {firstName}!
-        </Text>
-        <Text variant="bodyMedium" style={styles.subtitle}>
-          Hallinnoi lemmikkejäsi helposti
         </Text>
       </View>
 
@@ -55,70 +52,50 @@ export default function HomeScreen() {
         <Card style={styles.card} onPress={() => navigation.navigate('Pets' as never)}>
           <Card.Content style={{ alignItems: 'center' }}>
             <MaterialCommunityIcons name="paw" size={64} color={COLORS.primary} />
-            <Text variant="titleLarge" style={{ marginTop: SPACING.md }}>Lemmikki</Text>
-            <Text variant="bodyMedium" style={[styles.cardText, { textAlign: 'center' }]}>
-              Hallinnoi lemmikkejäsi
-            </Text>
+            <Text variant="titleMedium" style={{ marginTop: SPACING.md }}>Lemmikit</Text>
+
           </Card.Content>
         </Card>
 
         <Card style={styles.card} onPress={() => navigation.navigate('Profile' as never)}>
           <Card.Content style={{ alignItems: 'center' }}>
             <MaterialCommunityIcons name="account" size={64} color={COLORS.primary} />
-            <Text variant="titleLarge" style={{ marginTop: SPACING.md }}>Profiili</Text>
-            <Text variant="bodyMedium" style={[styles.cardText, { textAlign: 'center' }]}>
-              Omat tiedot ja asetukset
-            </Text>
+            <Text variant="titleMedium" style={{ marginTop: SPACING.md }}>Profiili</Text>
           </Card.Content>
         </Card>
 
         <Card style={styles.card} onPress={() => navigation.navigate('Calendar' as never)}>
           <Card.Content style={{ alignItems: 'center' }}>
             <MaterialCommunityIcons name="calendar" size={64} color={COLORS.primary} />
-            <Text variant="titleLarge" style={{ marginTop: SPACING.md }}>Kalenteri</Text>
-            <Text variant="bodyMedium" style={[styles.cardText, { textAlign: 'center' }]}>
-              Tapahtumat ja muistutukset
-            </Text>
+            <Text variant="titleMedium" style={{ marginTop: SPACING.md }}>Kalenteri</Text>
           </Card.Content>
         </Card>
 
         <Card style={styles.card} onPress={() => navigation.navigate('Health' as never)}>
           <Card.Content style={{ alignItems: 'center' }}>
             <MaterialCommunityIcons name="medical-bag" size={64} color={COLORS.primary} />
-            <Text variant="titleLarge" style={{ marginTop: SPACING.md }}>Terveys</Text>
-            <Text variant="bodyMedium" style={[styles.cardText, { textAlign: 'center' }]}>
-              Rokotukset ja lääkitys
-            </Text>
+            <Text variant="titleMedium" style={{ marginTop: SPACING.md }}>Terveys</Text>
           </Card.Content>
         </Card>
 
         <Card style={styles.card} onPress={() => navigation.navigate('WalkHistory' as never)}>
           <Card.Content style={{ alignItems: 'center' }}>
             <MaterialCommunityIcons name="run" size={64} color={COLORS.primary} />
-            <Text variant="titleLarge" style={{ marginTop: SPACING.md }}>Lenkit</Text>
-            <Text variant="bodyMedium" style={[styles.cardText, { textAlign: 'center' }]}>
-              {walks.length} tallennettua lenkkiä
-            </Text>
+            <Text variant="titleMedium" style={{ marginTop: SPACING.md }}>Lenkit</Text>
           </Card.Content>
         </Card>
 
         <Card style={styles.card} onPress={() => navigation.navigate('Maps' as never)}>
           <Card.Content style={{ alignItems: 'center' }}>
             <MaterialCommunityIcons name="map" size={64} color={COLORS.primary} />
-            <Text variant="titleLarge" style={{ marginTop: SPACING.md }}>Kartta</Text>
-            <Text variant="bodyMedium" style={[styles.cardText, { textAlign: 'center' }]}>
-              Eläinlääkärit ja palvelut
-            </Text>
+            <Text variant="titleMedium" style={{ marginTop: SPACING.md }}>Kartta</Text>
           </Card.Content>
         </Card>
 
         <Card style={styles.card} onPress={() => navigation.navigate('Settings' as never)}>
           <Card.Content style={{ alignItems: 'center' }}>
             <MaterialCommunityIcons name="cog" size={64} color={COLORS.primary} />
-            <Text variant="titleLarge" style={{ marginTop: SPACING.md }}>Asetukset</Text>
-            <Text variant="bodyMedium" style={[styles.cardText, { textAlign: 'center' }]}>
-              Sovelluksen asetukset
-            </Text>
+            <Text variant="titleMedium" style={{ marginTop: SPACING.md }}>Asetukset</Text>
           </Card.Content>
         </Card>
       </View>

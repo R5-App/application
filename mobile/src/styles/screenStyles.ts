@@ -16,8 +16,8 @@ export const homeStyles = StyleSheet.create({
   
   header: {
     padding: LAYOUT.screenPadding,
-    paddingTop: SPACING['2xl'],
-    paddingBottom: SPACING.xl,
+    paddingTop: SPACING.md,
+    paddingBottom: SPACING.sm,
     backgroundColor: COLORS.primaryContainer,
   },
   
@@ -52,8 +52,8 @@ export const homeStyles = StyleSheet.create({
   card: {
     ...COMMON_STYLES.card,
     width: '48%',
-    marginBottom: SPACING.md,
-    minHeight: 180,
+    marginBottom: SPACING.xs,
+    minHeight: 150,
   },
   
   cardText: {
@@ -112,7 +112,7 @@ export const petsStyles = StyleSheet.create({
 
   petImagePlaceholder: {
     backgroundColor: COLORS.surfaceVariant,
-    borderRadius: BORDER_RADIUS.medium,
+    borderRadius: BORDER_RADIUS.small,
     height: 150,
     justifyContent: 'center',
     alignItems: 'center',

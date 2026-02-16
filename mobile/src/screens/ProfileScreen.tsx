@@ -431,17 +431,6 @@ export default function ProfileScreen() {
         </Card.Content>
       </Card>
 
-      <Card style={styles.card}>
-        <Card.Content>
-          <Text variant="titleMedium" style={styles.sectionTitle}>
-            Sovelluksen asetukset
-          </Text>
-          <Text variant="bodyMedium" style={styles.sectionDescription}>
-            Lisää asetuksia tulossa pian...
-          </Text>
-        </Card.Content>
-      </Card>
-
       <View style={styles.logoutContainer}>
         <Button
           mode="outlined"
