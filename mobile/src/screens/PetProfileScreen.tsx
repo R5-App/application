@@ -69,10 +69,14 @@ export default function PetDetailsScreen() {
     if (pet) { // Only proceed if pet data has loaded
       // Pre-fill the fields with the current pet's data
       setEditName(pet.name);
-      setEditType(pet.type);
+      setEditType(pet.type || '');
       setEditBreed(pet.breed);
       setEditSex(pet.sex);
-      setEditBirthdate(pet.birthdate);
+      // Ensure birthdate is in YYYY-MM-DD format
+      const birthdate = pet.birthdate.includes('T') 
+        ? pet.birthdate.split('T')[0] 
+        : pet.birthdate.substring(0, 10);
+      setEditBirthdate(birthdate);
       setEditNotes(pet.notes || '');
       setEditDialogVisible(true); // Show the edit dialog modal to the user
     }
@@ -80,7 +84,12 @@ export default function PetDetailsScreen() {
 
   // Save edited pet data
   const handleSavePet = async () => {
-    const validation = validatePetData(editName, editType, editBreed, editSex, editBirthdate);
+    // Ensure birthdate is in YYYY-MM-DD format
+    const formattedBirthdate = editBirthdate.includes('T') 
+      ? editBirthdate.split('T')[0] 
+      : editBirthdate.substring(0, 10);
+    
+    const validation = validatePetData(editName, editType, editBreed, editSex, formattedBirthdate);
     
     if (!validation.valid) {
       setValidationMessage(validation.message || '');
@@ -103,12 +112,17 @@ export default function PetDetailsScreen() {
     
     // Send updated pet data to API (PUT request)
     try {
+      // Ensure birthdate is in YYYY-MM-DD format before sending
+      const formattedBirthdate = editBirthdate.includes('T') 
+        ? editBirthdate.split('T')[0] 
+        : editBirthdate.substring(0, 10);
+      
       const result = await petService.updatePet(petId, {
         name: editName,
         type: editType,
         breed: editBreed,
         sex: editSex,
-        birthdate: editBirthdate,
+        birthdate: formattedBirthdate,
         notes: editNotes,
       });
 
@@ -184,6 +198,22 @@ export default function PetDetailsScreen() {
     return (
       <View style={styles.emptyContainer}>
         <Text>Ladataan...</Text>
+      </View>
+    );
+  }
+
+  // Show error if loading failed
+  if (error) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.emptyContainer}>
+          <MaterialCommunityIcons name="alert-circle" size={64} color={COLORS.error} />
+          <Text variant="headlineSmall" style={{ marginTop: 16 }}>Virhe</Text>
+          <Text variant="bodyMedium" style={styles.emptyText}>{error}</Text>
+          <Button mode="contained" onPress={fetchPetDetails} style={{ marginTop: 16 }}>
+            Yritä uudelleen
+          </Button>
+        </View>
       </View>
     );
   }
@@ -447,7 +477,7 @@ export default function PetDetailsScreen() {
             <View onTouchStart={() => setShowBirthdatePicker(true)}>
               <TextInput
                 label="Syntymäpäivä *"
-                value={new Date(editBirthdate).toLocaleDateString('fi-FI')}
+                value={editBirthdate ? formatDate(new Date(editBirthdate)) : ''}
                 mode="outlined"
                 editable={false}
                 style={styles.editInput}

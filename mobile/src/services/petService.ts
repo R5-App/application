@@ -40,6 +40,41 @@ export const petService = {
   },
 
   /**
+   * Get a single pet by ID
+   */
+  async getPetById(petId: string | number): Promise<{ success: boolean; data?: Pet; message?: string }> {
+    try {
+      const response = await apiClient.get<{ success: boolean; message: string; data: PetResponse }>(
+        `/api/pets/${petId}`
+      );
+
+      if (response.data.success && response.data.data) {
+        // Convert PetResponse to Pet with string ID
+        const petData = response.data.data;
+        const convertedPet: Pet = {
+          id: String(petData.id),
+          owner_id: petData.owner_id,
+          name: petData.name,
+          type: petData.type,
+          breed: petData.breed,
+          sex: petData.sex,
+          birthdate: petData.birthdate,
+          notes: petData.notes
+        };
+        return { success: true, data: convertedPet };
+      }
+
+      return { success: false, message: response.data.message };
+    } catch (error: any) {
+      console.error('Get pet by ID error:', error);
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Lemmikin haku epäonnistui',
+      };
+    }
+  },
+
+  /**
    * Get complete pet data including all records
    */
   async getCompletePetData(petId: number): Promise<{ success: boolean; pet?: any; message?: string }> {
@@ -63,17 +98,65 @@ export const petService = {
   },
 
   /**
+   * Update a pet's information
+   */
+  async updatePet(petId: string | number, petData: { name?: string; type?: string; breed?: string; birthdate?: string; sex?: string; notes?: string }): Promise<{ success: boolean; data?: Pet; message?: string }> {
+    try {
+      const response = await apiClient.put<{ success: boolean; message: string; data: PetResponse }>(
+        `/api/pets/${petId}`,
+        petData
+      );
+
+      if (response.data.success && response.data.data) {
+        // Convert PetResponse to Pet with string ID
+        const petData = response.data.data;
+        const convertedPet: Pet = {
+          id: String(petData.id),
+          owner_id: petData.owner_id,
+          name: petData.name,
+          type: petData.type,
+          breed: petData.breed,
+          sex: petData.sex,
+          birthdate: petData.birthdate,
+          notes: petData.notes
+        };
+        return { success: true, data: convertedPet };
+      }
+
+      return { success: false, message: response.data.message };
+    } catch (error: any) {
+      console.error('Update pet error:', error);
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Lemmikin päivitys epäonnistui',
+      };
+    }
+  },
+
+  /**
    * Create a new pet
    */
-  async createPet(petData: { name: string; type?: string; breed?: string; birthdate?: string; sex?: string; notes?: string }): Promise<{ success: boolean; pet?: PetResponse; message?: string }> {
+  async createPet(petData: { name: string; type?: string; breed?: string; birthdate?: string; sex?: string; notes?: string }): Promise<{ success: boolean; pet?: Pet; message?: string }> {
     try {
       const response = await apiClient.post<{ success: boolean; message: string; data: PetResponse }>(
         '/api/pets',
         petData
       );
 
-      if (response.data.success) {
-        return { success: true, pet: response.data.data };
+      if (response.data.success && response.data.data) {
+        // Convert PetResponse to Pet with string ID
+        const petData = response.data.data;
+        const convertedPet: Pet = {
+          id: String(petData.id),
+          owner_id: petData.owner_id,
+          name: petData.name,
+          type: petData.type,
+          breed: petData.breed,
+          sex: petData.sex,
+          birthdate: petData.birthdate,
+          notes: petData.notes
+        };
+        return { success: true, pet: convertedPet };
       }
 
       return { success: false, message: response.data.message };
@@ -89,7 +172,7 @@ export const petService = {
   /**
    * Delete a pet
    */
-  async deletePet(petId: number): Promise<{ success: boolean; message?: string }> {
+  async deletePet(petId: string | number): Promise<{ success: boolean; message?: string }> {
     try {
       const response = await apiClient.delete<{ success: boolean; message: string }>(
         `/api/pets/${petId}`
@@ -109,17 +192,15 @@ export const petService = {
    * Convert backend pet to app Pet format
    */
   convertToAppPet(backendPet: PetResponse): Pet {
-    const birthdate = new Date(backendPet.birthdate);
-    const age = new Date().getFullYear() - birthdate.getFullYear();
-
     return {
-      id: backendPet.id,
+      id: String(backendPet.id),
+      owner_id: backendPet.owner_id,
       name: backendPet.name,
       type: backendPet.type,
-      breed: backendPet.breed || 'Tuntematon',
-      age: backendPet.age_years || age,
-      weight: 0, // Weight needs to be fetched separately
-      dateOfBirth: backendPet.birthdate,
+      breed: backendPet.breed,
+      sex: backendPet.sex,
+      birthdate: backendPet.birthdate,
+      notes: backendPet.notes
     };
   },
 };

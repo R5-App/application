@@ -28,8 +28,19 @@ export default function PetsScreen() {
       setError(null);
       const result = await petService.getUserPets();
       
-      if (result.success && result.data) {
-        setPets(result.data);
+      if (result.success && result.pets) {
+        // Convert PetResponse[] to Pet[] with string IDs
+        const convertedPets: Pet[] = result.pets.map(pet => ({
+          id: String(pet.id),
+          owner_id: pet.owner_id,
+          name: pet.name,
+          type: pet.type,
+          breed: pet.breed,
+          sex: pet.sex,
+          birthdate: pet.birthdate,
+          notes: pet.notes
+        }));
+        setPets(convertedPets);
       } else {
         setError(result.message || 'Lemmikkien lataus epäonnistui');
       }
@@ -74,6 +85,23 @@ const handleAddPet = () => {
       <View style={styles.container}>
         <View style={styles.emptyContainer}>
           <Text>Ladataan lemmikkejä...</Text>
+        </View>
+      </View>
+    );
+  }
+
+  // ERROR STATE
+  if (error) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.emptyContainer}>
+          <Text variant="headlineSmall">Virhe</Text>
+          <Text variant="bodyMedium" style={styles.emptyText}>
+            {error}
+          </Text>
+          <Button mode="contained" onPress={fetchUserPets} style={{ marginTop: 16 }}>
+            Yritä uudelleen
+          </Button>
         </View>
       </View>
     );

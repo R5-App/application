@@ -30,7 +30,7 @@ export default function VisitsScreen() {
   const [pets, setPets] = useState<Pet[]>([]);
   const [visits, setVisits] = useState<Visit[]>([]);
   const [visitTypes, setVisitTypes] = useState<VisitType[]>([]);
-  const [selectedPetId, setSelectedPetId] = useState<number | null>(null);
+  const [selectedPetId, setSelectedPetId] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [modalVisible, setModalVisible] = useState<boolean>(false);
@@ -89,7 +89,7 @@ export default function VisitsScreen() {
   }, []);
 
   const selectedPetVisits = visits
-    .filter(visit => visit.pet_id === selectedPetId)
+    .filter(visit => selectedPetId && visit.pet_id === parseInt(selectedPetId))
     .sort((a, b) => new Date(b.visit_date).getTime() - new Date(a.visit_date).getTime());
 
   const handleOpenModal = async () => {
@@ -158,7 +158,7 @@ export default function VisitsScreen() {
         }
         
         const visitData = {
-          pet_id: selectedPetId,
+          pet_id: parseInt(selectedPetId!),
           visit_date: visitDate,
           vet_name: vetName,
           location: location,
