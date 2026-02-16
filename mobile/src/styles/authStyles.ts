@@ -4,7 +4,7 @@
  */
 
 import { StyleSheet } from 'react-native';
-import { COLORS, SPACING, BORDER_RADIUS, COMMON_STYLES, LAYOUT, TYPOGRAPHY } from './theme';
+import { COLORS, SPACING, COMMON_STYLES, LAYOUT, TYPOGRAPHY } from './theme';
 
 export const authStyles = StyleSheet.create({
   // Container & Layout
@@ -26,9 +26,17 @@ export const authStyles = StyleSheet.create({
   
   // Logo
   logoContainer: {
-    ...COMMON_STYLES.logoContainer,
+    width: 200,
+    height: 200,
     alignSelf: 'center',
     marginBottom: SPACING['2xl'],
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  
+  logoImage: {
+    width: 200,
+    height: 200,
   },
   
   logoText: {
