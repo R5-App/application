@@ -111,6 +111,7 @@ export default function Navigation() {
               component={HomeScreen}
               options={{ 
                 title: 'Koti',
+                headerShown: false,
                 headerBackTitle: 'Takaisin',
                }}
             />
