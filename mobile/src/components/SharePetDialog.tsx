@@ -135,7 +135,7 @@ export default function SharePetDialog({ visible, onDismiss, petId, petName, isO
       {!shareCode ? (
         <>
           <Text style={styles.expiryText}>
-            📌 Jakokoodi on voimassa 24 tuntia
+             Jakokoodi on voimassa 24 tuntia
           </Text>
 
           <Button
@@ -169,7 +169,7 @@ export default function SharePetDialog({ visible, onDismiss, petId, petName, isO
           </View>
 
           <Text style={styles.expiryText}>
-            ⏰ Koodi on voimassa 24 tuntia
+             Koodi on voimassa 24 tuntia
           </Text>
 
           <Button
