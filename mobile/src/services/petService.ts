@@ -13,6 +13,7 @@ export interface PetResponse {
   notes?: string;
   age_years?: number;
   created_at: string;
+  role?: 'omistaja' | 'hoitaja' | 'lääkäri'; // User's role for this pet
 }
 
 export const petService = {
@@ -62,7 +63,8 @@ export const petService = {
           breed: petData.breed,
           sex: petData.sex,
           birthdate: petData.birthdate,
-          notes: petData.notes
+          notes: petData.notes,
+          role: petData.role || 'omistaja'
         };
         return { success: true, data: convertedPet };
       }
@@ -127,7 +129,8 @@ export const petService = {
           breed: petData.breed,
           sex: petData.sex,
           birthdate: petData.birthdate,
-          notes: petData.notes
+          notes: petData.notes,
+          role: petData.role || 'omistaja'
         };
         return { success: true, data: convertedPet };
       }
@@ -166,7 +169,8 @@ export const petService = {
           breed: petData.breed,
           sex: petData.sex,
           birthdate: petData.birthdate,
-          notes: petData.notes
+          notes: petData.notes,
+          role: petData.role || 'omistaja'
         };
         return { success: true, pet: convertedPet };
       }

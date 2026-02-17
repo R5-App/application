@@ -46,7 +46,8 @@ export default function PetsScreen() {
           breed: pet.breed,
           sex: pet.sex,
           birthdate: pet.birthdate,
-          notes: pet.notes
+          notes: pet.notes,
+          role: pet.role || 'omistaja' // Default to owner if not specified
         }));
         setPets(convertedPets);
       } else {
