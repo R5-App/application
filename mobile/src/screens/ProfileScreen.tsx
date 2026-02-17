@@ -380,19 +380,6 @@ export default function ProfileScreen() {
 
       <Card style={styles.card}>
         <Card.Content>
-          {hasSubUsers && (
-            <Button
-              mode="text"
-              onPress={handleViewSubUsers}
-              icon="account-group"
-              contentStyle={styles.buttonContent}
-              labelStyle={styles.buttonLabel}
-              style={styles.actionButton}
-            >
-              Näytä alikäyttäjät
-            </Button>
-          )}
-
           <Button
             mode="text"
             onPress={handleChangeEmail}

@@ -49,6 +49,7 @@ export default function PetsScreen() {
           notes: pet.notes,
           role: pet.role || 'omistaja' // Default to owner if not specified
         }));
+        console.log('[PetsScreen] Fetched pets with roles:', convertedPets.map(p => ({ id: p.id, name: p.name, role: p.role, owner_id: p.owner_id })));
         setPets(convertedPets);
       } else {
         setError(result.message || 'Lemmikkien lataus epäonnistui');
