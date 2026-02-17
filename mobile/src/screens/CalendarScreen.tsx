@@ -798,7 +798,9 @@ export default function CalendarScreen() {
           onDismiss={() => setDayViewVisible(false)}
           contentContainerStyle={styles.dayViewModal}
         >
-          {renderDayView()}
+          <View style={styles.dayViewModalInner}>
+            {renderDayView()}
+          </View>
         </Modal>
       </Portal>
 
