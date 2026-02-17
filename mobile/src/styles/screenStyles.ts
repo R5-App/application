@@ -153,6 +153,7 @@ export const petsStyles = StyleSheet.create({
   infoCard: {
     margin: SPACING.lg,
     marginBottom: SPACING.md,
+    backgroundColor: COLORS.background,
   },
   
   infoSection: {
@@ -175,6 +176,7 @@ export const petsStyles = StyleSheet.create({
     paddingHorizontal: SPACING.lg,
     paddingBottom: SPACING.xl,
     gap: SPACING.md,
+    backgroundColor: COLORS.background,
   },
   
   actionButton: {
@@ -205,7 +207,7 @@ export const petsStyles = StyleSheet.create({
   },
   
     modalContainer: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: COLORS.background,
     margin: SPACING.lg,
     padding: SPACING.lg,
     borderRadius: 12,
@@ -430,6 +432,7 @@ export const visitsStyles = StyleSheet.create({
 
   visitCard: {
     marginBottom: SPACING.md,
+    backgroundColor: COLORS.surface,
     elevation: 2,
   },
 
@@ -629,6 +632,7 @@ export const medicationsStyles = StyleSheet.create({
 
   medicationCard: {
     marginBottom: SPACING.md,
+    backgroundColor: COLORS.surface,
     elevation: 2,
   },
 
@@ -819,6 +823,7 @@ export const vaccinationsStyles = StyleSheet.create({
 
   vaccinationCard: {
     marginBottom: SPACING.md,
+    backgroundColor: COLORS.surface,
     elevation: 2,
   },
 
@@ -1158,6 +1163,7 @@ export const weightsStyles = StyleSheet.create({
   weightCard: {
     marginHorizontal: SPACING.md,
     marginBottom: SPACING.md,
+    backgroundColor: COLORS.surface,
     elevation: 2,
   },
 

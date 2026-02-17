@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Modal, Platform, Linking } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, Platform, Linking } from 'react-native';
+import { Portal, Dialog, Button } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { OSMView, type OSMViewRef } from 'expo-osm-sdk';
 import * as Location from 'expo-location';
@@ -26,6 +27,13 @@ export default function MapScreen() {
   const [selectedPets, setSelectedPets] = useState<Pet[]>([]);
   const [pets, setPets] = useState<Pet[]>([]);
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [stopDialogVisible, setStopDialogVisible] = useState(false);
+  const [locationPermissionDialogVisible, setLocationPermissionDialogVisible] = useState(false);
+  const [noPetsDialogVisible, setNoPetsDialogVisible] = useState(false);
+  const [errorDialogVisible, setErrorDialogVisible] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [walkSavedDialogVisible, setWalkSavedDialogVisible] = useState(false);
+  const [locationDeniedDialogVisible, setLocationDeniedDialogVisible] = useState(false);
   const mapRef = useRef<OSMViewRef>(null);
 
   // Fetch pets from backend
@@ -120,31 +128,23 @@ export default function MapScreen() {
   const handleSelectPet = async () => {
     // Check location permission first
     if (!hasLocationPermission) {
-      Alert.alert(
-        'Sijaintitiedot tarvitaan',
-        'Anna sovellukselle lupa käyttää sijaintitietoja lenkin seuraamiseksi.',
-        [
-          { text: 'Peruuta', style: 'cancel' },
-          {
-            text: 'Avaa asetukset',
-            onPress: () => {
-              if (Platform.OS === 'ios') {
-                Linking.openURL('app-settings:');
-              } else {
-                Linking.openSettings();
-              }
-            },
-          },
-        ]
-      );
+      setLocationPermissionDialogVisible(true);
       return;
     }
 
     if (pets.length === 0) {
-      Alert.alert('Ei lemmikkeitä', 'Lisää ensin lemmikki profiilissa');
+      setNoPetsDialogVisible(true);
       return;
     }
     setShowPetSelector(true);
+  };
+
+  const handleOpenSettings = () => {
+    if (Platform.OS === 'ios') {
+      Linking.openURL('app-settings:');
+    } else {
+      Linking.openSettings();
+    }
   };
 
   const handleStartWalk = async (pet: Pet) => {
@@ -158,13 +158,15 @@ export default function MapScreen() {
         setSelectedPets([...selectedPets, pet]);
       }
     } catch (error: any) {
-      Alert.alert('Virhe', error.message || 'Lemmikin valinta epäonnistui');
+      setErrorMessage(error.message || 'Lemmikin valinta epäonnistui');
+      setErrorDialogVisible(true);
     }
   };
 
   const handleConfirmPets = async () => {
     if (selectedPets.length === 0) {
-      Alert.alert('Virhe', 'Valitse vähintään yksi lemmikki');
+      setErrorMessage('Valitse vähintään yksi lemmikki');
+      setErrorDialogVisible(true);
       return;
     }
 
@@ -175,28 +177,20 @@ export default function MapScreen() {
       setShowPetSelector(false);
       await startWalk(petIds, petNames);
     } catch (error: any) {
-      Alert.alert('Virhe', error.message || 'Lenkin aloitus epäonnistui');
+      setErrorMessage(error.message || 'Lenkin aloitus epäonnistui');
+      setErrorDialogVisible(true);
     }
   };
 
-  const handleStopWalk = async () => {
-    const petNames = selectedPets.map(p => p.name).join(', ');
-    Alert.alert(
-      'Lopeta lenkki',
-      `Haluatko varmasti lopettaa lenkin${selectedPets.length > 1 ? ' lemmikeille' : ''}: ${petNames}?`,
-      [
-        { text: 'Peruuta', style: 'cancel' },
-        {
-          text: 'Lopeta',
-          style: 'destructive',
-          onPress: async () => {
-            await stopWalk();
-            setSelectedPets([]);
-            Alert.alert('Lenkki tallennettu', 'Lenkki on tallennettu laitteen muistiin');
-          },
-        },
-      ]
-    );
+  const handleStopWalk = () => {
+    setStopDialogVisible(true);
+  };
+
+  const confirmStopWalk = async () => {
+    setStopDialogVisible(false);
+    await stopWalk();
+    setSelectedPets([]);
+    setWalkSavedDialogVisible(true);
   };
 
   const handlePauseResume = () => {
@@ -321,23 +315,7 @@ export default function MapScreen() {
                 if (granted) {
                   getCurrentLocation();
                 } else {
-                  Alert.alert(
-                    'Sijaintilupa evätty',
-                    'Voit myöhemmin sallia sijaintitiedot laitteen asetuksista.',
-                    [
-                      { text: 'OK', style: 'cancel' },
-                      {
-                        text: 'Avaa asetukset',
-                        onPress: () => {
-                          if (Platform.OS === 'ios') {
-                            Linking.openURL('app-settings:');
-                          } else {
-                            Linking.openSettings();
-                          }
-                        },
-                      },
-                    ]
-                  );
+                  setLocationDeniedDialogVisible(true);
                 }
               }}
             >
@@ -501,6 +479,120 @@ export default function MapScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Dialogs */}
+      <Portal>
+        {/* Stop Walk Confirmation Dialog */}
+        <Dialog
+          visible={stopDialogVisible}
+          onDismiss={() => setStopDialogVisible(false)}
+          style={{ backgroundColor: COLORS.background }}
+        >
+          <Dialog.Title>Lopeta lenkki</Dialog.Title>
+          <Dialog.Content>
+            <Text style={{ ...TYPOGRAPHY.bodyMedium, color: COLORS.onSurface }}>
+              Haluatko varmasti lopettaa lenkin{selectedPets.length > 1 ? ' lemmikeille' : ''}: {selectedPets.map(p => p.name).join(', ')}?
+            </Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setStopDialogVisible(false)}>Peruuta</Button>
+            <Button onPress={confirmStopWalk} textColor={COLORS.error}>Lopeta</Button>
+          </Dialog.Actions>
+        </Dialog>
+
+        {/* Location Permission Dialog */}
+        <Dialog
+          visible={locationPermissionDialogVisible}
+          onDismiss={() => setLocationPermissionDialogVisible(false)}
+          style={{ backgroundColor: COLORS.background }}
+        >
+          <Dialog.Title>Sijaintitiedot tarvitaan</Dialog.Title>
+          <Dialog.Content>
+            <Text style={{ ...TYPOGRAPHY.bodyMedium, color: COLORS.onSurface }}>
+              Anna sovellukselle lupa käyttää sijaintitietoja lenkin seuraamiseksi.
+            </Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setLocationPermissionDialogVisible(false)}>Peruuta</Button>
+            <Button onPress={() => {
+              setLocationPermissionDialogVisible(false);
+              handleOpenSettings();
+            }}>Avaa asetukset</Button>
+          </Dialog.Actions>
+        </Dialog>
+
+        {/* No Pets Dialog */}
+        <Dialog
+          visible={noPetsDialogVisible}
+          onDismiss={() => setNoPetsDialogVisible(false)}
+          style={{ backgroundColor: COLORS.background }}
+        >
+          <Dialog.Title>Ei lemmikkeitä</Dialog.Title>
+          <Dialog.Content>
+            <Text style={{ ...TYPOGRAPHY.bodyMedium, color: COLORS.onSurface }}>
+              Lisää ensin lemmikki profiilissa
+            </Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setNoPetsDialogVisible(false)}>OK</Button>
+          </Dialog.Actions>
+        </Dialog>
+
+        {/* Error Dialog */}
+        <Dialog
+          visible={errorDialogVisible}
+          onDismiss={() => setErrorDialogVisible(false)}
+          style={{ backgroundColor: COLORS.background }}
+        >
+          <Dialog.Title>Virhe</Dialog.Title>
+          <Dialog.Content>
+            <Text style={{ ...TYPOGRAPHY.bodyMedium, color: COLORS.onSurface }}>
+              {errorMessage}
+            </Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setErrorDialogVisible(false)}>OK</Button>
+          </Dialog.Actions>
+        </Dialog>
+
+        {/* Walk Saved Dialog */}
+        <Dialog
+          visible={walkSavedDialogVisible}
+          onDismiss={() => setWalkSavedDialogVisible(false)}
+          style={{ backgroundColor: COLORS.background }}
+        >
+          <Dialog.Title>Lenkki tallennettu</Dialog.Title>
+          <Dialog.Content>
+            <Text style={{ ...TYPOGRAPHY.bodyMedium, color: COLORS.onSurface }}>
+              Lenkki on tallennettu laitteen muistiin
+            </Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setWalkSavedDialogVisible(false)}>OK</Button>
+          </Dialog.Actions>
+        </Dialog>
+
+        {/* Location Denied Dialog */}
+        <Dialog
+          visible={locationDeniedDialogVisible}
+          onDismiss={() => setLocationDeniedDialogVisible(false)}
+          style={{ backgroundColor: COLORS.background }}
+        >
+          <Dialog.Title>Sijaintilupa evätty</Dialog.Title>
+          <Dialog.Content>
+            <Text style={{ ...TYPOGRAPHY.bodyMedium, color: COLORS.onSurface }}>
+              Voit myöhemmin sallia sijaintitiedot laitteen asetuksista.
+            </Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setLocationDeniedDialogVisible(false)}>OK</Button>
+            <Button onPress={() => {
+              setLocationDeniedDialogVisible(false);
+              handleOpenSettings();
+            }}>Avaa asetukset</Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
     </View>
   );
 }

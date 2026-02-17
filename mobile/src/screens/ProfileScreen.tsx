@@ -444,7 +444,11 @@ export default function ProfileScreen() {
       </View>
 
       <Portal>
-        <Dialog visible={emailDialogVisible} onDismiss={() => setEmailDialogVisible(false)}>
+        <Dialog 
+        visible={emailDialogVisible} 
+        onDismiss={() => setEmailDialogVisible(false)}
+        style={{ backgroundColor: COLORS.background }}
+        >
           <Dialog.Title>Muuta sähköposti</Dialog.Title>
           <Dialog.Content>
             <TextInput
@@ -468,7 +472,11 @@ export default function ProfileScreen() {
           </Dialog.Actions>
         </Dialog>
 
-        <Dialog visible={deleteDialogVisible} onDismiss={() => setDeleteDialogVisible(false)}>
+        <Dialog 
+        visible={deleteDialogVisible} 
+        onDismiss={() => setDeleteDialogVisible(false)}
+        style={{ backgroundColor: COLORS.background }}
+        >
           <Dialog.Title>Poista tili</Dialog.Title>
           <Dialog.Content>
             <Text variant="bodyMedium" style={{ marginBottom: SPACING.md }}>
@@ -507,8 +515,12 @@ export default function ProfileScreen() {
             </Button>
           </Dialog.Actions>
         </Dialog>
-
-        <Dialog visible={subUsersDialogVisible} onDismiss={() => setSubUsersDialogVisible(false)}>
+ 
+        <Dialog 
+          visible={subUsersDialogVisible} 
+          onDismiss={() => setSubUsersDialogVisible(false)}
+          style={{ backgroundColor: COLORS.background }}
+        >
           <Dialog.Title>Alikäyttäjät</Dialog.Title>
           <Dialog.Content>
             <Text variant="bodyMedium" style={{ marginBottom: SPACING.md }}>
@@ -531,7 +543,7 @@ export default function ProfileScreen() {
                       onPress={() => handleSelectSubUser(subUser.id)}
                       style={{ 
                         padding: SPACING.md, 
-                        backgroundColor: COLORS.surfaceVariant, 
+                        backgroundColor: COLORS.surface, 
                         borderRadius: 8,
                         flexDirection: 'row',
                         justifyContent: 'space-between',
@@ -595,7 +607,11 @@ export default function ProfileScreen() {
           </Dialog.Actions>
         </Dialog>
 
-        <Dialog visible={roleEditDialogVisible} onDismiss={() => setRoleEditDialogVisible(false)}>
+        <Dialog 
+        visible={roleEditDialogVisible} 
+        onDismiss={() => setRoleEditDialogVisible(false)}
+        style={{ backgroundColor: COLORS.background }}
+        >
           <Dialog.Title>Muuta roolia</Dialog.Title>
           <Dialog.Content>
             <View style={{ gap: SPACING.sm }}>
@@ -719,7 +735,11 @@ export default function ProfileScreen() {
           </Dialog.Actions>
         </Dialog>
 
-        <Dialog visible={passwordDialogVisible} onDismiss={() => setPasswordDialogVisible(false)}>
+        <Dialog 
+        visible={passwordDialogVisible} 
+        onDismiss={() => setPasswordDialogVisible(false)}
+        style={{ backgroundColor: COLORS.background }}
+        >
           <Dialog.Title>Muuta salasana</Dialog.Title>
           <Dialog.Content>
             <TextInput

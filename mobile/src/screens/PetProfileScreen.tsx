@@ -376,6 +376,7 @@ export default function PetDetailsScreen() {
         <Dialog
           visible={messageDialogVisible && messageTitle === 'Poista lemmikki'}
           onDismiss={() => setMessageDialogVisible(false)}
+          style={{ backgroundColor: COLORS.background }}
         >
           <Dialog.Title style={{ color: COLORS.error }}>{messageTitle}</Dialog.Title>
           <Dialog.Content>
@@ -427,6 +428,7 @@ export default function PetDetailsScreen() {
         <Dialog 
           visible={editDialogVisible} // Show/hide based on state
           onDismiss={() => setEditDialogVisible(false)} // Close when tapping outside
+          style={{ backgroundColor: COLORS.background }} // Set background color to match theme
         >
           <Dialog.Title>Muokkaa lemmikin tietoja</Dialog.Title>
           <Dialog.Content>

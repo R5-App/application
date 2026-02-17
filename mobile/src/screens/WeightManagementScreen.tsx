@@ -737,6 +737,7 @@ export default function WeightManagementScreen() {
         <Dialog
           visible={deleteDialogVisible}
           onDismiss={() => setDeleteDialogVisible(false)}
+          style={{ backgroundColor: COLORS.background }}
         >
           <Dialog.Title>Poista painomittaus</Dialog.Title>
           <Dialog.Content>
