@@ -4,13 +4,11 @@ import { Text, Card } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../contexts/AuthContext';
-import { useWalk } from '@contexts/WalkContext';
 import { homeStyles as styles } from '../styles/screenStyles';
 import { COLORS, SPACING } from '../styles/theme';
 
 export default function HomeScreen() {
   const { user } = useAuth();
-  const { walks } = useWalk();
   const navigation = useNavigation();
   const paw1 = useRef(new Animated.Value(0)).current;
   const paw2 = useRef(new Animated.Value(0)).current;

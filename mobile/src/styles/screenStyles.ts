@@ -1827,13 +1827,17 @@ export const calendarStyles = StyleSheet.create({
     margin: SPACING.lg,
     borderRadius: 16,
     maxHeight: '90%',
-    flex: 1,
+  },
+
+  dayViewModalInner: {
     overflow: 'hidden',
+    borderRadius: 16,
+    maxHeight: '90vh' as any,
   },
 
   dayViewContainer: {
-    flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: COLORS.surface,
+    minHeight: 400,
   },
 
   dayViewHeader: {
@@ -1853,7 +1857,7 @@ export const calendarStyles = StyleSheet.create({
   },
 
   dayViewScroll: {
-    flex: 1,
+    maxHeight: 450,
     backgroundColor: COLORS.background,
   },
 
