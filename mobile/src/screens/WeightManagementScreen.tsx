@@ -61,6 +61,7 @@ export default function WeightManagementScreen() {
             id: String(pet.id),
             role: pet.role || 'omistaja'
           }));
+          console.log('[WeightManagement] Fetched pets with roles:', fetchedPets.map(p => ({ id: p.id, name: p.name, role: p.role })));
           setPets(fetchedPets);
           
           // Set the first pet as selected by default
@@ -628,7 +629,12 @@ export default function WeightManagementScreen() {
       </View>
 
       {/* Check if current user has permission to view weight data */}
-      {pets.find(p => p.id === selectedPetId)?.role === 'hoitaja' ? (
+      {(() => {
+        const selectedPet = pets.find(p => p.id === selectedPetId);
+        const isHoitaja = selectedPet?.role === 'hoitaja';
+        console.log('[WeightManagement] Access check:', { petId: selectedPetId, petName: selectedPet?.name, role: selectedPet?.role, isHoitaja });
+        return isHoitaja;
+      })() ? (
         <View style={styles.emptyContainer}>
           <MaterialCommunityIcons name="lock" size={64} color={COLORS.onSurfaceVariant} />
           <Text variant="headlineSmall" style={styles.emptyTitle}>

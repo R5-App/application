@@ -222,7 +222,8 @@ export const petService = {
       breed: backendPet.breed,
       sex: backendPet.sex,
       birthdate: backendPet.birthdate,
-      notes: backendPet.notes
+      notes: backendPet.notes,
+      role: backendPet.role || 'omistaja'
     };
   },
 

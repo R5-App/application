@@ -72,6 +72,7 @@ export default function VisitsScreen() {
             id: String(pet.id),
             role: pet.role || 'omistaja'
           }));
+          console.log('[VisitsScreen] Fetched pets with roles:', fetchedPets.map(p => ({ id: p.id, name: p.name, role: p.role })));
           setPets(fetchedPets);
           
           // Set the first pet as selected by default
