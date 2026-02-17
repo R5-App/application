@@ -31,10 +31,13 @@ export const petService = {
 
       return { success: false, message: response.data.message };
     } catch (error: any) {
-      console.error('Get user pets error:', error);
+      const errorMessage = error.response?.data?.message || 'Lemmikkien haku epäonnistui';
+      if (__DEV__) {
+        console.log('Get user pets failed:', errorMessage);
+      }
       return {
         success: false,
-        message: error.response?.data?.message || 'Lemmikkien haku epäonnistui',
+        message: errorMessage,
       };
     }
   },
@@ -66,10 +69,13 @@ export const petService = {
 
       return { success: false, message: response.data.message };
     } catch (error: any) {
-      console.error('Get pet by ID error:', error);
+      const errorMessage = error.response?.data?.message || 'Lemmikin haku epäonnistui';
+      if (__DEV__) {
+        console.log('Get pet by ID failed:', errorMessage);
+      }
       return {
         success: false,
-        message: error.response?.data?.message || 'Lemmikin haku epäonnistui',
+        message: errorMessage,
       };
     }
   },
@@ -89,10 +95,13 @@ export const petService = {
 
       return { success: false, message: response.data.message };
     } catch (error: any) {
-      console.error('Get complete pet data error:', error);
+      const errorMessage = error.response?.data?.message || 'Lemmikin tietojen haku epäonnistui';
+      if (__DEV__) {
+        console.log('Get complete pet data failed:', errorMessage);
+      }
       return {
         success: false,
-        message: error.response?.data?.message || 'Lemmikin tietojen haku epäonnistui',
+        message: errorMessage,
       };
     }
   },
@@ -125,10 +134,13 @@ export const petService = {
 
       return { success: false, message: response.data.message };
     } catch (error: any) {
-      console.error('Update pet error:', error);
+      const errorMessage = error.response?.data?.message || 'Lemmikin päivitys epäonnistui';
+      if (__DEV__) {
+        console.log('Update pet failed:', errorMessage);
+      }
       return {
         success: false,
-        message: error.response?.data?.message || 'Lemmikin päivitys epäonnistui',
+        message: errorMessage,
       };
     }
   },
@@ -161,10 +173,13 @@ export const petService = {
 
       return { success: false, message: response.data.message };
     } catch (error: any) {
-      console.error('Create pet error:', error);
+      const errorMessage = error.response?.data?.message || 'Lemmikin luonti epäonnistui';
+      if (__DEV__) {
+        console.log('Create pet failed:', errorMessage);
+      }
       return {
         success: false,
-        message: error.response?.data?.message || 'Lemmikin luonti epäonnistui',
+        message: errorMessage,
       };
     }
   },
@@ -180,10 +195,13 @@ export const petService = {
 
       return { success: response.data.success, message: response.data.message };
     } catch (error: any) {
-      console.error('Delete pet error:', error);
+      const errorMessage = error.response?.data?.message || 'Lemmikin poisto epäonnistui';
+      if (__DEV__) {
+        console.log('Delete pet failed:', errorMessage);
+      }
       return {
         success: false,
-        message: error.response?.data?.message || 'Lemmikin poisto epäonnistui',
+        message: errorMessage,
       };
     }
   },
@@ -202,6 +220,155 @@ export const petService = {
       birthdate: backendPet.birthdate,
       notes: backendPet.notes
     };
+  },
+
+  /**
+   * Share pet - Generate share code
+   */
+  async sharePet(petId: string | number, expiresIn: string = '24h'): Promise<{ success: boolean; data?: any; message?: string }> {
+    try {
+      const response = await apiClient.post(
+        `/api/pets/${petId}/share`,
+        { expiresIn }
+      );
+
+      if (response.data.success) {
+        return { success: true, data: response.data.data };
+      }
+
+      return { success: false, message: response.data.message };
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Jakokoodin luonti epäonnistui';
+      if (__DEV__) {
+        console.log('Share pet failed:', errorMessage);
+      }
+      return {
+        success: false,
+        message: errorMessage,
+      };
+    }
+  },
+
+  /**
+   * Redeem share code
+   */
+  async redeemShareCode(shareCode: string): Promise<{ success: boolean; data?: Pet; message?: string }> {
+    try {
+      const response = await apiClient.post(
+        '/api/pets/redeem',
+        { shareCode }
+      );
+
+      if (response.data.success && response.data.data) {
+        const petData = response.data.data;
+        const convertedPet: Pet = {
+          id: String(petData.id),
+          owner_id: petData.owner_id,
+          name: petData.name,
+          type: petData.type,
+          breed: petData.breed,
+          sex: petData.sex,
+          birthdate: petData.birthdate,
+          notes: petData.notes
+        };
+        return { success: true, data: convertedPet };
+      }
+
+      return { success: false, message: response.data.message };
+    } catch (error: any) {
+      // Log only the error message, not the full Axios error object
+      const errorMessage = error.response?.data?.message || 'Jakokoodin lunastus epäonnistui';
+      if (__DEV__) {
+        console.log('Redeem share code failed:', errorMessage);
+      }
+      return {
+        success: false,
+        message: errorMessage,
+      };
+    }
+  },
+
+  /**
+   * Get shared users for a pet
+   */
+  async getSharedUsers(petId: string | number): Promise<{ success: boolean; data?: any[]; count?: number; message?: string }> {
+    try {
+      const response = await apiClient.get(
+        `/api/pets/${petId}/shared-users`
+      );
+
+      if (response.data.success) {
+        return { 
+          success: true, 
+          data: response.data.data,
+          count: response.data.count 
+        };
+      }
+
+      return { success: false, message: response.data.message };
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Jaettujen käyttäjien haku epäonnistui';
+      if (__DEV__) {
+        console.log('Get shared users failed:', errorMessage);
+      }
+      return {
+        success: false,
+        message: errorMessage,
+      };
+    }
+  },
+
+  /**
+   * Remove shared user access
+   */
+  async removeSharedUser(petId: string | number, userId: string): Promise<{ success: boolean; message?: string }> {
+    try {
+      const response = await apiClient.delete(
+        `/api/pets/${petId}/shared-users/${userId}`
+      );
+
+      if (response.data.success) {
+        return { success: true, message: response.data.message };
+      }
+
+      return { success: false, message: response.data.message };
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Käyttäjän poisto epäonnistui';
+      if (__DEV__) {
+        console.log('Remove shared user failed:', errorMessage);
+      }
+      return {
+        success: false,
+        message: errorMessage,
+      };
+    }
+  },
+
+  /**
+   * Update shared user role
+   */
+  async updateSharedUserRole(petId: string | number, userId: string, role: string): Promise<{ success: boolean; message?: string }> {
+    try {
+      const response = await apiClient.put(
+        `/api/pets/${petId}/shared-users/${userId}`,
+        { role }
+      );
+
+      if (response.data.success) {
+        return { success: true, message: response.data.message };
+      }
+
+      return { success: false, message: response.data.message };
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Roolin päivitys epäonnistui';
+      if (__DEV__) {
+        console.log('Update shared user role failed:', errorMessage);
+      }
+      return {
+        success: false,
+        message: errorMessage,
+      };
+    }
   },
 };
 

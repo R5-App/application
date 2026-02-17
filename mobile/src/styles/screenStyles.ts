@@ -101,9 +101,15 @@ export const petsStyles = StyleSheet.create({
     ...COMMON_STYLES.card,
   },
   
+  petNameRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  
   petName: {
     ...TYPOGRAPHY.titleLarge,
-    marginBottom: SPACING.xs,
+    flex: 1,
   },
   
   petInfo: {
@@ -148,6 +154,111 @@ export const petsStyles = StyleSheet.create({
   headerTitle: {
     ...TYPOGRAPHY.headlineMedium,
     color: COLORS.onPrimaryContainer,
+  },
+  
+  // === Pet Sharing Styles ===
+  shareButton: {
+    marginTop: SPACING.sm,
+  },
+  
+  dialogContent: {
+    maxHeight: 600,
+  },
+  
+  shareSection: {
+    marginBottom: SPACING.lg,
+  },
+  
+  shareSectionTitle: {
+    ...TYPOGRAPHY.titleMedium,
+    marginBottom: SPACING.md,
+    color: COLORS.onSurface,
+  },
+  
+  qrContainer: {
+    alignItems: 'center',
+    padding: SPACING.lg,
+    backgroundColor: COLORS.surface,
+    borderRadius: BORDER_RADIUS.medium,
+    marginBottom: SPACING.md,
+  },
+  
+  shareCodeText: {
+    ...TYPOGRAPHY.bodyMedium,
+    fontFamily: 'monospace',
+    backgroundColor: COLORS.surfaceVariant,
+    padding: SPACING.md,
+    borderRadius: BORDER_RADIUS.small,
+    marginBottom: SPACING.md,
+  },
+  
+  expiryText: {
+    ...TYPOGRAPHY.bodySmall,
+    color: COLORS.onSurfaceVariant,
+    marginTop: SPACING.sm,
+    textAlign: 'center',
+  },
+  
+  sharedUserItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: SPACING.md,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.outlineVariant,
+  },
+  
+  sharedUserInfo: {
+    flex: 1,
+  },
+  
+  sharedUserName: {
+    ...TYPOGRAPHY.bodyLarge,
+    fontWeight: '500',
+    color: COLORS.onSurface,
+  },
+  
+  sharedUserEmail: {
+    ...TYPOGRAPHY.bodySmall,
+    color: COLORS.onSurfaceVariant,
+  },
+  
+  sharedUserRole: {
+    ...TYPOGRAPHY.labelSmall,
+    color: COLORS.primary,
+    marginTop: SPACING.xs,
+  },
+  
+  removeButton: {
+    marginLeft: SPACING.md,
+  },
+  
+  emptySharedUsers: {
+    ...TYPOGRAPHY.bodyMedium,
+    color: COLORS.onSurfaceVariant,
+    textAlign: 'center',
+    paddingVertical: SPACING.lg,
+  },
+  
+  pickerContainer: {
+    marginBottom: SPACING.md,
+  },
+  
+  pickerLabel: {
+    ...TYPOGRAPHY.labelMedium,
+    color: COLORS.onSurfaceVariant,
+    marginBottom: SPACING.xs,
+  },
+  
+  picker: {
+    backgroundColor: COLORS.surfaceVariant,
+    borderRadius: BORDER_RADIUS.small,
+  },
+  
+  cardActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    paddingTop: SPACING.sm,
   },
   
   infoCard: {
