@@ -10,7 +10,6 @@ export default function SettingsScreen() {
   const { user, logout } = useAuth();
   const { settings, updateSettings, syncAllWalks } = useWalk();
   const [notifications, setNotifications] = React.useState(true);
-  const [darkMode, setDarkMode] = React.useState(false);
   const [logoutDialogVisible, setLogoutDialogVisible] = React.useState(false);
   const [isSyncing, setIsSyncing] = React.useState(false);
 
@@ -112,21 +111,6 @@ export default function SettingsScreen() {
             />
           </>
         )}
-        
-      <View style={styles.section}>
-        <Text variant="titleMedium" style={styles.sectionTitle}>
-          Näyttö
-        </Text>
-        <List.Item
-          title="Pimeä tila"
-          right={() => (
-            <Switch
-              value={darkMode}
-              onValueChange={setDarkMode}
-            />
-          )}
-        />
-      </View>
 
       <View style={styles.section}>
         <Text variant="titleMedium" style={styles.sectionTitle}>

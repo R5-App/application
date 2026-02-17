@@ -5,11 +5,11 @@ import {
   StyleSheet, 
   FlatList, 
   TouchableOpacity,
-  Alert,
   RefreshControl,
   Animated,
 } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
+import { Portal, Dialog, Button } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useWalk } from '@contexts/WalkContext';
@@ -21,6 +21,8 @@ export default function WalkHistoryScreen() {
   const { walks, deleteWalk, refreshWalks } = useWalk();
   const [selectedWalk, setSelectedWalk] = useState<Walk | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [deleteDialogVisible, setDeleteDialogVisible] = useState(false);
+  const [walkToDelete, setWalkToDelete] = useState<Walk | null>(null);
 
   useEffect(() => {
     refreshWalks();
@@ -56,23 +58,20 @@ export default function WalkHistoryScreen() {
     return date.toLocaleDateString('fi-FI');
   };
 
-  const handleDeleteWalk = (id: string) => {
-    Alert.alert(
-      'Poista lenkki',
-      'Haluatko varmasti poistaa tämän lenkin?',
-      [
-        { text: 'Peruuta', style: 'cancel' },
-        {
-          text: 'Poista',
-          style: 'destructive',
-          onPress: async () => {
-            await deleteWalk(id);
-            setSelectedWalk(null);
-          },
-        },
-      ]
-    );
+  const handleDeleteWalk = (walk: Walk) => {
+    setWalkToDelete(walk);
+    setDeleteDialogVisible(true);
   };
+
+  const confirmDeleteWalk = async () => {
+    if (!walkToDelete) return;
+    
+    await deleteWalk(walkToDelete.id);
+    setSelectedWalk(null);
+    setDeleteDialogVisible(false);
+    setWalkToDelete(null);
+  };
+
 
   const renderRightActions = (_progress: Animated.AnimatedInterpolation<number>, dragX: Animated.AnimatedInterpolation<number>, item: Walk) => {
     const trans = dragX.interpolate({
@@ -92,7 +91,7 @@ export default function WalkHistoryScreen() {
       >
         <TouchableOpacity
           style={styles.deleteActionButton}
-          onPress={() => handleDeleteWalk(item.id)}
+          onPress={() => handleDeleteWalk(item)}
         >
           <MaterialCommunityIcons name="delete" size={28} color={COLORS.onError} />
           <Text style={styles.deleteText}>Poista</Text>
@@ -201,7 +200,7 @@ export default function WalkHistoryScreen() {
             
             <TouchableOpacity
               style={styles.deleteButton}
-              onPress={() => handleDeleteWalk(item.id)}
+              onPress={() => handleDeleteWalk(item)}
               activeOpacity={0.7}
             >
               <MaterialCommunityIcons 
@@ -256,6 +255,25 @@ export default function WalkHistoryScreen() {
           />
         }
       />
+
+      <Portal>
+        <Dialog
+          visible={deleteDialogVisible}
+          onDismiss={() => setDeleteDialogVisible(false)}
+          style={{ backgroundColor: COLORS.background }}
+        >
+          <Dialog.Title>Poista lenkki</Dialog.Title>
+          <Dialog.Content>
+            <Text style={{ ...TYPOGRAPHY.bodyMedium, color: COLORS.onSurface }}>
+              Haluatko varmasti poistaa tämän lenkin?
+            </Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setDeleteDialogVisible(false)}>Peruuta</Button>
+            <Button onPress={confirmDeleteWalk} textColor={COLORS.error}>Poista</Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
     </View>
   );
 }
@@ -266,18 +284,18 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   header: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.primaryContainer,
     padding: SPACING.lg,
     paddingTop: SPACING.xl,
   },
   headerTitle: {
     ...TYPOGRAPHY.headlineMedium,
-    color: COLORS.onPrimary,
-    fontWeight: '600',
+    color: COLORS.onPrimaryContainer,
+    fontWeight: '400',
   },
   headerSubtitle: {
     ...TYPOGRAPHY.bodyMedium,
-    color: COLORS.onPrimary,
+    color: COLORS.onPrimaryContainer,
     opacity: 0.9,
     marginTop: SPACING.xs,
   },

@@ -593,6 +593,7 @@ export default function VisitsScreen() {
         <Dialog
           visible={deleteDialogVisible}
           onDismiss={() => setDeleteDialogVisible(false)}
+          style={{ backgroundColor: COLORS.background }}
         >
           <Dialog.Title>Poista käynti</Dialog.Title>
           <Dialog.Content>

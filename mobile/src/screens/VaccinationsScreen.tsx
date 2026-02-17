@@ -527,6 +527,7 @@ export default function VaccinationsScreen() {
         <Dialog
           visible={deleteDialogVisible}
           onDismiss={() => setDeleteDialogVisible(false)}
+          style={{ backgroundColor: COLORS.background }}
         >
           <Dialog.Title>Vahvista poisto</Dialog.Title>
           <Dialog.Content>

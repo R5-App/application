@@ -12,23 +12,23 @@ import { MD3LightTheme, MD3Theme as PaperMD3Theme } from 'react-native-paper';
 // ============================================
 
 export const COLORS = {
-  // MD3 Primary Color Scheme
-  primary: '#6750A4',
+  // MD3 Primary Color Scheme - Lämmin ruskehtava-mauve
+  primary: '#6f4f54',
   onPrimary: '#FFFFFF',
-  primaryContainer: '#EADDFF',
-  onPrimaryContainer: '#21005D',
+  primaryContainer: '#E8DFD6',
+  onPrimaryContainer: '#22181A',
   
-  // MD3 Secondary Color Scheme
-  secondary: '#625B71',
+  // MD3 Secondary Color Scheme - Lämmin harmaanruskea
+  secondary: '#75685E',
   onSecondary: '#FFFFFF',
-  secondaryContainer: '#E8DEF8',
-  onSecondaryContainer: '#1D192B',
+  secondaryContainer: '#E8DFD6',
+  onSecondaryContainer: '#2B231C',
   
-  // MD3 Tertiary Color Scheme
-  tertiary: '#7D5260',
+  // MD3 Tertiary Color Scheme - Lämmin terrakotta
+  tertiary: '#8B6355',
   onTertiary: '#FFFFFF',
-  tertiaryContainer: '#FFD8E4',
-  onTertiaryContainer: '#31111D',
+  tertiaryContainer: '#FFDDD3',
+  onTertiaryContainer: '#331915',
   
   // MD3 Error Color Scheme
   error: '#B3261E',
@@ -36,22 +36,22 @@ export const COLORS = {
   errorContainer: '#F9DEDC',
   onErrorContainer: '#410E0B',
   
-  // MD3 Background & Surface
-  background: '#FFFBFE',
-  onBackground: '#1C1B1F',
-  surface: '#FFFBFE',
-  onSurface: '#1C1B1F',
-  surfaceVariant: '#E7E0EC',
-  onSurfaceVariant: '#49454F',
+  // MD3 Background & Surface - Lämmin off-white
+  background: '#FFF9F5',
+  onBackground: '#1F1B18',
+  surface: '#ffffff',
+  onSurface: '#1F1B18',
+  surfaceVariant: '#EBE3DB',
+  onSurfaceVariant: '#4D4539',
   
-  // MD3 Outline
-  outline: '#79747E',
-  outlineVariant: '#CAC4D0',
+  // MD3 Outline - Lämmin harmaa
+  outline: '#847B73',
+  outlineVariant: '#D4CCC3',
   
   // MD3 Inverse Colors
-  inverseSurface: '#313033',
-  inverseOnSurface: '#F4EFF4',
-  inversePrimary: '#D0BCFF',
+  inverseSurface: '#342F2B',
+  inverseOnSurface: '#F8F0EB',
+  inversePrimary: '#E5C9A8',
   
   // Custom Status Colors (yhteensopivat MD3:n kanssa)
   success: '#4CAF50',
