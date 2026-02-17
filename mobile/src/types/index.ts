@@ -12,6 +12,7 @@ export interface Pet {
   weight?: number;
   image?: string;
   notes?: string;
+  role?: 'omistaja' | 'hoitaja' | 'lääkäri'; // User's role for this pet
 }
 
 export interface User {

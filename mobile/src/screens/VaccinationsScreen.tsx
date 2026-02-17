@@ -57,7 +57,11 @@ export default function VaccinationsScreen() {
         ]);
         
         if (petsResponse.data.success && petsResponse.data.data) {
-          const fetchedPets = petsResponse.data.data;
+          const fetchedPets: Pet[] = petsResponse.data.data.map((pet: any) => ({
+            ...pet,
+            id: String(pet.id),
+            role: pet.role || 'omistaja'
+          }));
           setPets(fetchedPets);
           
           if (fetchedPets.length > 0) {
@@ -362,23 +366,38 @@ export default function VaccinationsScreen() {
         ))}
       </ScrollView>
 
-      <ScrollView
-        style={styles.content}
-        contentContainerStyle={styles.scrollContent}
-      >
-        {selectedPetVaccinations.length === 0 ? (
-          renderEmptyState()
-        ) : (
-          selectedPetVaccinations.map(renderVaccinationCard)
-        )}
-      </ScrollView>
+      {/* Check if current user has permission to view vaccinations */}
+      {pets.find(p => p.id === selectedPetId)?.role === 'hoitaja' ? (
+        <View style={styles.emptyContainer}>
+          <MaterialCommunityIcons name="lock" size={64} color={COLORS.onSurfaceVariant} />
+          <Text variant="headlineSmall" style={styles.emptyTitle}>
+            Ei käyttöoikeutta
+          </Text>
+          <Text variant="bodyMedium" style={styles.emptyText}>
+            Hoitajana et voi nähdä rokotuksia
+          </Text>
+        </View>
+      ) : (
+        <>
+          <ScrollView
+            style={styles.content}
+            contentContainerStyle={styles.scrollContent}
+          >
+            {selectedPetVaccinations.length === 0 ? (
+              renderEmptyState()
+            ) : (
+              selectedPetVaccinations.map(renderVaccinationCard)
+            )}
+          </ScrollView>
 
-      <FAB
-        icon="plus"
-        style={styles.fab}
-        onPress={handleOpenModal}
-        label="Lisää rokotus"
-      />
+          <FAB
+            icon="plus"
+            style={styles.fab}
+            onPress={handleOpenModal}
+            label="Lisää rokotus"
+          />
+        </>
+      )}
 
       <Portal>
         <Modal

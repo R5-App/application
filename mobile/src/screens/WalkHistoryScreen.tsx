@@ -13,7 +13,8 @@ import { Portal, Dialog, Button } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useWalk } from '@contexts/WalkContext';
-import { Walk } from '../types';
+import { Walk, Pet } from '../types';
+import apiClient from '../services/api';
 import { COLORS, SPACING, TYPOGRAPHY, LAYOUT } from '../styles/theme';
 
 export default function WalkHistoryScreen() {
@@ -23,10 +24,38 @@ export default function WalkHistoryScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [deleteDialogVisible, setDeleteDialogVisible] = useState(false);
   const [walkToDelete, setWalkToDelete] = useState<Walk | null>(null);
+  const [pets, setPets] = useState<Pet[]>([]);
 
   useEffect(() => {
     refreshWalks();
+    fetchPets();
   }, []);
+
+  const fetchPets = async () => {
+    try {
+      const petsResponse = await apiClient.get('/api/pets');
+      if (petsResponse.data.success && petsResponse.data.data) {
+        const fetchedPets: Pet[] = petsResponse.data.data.map((pet: any) => ({
+          ...pet,
+          id: String(pet.id),
+          role: pet.role || 'omistaja'
+        }));
+        setPets(fetchedPets);
+      }
+    } catch (error) {
+      console.error('Failed to fetch pets:', error);
+    }
+  };
+
+  const getPetRole = (petId: string): string | undefined => {
+    return pets.find(p => p.id === petId)?.role;
+  };
+
+  // Filter walks - only show walks for pets where user is NOT hoitaja
+  const filteredWalks = walks.filter(walk => {
+    const role = getPetRole(walk.petId);
+    return role !== 'hoitaja';
+  });
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -185,18 +214,21 @@ export default function WalkHistoryScreen() {
           </View>
 
           <View style={styles.actionButtons}>
-            <TouchableOpacity 
-              style={styles.viewMapButton}
-              onPress={() => navigation.navigate('WalkDetail', { walk: item })}
-              activeOpacity={0.7}
-            >
-              <MaterialCommunityIcons 
-                name="map-outline" 
-                size={LAYOUT.iconSm} 
-                color={COLORS.primary} 
-              />
-              <Text style={styles.viewMapButtonText}>Näytä kartalla</Text>
-            </TouchableOpacity>
+            {/* Only show map button for omistaja, hide for lääkäri */}
+            {getPetRole(item.petId) !== 'lääkäri' && (
+              <TouchableOpacity 
+                style={styles.viewMapButton}
+                onPress={() => navigation.navigate('WalkDetail', { walk: item })}
+                activeOpacity={0.7}
+              >
+                <MaterialCommunityIcons 
+                  name="map-outline" 
+                  size={LAYOUT.iconSm} 
+                  color={COLORS.primary} 
+                />
+                <Text style={styles.viewMapButtonText}>Näytä kartalla</Text>
+              </TouchableOpacity>
+            )}
             
             <TouchableOpacity
               style={styles.deleteButton}
@@ -236,12 +268,12 @@ export default function WalkHistoryScreen() {
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Lenkkihistoria</Text>
         <Text style={styles.headerSubtitle}>
-          {walks.length} {walks.length === 1 ? 'lenkki' : 'lenkkiä'}
+          {filteredWalks.length} {filteredWalks.length === 1 ? 'lenkki' : 'lenkkiä'}
         </Text>
       </View>
 
       <FlatList
-        data={walks.sort((a, b) => b.startTime - a.startTime)}
+        data={filteredWalks.sort((a, b) => b.startTime - a.startTime)}
         renderItem={renderWalkItem}
         keyExtractor={item => item.id}
         contentContainerStyle={styles.listContent}
