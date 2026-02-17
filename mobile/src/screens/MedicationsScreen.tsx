@@ -58,7 +58,11 @@ export default function MedicationsScreen() {
         ]);
         
         if (petsResponse.data.success && petsResponse.data.data) {
-          const fetchedPets = petsResponse.data.data;
+          const fetchedPets: Pet[] = petsResponse.data.data.map((pet: any) => ({
+            ...pet,
+            id: String(pet.id),
+            role: pet.role || 'omistaja'
+          }));
           setPets(fetchedPets);
           
           if (fetchedPets.length > 0) {

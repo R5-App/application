@@ -326,17 +326,19 @@ export default function PetDetailsScreen() {
           Muokkaa lemmikin tietoja
         </Button>
 
-        {/* Vaccinations*/}
-        <Button 
-          mode="contained-tonal" 
-          onPress={() => navigation.navigate('Vaccinations' as never)}
-          icon="needle"
-          style={styles.actionButton}
+        {/* Vaccinations - hidden for hoitaja */}
+        {pet.role !== 'hoitaja' && (
+          <Button 
+            mode="contained-tonal" 
+            onPress={() => navigation.navigate('Vaccinations' as never)}
+            icon="needle"
+            style={styles.actionButton}
           >
-          Rokotukset
-        </Button>
+            Rokotukset
+          </Button>
+        )}
 
-        {/* Medications*/}
+        {/* Medications - visible for all roles */}
         <Button 
           mode="contained-tonal" 
           onPress={() => navigation.navigate('Medications' as never)}
@@ -346,27 +348,31 @@ export default function PetDetailsScreen() {
           Lääkitys
         </Button>
 
-        {/* Weight*/}
-        <Button 
-          mode="contained-tonal" 
-          onPress={() => navigation.navigate('WeightManagement' as never)}
-          icon="scale"
-          style={styles.actionButton}
-        >
-          Paino
-        </Button>
+        {/* Weight - hidden for hoitaja */}
+        {pet.role !== 'hoitaja' && (
+          <Button 
+            mode="contained-tonal" 
+            onPress={() => navigation.navigate('WeightManagement' as never)}
+            icon="scale"
+            style={styles.actionButton}
+          >
+            Paino
+          </Button>
+        )}
 
-        {/* Delete button*/}
-        <Button 
-          mode="outlined" 
-          textColor={COLORS.error}
-          onPress={handleDeletePet}
-          disabled={isDeleting} // Disable if delete is already in progress
-          icon="delete"
-          style={styles.actionButton}
-        >
-          Poista lemmikki
-        </Button>
+        {/* Delete button - only for owner */}
+        {pet.role === 'omistaja' && (
+          <Button 
+            mode="outlined" 
+            textColor={COLORS.error}
+            onPress={handleDeletePet}
+            disabled={isDeleting}
+            icon="delete"
+            style={styles.actionButton}
+          >
+            Poista lemmikki
+          </Button>
+        )}
       </View>
 
       {/* EDIT (Modal popup)*/}

@@ -67,7 +67,11 @@ export default function VisitsScreen() {
         ]);
         
         if (petsResponse.data.success && petsResponse.data.data) {
-          const fetchedPets = petsResponse.data.data;
+          const fetchedPets: Pet[] = petsResponse.data.data.map((pet: any) => ({
+            ...pet,
+            id: String(pet.id),
+            role: pet.role || 'omistaja'
+          }));
           setPets(fetchedPets);
           
           // Set the first pet as selected by default
@@ -405,23 +409,38 @@ export default function VisitsScreen() {
         ))}
       </ScrollView>
 
-      <ScrollView
-        style={styles.content}
-        contentContainerStyle={styles.scrollContent}
-      >
-        {selectedPetVisits.length === 0 ? (
-          renderEmptyState()
-        ) : (
-          selectedPetVisits.map(renderVisitCard)
-        )}
-      </ScrollView>
+      {/* Check if current user has permission to view visits */}
+      {pets.find(p => p.id === selectedPetId)?.role === 'hoitaja' ? (
+        <View style={styles.emptyContainer}>
+          <MaterialCommunityIcons name="lock" size={64} color={COLORS.onSurfaceVariant} />
+          <Text variant="headlineSmall" style={styles.emptyTitle}>
+            Ei käyttöoikeutta
+          </Text>
+          <Text variant="bodyMedium" style={styles.emptyText}>
+            Hoitajana et voi nähdä käyntejä
+          </Text>
+        </View>
+      ) : (
+        <>
+          <ScrollView
+            style={styles.content}
+            contentContainerStyle={styles.scrollContent}
+          >
+            {selectedPetVisits.length === 0 ? (
+              renderEmptyState()
+            ) : (
+              selectedPetVisits.map(renderVisitCard)
+            )}
+          </ScrollView>
 
-      <FAB
-        icon="plus"
-        style={styles.fab}
-        onPress={handleOpenModal}
-        label="Lisää käynti"
-      />
+          <FAB
+            icon="plus"
+            style={styles.fab}
+            onPress={handleOpenModal}
+            label="Lisää käynti"
+          />
+        </>
+      )}
 
       <Portal>
         <Modal

@@ -56,7 +56,11 @@ export default function WeightManagementScreen() {
         ]);
         
         if (petsResponse.data.success && petsResponse.data.data) {
-          const fetchedPets = petsResponse.data.data;
+          const fetchedPets: Pet[] = petsResponse.data.data.map((pet: any) => ({
+            ...pet,
+            id: String(pet.id),
+            role: pet.role || 'omistaja'
+          }));
           setPets(fetchedPets);
           
           // Set the first pet as selected by default
@@ -623,32 +627,47 @@ export default function WeightManagementScreen() {
         </ScrollView>
       </View>
 
-      <ScrollView
-        style={styles.content}
-        contentContainerStyle={styles.scrollContent}
-      >
-        {selectedPetWeights.length > 0 && renderGraph()}
-
-        <View style={styles.dividerSection}>
-          <Divider />
-          <Text variant="titleMedium" style={styles.sectionTitle}>
-            Mittaushistoria
+      {/* Check if current user has permission to view weight data */}
+      {pets.find(p => p.id === selectedPetId)?.role === 'hoitaja' ? (
+        <View style={styles.emptyContainer}>
+          <MaterialCommunityIcons name="lock" size={64} color={COLORS.onSurfaceVariant} />
+          <Text variant="headlineSmall" style={styles.emptyTitle}>
+            Ei käyttöoikeutta
+          </Text>
+          <Text variant="bodyMedium" style={styles.emptyText}>
+            Hoitajana et voi nähdä painomittauksia
           </Text>
         </View>
+      ) : (
+        <>
+          <ScrollView
+            style={styles.content}
+            contentContainerStyle={styles.scrollContent}
+          >
+            {selectedPetWeights.length > 0 && renderGraph()}
 
-        {selectedPetWeights.length === 0 ? (
-          renderEmptyState()
-        ) : (
-          selectedPetWeights.map((record, index) => renderWeightCard(record, index))
-        )}
-      </ScrollView>
+            <View style={styles.dividerSection}>
+              <Divider />
+              <Text variant="titleMedium" style={styles.sectionTitle}>
+                Mittaushistoria
+              </Text>
+            </View>
 
-      <FAB
-        icon="plus"
-        style={styles.fab}
-        onPress={handleOpenModal}
-        label="Lisää mittaus"
-      />
+            {selectedPetWeights.length === 0 ? (
+              renderEmptyState()
+            ) : (
+              selectedPetWeights.map((record, index) => renderWeightCard(record, index))
+            )}
+          </ScrollView>
+
+          <FAB
+            icon="plus"
+            style={styles.fab}
+            onPress={handleOpenModal}
+            label="Lisää mittaus"
+          />
+        </>
+      )}
 
       <Portal>
         <Modal
