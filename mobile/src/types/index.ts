@@ -111,3 +111,37 @@ export interface CalendarEvent {
   eventType: string;
   remindBeforeMin?: number;
 }
+
+// Pet sharing types
+export interface ShareCodeResponse {
+  success: boolean;
+  message: string;
+  data?: {
+    shareCode: string;
+    petId: number;
+    petName: string;
+    expiresIn: string;
+  };
+}
+
+export interface SharedUser {
+  id: string;
+  username: string;
+  email: string;
+  name: string;
+  role: 'omistaja' | 'hoitaja' | 'lääkäri';
+  shared_at: string;
+}
+
+export interface SharedUsersResponse {
+  success: boolean;
+  message: string;
+  data?: SharedUser[];
+  count?: number;
+}
+
+export interface RedeemShareCodeResponse {
+  success: boolean;
+  message: string;
+  data?: Pet;
+}
