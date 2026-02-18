@@ -109,7 +109,7 @@ export default function SharePetDialog({ visible, onDismiss, petId, petName, isO
 
     setIsUpdatingRole(true);
     try {
-      const result = await authService.updateSubUserRole(editingSharedUser.id, newRole);
+      const result = await authService.updateSubUserRole(editingSharedUser.id, petId, newRole);
       if (result.success) {
         showSnackbar(`Käyttäjän ${editingSharedUser.username} rooli päivitetty`, 'success');
         setRoleEditDialogVisible(false);

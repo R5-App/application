@@ -214,7 +214,9 @@ export default function ProfileScreen() {
 
     setIsUpdatingRole(true);
     try {
-      const result = await authService.updateSubUserRole(editingSubUser.id, newRole);
+      // TODO: This endpoint now requires a petId. ProfileScreen needs to be updated to work with pet-specific roles
+      // or use a different endpoint for account-level roles
+      const result = await authService.updateSubUserRole(editingSubUser.id, '', newRole); // Empty petId - needs fix
       if (result.success) {
         showSnackbar(result.message, 'success');
         setRoleEditDialogVisible(false);

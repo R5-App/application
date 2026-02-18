@@ -109,9 +109,9 @@ export const authService = {
   },
 
   // Update sub-user role
-  updateSubUserRole: async (subUserId: string, role: string): Promise<{ success: boolean; message: string }> => {
+  updateSubUserRole: async (subUserId: string, petId: string, role: string): Promise<{ success: boolean; message: string }> => {
     try {
-      await apiClient.put(`/api/auth/sub-user/${subUserId}/pet/:petId/role`, { role });
+      await apiClient.put(`/api/auth/sub-user/${subUserId}/pet/${petId}/role`, { role });
       return {
         success: true,
         message: 'Rooli päivitetty onnistuneesti',
