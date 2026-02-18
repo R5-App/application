@@ -3,7 +3,7 @@ import { View, ScrollView } from 'react-native';
 import { Text, Button, Portal, TextInput, Dialog } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import petService from '../services/petService';
-import { COLORS, SPACING } from '../styles/theme';
+import { COLORS } from '../styles/theme';
 import { validatePetData } from '../helpers';
 import { petsStyles as styles } from '../styles/screenStyles';
 import DateTimePicker from '@react-native-community/datetimepicker';

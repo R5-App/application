@@ -49,7 +49,7 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
         contentContainerStyle={authStyles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={authStyles.logoContainer}>
+        <View style={authStyles.logoContainer1}>
           <Image
             source={require('../assets/images/image.png')}
             style={authStyles.logoImage}
