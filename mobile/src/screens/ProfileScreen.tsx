@@ -28,7 +28,7 @@ export default function ProfileScreen() {
   const [showDeletePassword, setShowDeletePassword] = useState(false);
   const [subUsersDialogVisible, setSubUsersDialogVisible] = useState(false);
   const [subUsers, setSubUsers] = useState<any[]>([]);
-  const [isLoadingSubUsers, setIsLoadingSubUsers] = useState(false);
+  const [isLoadingSubUsers] = useState(false);
   const [selectedSubUserId, setSelectedSubUserId] = useState<string | null>(null);
   const [isDeletingSubUser, setIsDeletingSubUser] = useState(false);
   const [roleEditDialogVisible, setRoleEditDialogVisible] = useState(false);
@@ -176,27 +176,6 @@ export default function ProfileScreen() {
       setPasswordValidationDialogVisible(true);
     } finally {
       setIsUpdatingPassword(false);
-    }
-  };
-
-  const handleViewSubUsers = async () => {
-    setSubUsersDialogVisible(true);
-    setIsLoadingSubUsers(true);
-    setSelectedSubUserId(null);
-    try {
-      const result = await authService.getSubUsers();
-      
-      if (result.success && result.data) {
-        setSubUsers(result.data);
-        setHasSubUsers(result.data.length > 0);
-      } else {
-        showSnackbar(result.message || 'Alikäyttäjien haku epäonnistui', 'error');
-      }
-    } catch (error) {
-      console.error('Sub-users fetch exception:', error);
-      showSnackbar('Alikäyttäjien haku epäonnistui', 'error');
-    } finally {
-      setIsLoadingSubUsers(false);
     }
   };
 

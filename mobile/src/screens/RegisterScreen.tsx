@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { View, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
-import { TextInput, Button, Text, Surface } from 'react-native-paper';
+import { View, ScrollView, KeyboardAvoidingView, Platform, Image } from 'react-native';
+import { TextInput, Button, Text  } from 'react-native-paper';
 import { useAuth } from '@contexts/AuthContext';
 import { useSnackbar } from '@contexts/SnackbarContext';
 import { authStyles } from '../styles/authStyles';
@@ -86,9 +86,13 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
         contentContainerStyle={authStyles.scrollContentRegister}
         keyboardShouldPersistTaps="handled"
       >
-        <Surface style={authStyles.logoContainer}>
-          <Text style={authStyles.logoText}>Logo</Text>
-        </Surface>
+        <View style={authStyles.logoContainer2}>
+          <Image
+            source={require('../assets/images/image.png')}
+            style={authStyles.logoImage}
+            resizeMode="contain"
+          />
+        </View>
 
         <Text variant="headlineSmall" style={authStyles.title}>
           Luo uusi tili

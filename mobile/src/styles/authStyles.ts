@@ -25,7 +25,17 @@ export const authStyles = StyleSheet.create({
   },
   
   // Logo
-  logoContainer: {
+  logoContainer1: {
+    width: 200,
+    height: 200,
+    alignSelf: 'center',
+    marginBottom: SPACING['2xl'],
+    top: -SPACING['2xl'],
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  logoContainer2: {
     width: 200,
     height: 200,
     alignSelf: 'center',
@@ -35,8 +45,8 @@ export const authStyles = StyleSheet.create({
   },
   
   logoImage: {
-    width: 200,
-    height: 200,
+    width: 350,
+    height: 350,
   },
   
   logoText: {

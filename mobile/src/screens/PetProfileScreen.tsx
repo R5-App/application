@@ -9,10 +9,12 @@ import { Pet } from '../types';
 import { COLORS, LAYOUT } from '../styles/theme';
 import { calculateAge, formatDate, validatePetData } from '../helpers';
 import { petsStyles as styles } from '../styles/screenStyles';
+import { useSnackbar } from '../contexts/SnackbarContext';
 
 export default function PetDetailsScreen() {
   const route = useRoute(); // access to route params
   const navigation = useNavigation();
+  const { showSnackbar } = useSnackbar();
   const { petId } = route.params as { petId: string };  // Extract the petId from route params
   const scrollViewRef = useRef<ScrollView>(null);
 
@@ -32,8 +34,6 @@ export default function PetDetailsScreen() {
   
   const [isSaving, setIsSaving] = useState(false); // track saving (prevent double clicks)
   const [isDeleting, setIsDeleting] = useState(false); // same as above but for deleting
-  const [validationDialogVisible, setValidationDialogVisible] = useState(false);
-  const [validationMessage, setValidationMessage] = useState('');
 
   const [messageDialogVisible, setMessageDialogVisible] = useState(false);
   const [messageTitle, setMessageTitle] = useState('');
@@ -92,8 +92,7 @@ export default function PetDetailsScreen() {
     const validation = validatePetData(editName, editType, editBreed, editSex, formattedBirthdate);
     
     if (!validation.valid) {
-      setValidationMessage(validation.message || '');
-      setValidationDialogVisible(true);
+      showSnackbar(validation.message || 'Virhe', 'error');
       return;
     }
    // ennen kuin const validation jne lisättiin, tässä oli:
@@ -129,22 +128,14 @@ export default function PetDetailsScreen() {
       if (result.success && result.data) { // Check if API response indicates success
         setPet(result.data); // Update the displayed pet data with the new values from API
         setEditDialogVisible(false); // Close the edit dialog
-
-        setMessageTitle('Onnistui');
-        setMessageContent('Lemmikin tiedot päivitetty');
-        setMessageType('success');
-        setMessageDialogVisible(true);
+        showSnackbar('Lemmikin tiedot päivitetty', 'success');
       } else {
-        setMessageTitle('Virhe');
-        setMessageContent(result.message || 'Päivitys epäonnistui');
-        setMessageType('error');
-        setMessageDialogVisible(true);
+        setEditDialogVisible(false); // Close the edit dialog
+        showSnackbar(result.message || 'Päivitys epäonnistui', 'error');
       }
     } catch (error) {
-      setMessageTitle('Virhe');
-      setMessageContent('Päivitys epäonnistui');
-      setMessageType('error');
-      setMessageDialogVisible(true);
+      setEditDialogVisible(false); // Close the edit dialog
+      showSnackbar('Päivitys epäonnistui', 'error');
       console.error('Error updating pet:', error);
     } finally {
       setIsSaving(false);
@@ -413,20 +404,6 @@ export default function PetDetailsScreen() {
           </Dialog.Content>
           <Dialog.Actions>
             <Button onPress={() => setMessageDialogVisible(false)}>OK</Button>
-          </Dialog.Actions>
-        </Dialog>
-
-        {/* Validation error dialog */}
-        <Dialog
-          visible={validationDialogVisible}
-          onDismiss={() => setValidationDialogVisible(false)}
-        >
-          <Dialog.Title>Virhe</Dialog.Title>
-          <Dialog.Content>
-            <Text>{validationMessage}</Text>
-          </Dialog.Content>
-          <Dialog.Actions>
-            <Button onPress={() => setValidationDialogVisible(false)}>OK</Button>
           </Dialog.Actions>
         </Dialog>
 
