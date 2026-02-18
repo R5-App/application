@@ -53,7 +53,11 @@ export default function RedeemShareCodeDialog({ visible, onDismiss, onSuccess }:
 
   return (
     <Portal>
-      <Dialog visible={visible} onDismiss={handleClose}>
+      <Dialog 
+      visible={visible} 
+      onDismiss={handleClose}
+      style={{ backgroundColor: COLORS.background }}
+      >
         <Dialog.Title>Lunasta jakokoodi</Dialog.Title>
         
         <Dialog.Content style={styles.dialogContent}>
