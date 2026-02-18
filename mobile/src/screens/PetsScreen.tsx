@@ -8,6 +8,7 @@ import { Pet } from '../types';
 import SharePetDialog from '../components/SharePetDialog';
 import RedeemShareCodeDialog from '../components/RedeemShareCodeDialog';
 import { useAuth } from '../contexts/AuthContext';
+import { COLORS } from '@utils/constants';
 
 const SCREEN_NAME = 'PetsScreen';
 
@@ -207,6 +208,7 @@ const handleRedeemSuccess = () => {
         <Dialog
           visible={showAddOptionsDialog}
           onDismiss={() => setShowAddOptionsDialog(false)}
+          style= {{ backgroundColor: COLORS.background }}
         >
           <Dialog.Title>Lisää lemmikki</Dialog.Title>
           

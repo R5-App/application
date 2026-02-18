@@ -162,6 +162,7 @@ export const petsStyles = StyleSheet.create({
   },
   
   dialogContent: {
+    backgroundColor: COLORS.background,
     maxHeight: 600,
   },
   

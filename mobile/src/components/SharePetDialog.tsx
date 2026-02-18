@@ -279,7 +279,10 @@ export default function SharePetDialog({ visible, onDismiss, petId, petName, isO
 
   return (
     <Portal>
-      <Dialog visible={visible} onDismiss={handleClose} style={{ maxHeight: '80%' }}>
+      <Dialog 
+      visible={visible} 
+      onDismiss={handleClose} 
+      style={{ maxHeight: '80%', backgroundColor: COLORS.background }}>
         <Dialog.Title>Jaa lemmikki: {petName}</Dialog.Title>
         
         <Dialog.Content style={styles.dialogContent}>
