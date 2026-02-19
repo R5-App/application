@@ -4,6 +4,8 @@ import { Text, Card, FAB, Portal, Button, Dialog, IconButton } from 'react-nativ
 import { petsStyles as styles } from '../styles/screenStyles';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import petService from '../services/petService';
+import avatarService from '../services/avatarService';
+import AvatarDisplay from '../components/AvatarDisplay';
 import { Pet } from '../types';
 import SharePetDialog from '../components/SharePetDialog';
 import RedeemShareCodeDialog from '../components/RedeemShareCodeDialog';
@@ -23,6 +25,7 @@ export default function PetsScreen() {
   const [error, setError] = useState<string | null>(null);
   const [shareDialogVisible, setShareDialogVisible] = useState(false);
   const [selectedPet, setSelectedPet] = useState<Pet | null>(null);
+  const [petAvatars, setPetAvatars] = useState<Record<string, number | undefined>>({});
 
   useFocusEffect(
     React.useCallback(() => {
@@ -52,6 +55,21 @@ export default function PetsScreen() {
         }));
         console.log('[PetsScreen] Fetched pets with roles:', convertedPets.map(p => ({ id: p.id, name: p.name, role: p.role, owner_id: p.owner_id })));
         setPets(convertedPets);
+
+        // Fetch avatars for all pets
+        const avatars: Record<string, number | undefined> = {};
+        for (const pet of convertedPets) {
+          try {
+            const avatarResult = await avatarService.getAvatarByPetId(parseInt(pet.id));
+            if (avatarResult.success && avatarResult.data) {
+              avatars[pet.id] = avatarResult.data.id;
+            }
+          } catch (err) {
+            // Continue if avatar fetch fails for a single pet
+            console.error(`Failed to fetch avatar for pet ${pet.id}:`, err);
+          }
+        }
+        setPetAvatars(avatars);
       } else {
         setError(result.message || 'Lemmikkien lataus epäonnistui');
       }
@@ -161,31 +179,35 @@ const handleRedeemSuccess = () => {
               style={styles.card}
               onPress={() => handlePetPress(item.id)}
             >
-              <Card.Content>
+              <Card.Content style={styles.cardContent}>
                 
-                {/* PLACEHOLDER PET IMAGE */}
-                <View style={styles.petImagePlaceholder}>
-                  <Text variant="bodyMedium" style={ styles.petImagePlaceholderText}>
-                    🐾 Kuva
-                  </Text>
+                {/* PET AVATAR (LEFT) */}
+                <View style={styles.cardAvatarContainer}>
+                  <AvatarDisplay
+                    avatarId={petAvatars[item.id]}
+                    size="small"
+                  />
                 </View>
 
-                {/* PET NAME AND SHARE ICON */}
-                <View style={styles.petNameRow}>
+                {/* PET NAME (MIDDLE) */}
+                <View style={styles.cardTextContainer}>
                   <Text variant="titleLarge" style={styles.petName}>
                     {item.name}
                   </Text>
-                  {isPetOwner(item) && (
-                    <IconButton
-                      icon="share-variant"
-                      size={20}
-                      onPress={(e) => {
-                        e.stopPropagation();
-                        handleSharePet(item);
-                      }}
-                    />
-                  )}
                 </View>
+
+                {/* SHARE ICON (RIGHT) */}
+                {isPetOwner(item) && (
+                  <IconButton
+                    icon="share-variant"
+                    size={20}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      handleSharePet(item);
+                    }}
+                    style={styles.cardShareButton}
+                  />
+                )}
 
               </Card.Content>
             </Card>
