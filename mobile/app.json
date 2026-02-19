@@ -31,11 +31,19 @@
         "NSLocationAlwaysUsageDescription": "MyPet tarvitsee sijaintitietosi lenkkien seurantaan myös taustalla.",
         "NSMotionUsageDescription": "MyPet tarvitsee liikeanturitietoja askeleiden laskemiseen lenkin aikana.",
         "NSPhotoLibraryUsageDescription": "MyPet tarvitsee pääsyn valokuviin lemmikin kuvan valitsemiseen.",
-        "NSCameraRollAddOnlyAccessPrivacy": "MyPet tarvitsee pääsyn valokuviin lemmikin kuvan valitsemiseen."
+        "NSCameraUsageDescription": "MyPet tarvitsee pääsyn kameraan valokuvien ottamiseen.",
+        "NSPhotoLibraryAddUsageDescription": "MyPet tarvitsee pääsyn valokuviin lemmikin kuvan tallentamiseen."
       }
     },
     "plugins": [
       "expo-osm-sdk/plugin",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "MyPet tarvitsee pääsyn valokuviin lemmikin kuvan valitsemiseen.",
+          "cameraPermission": "MyPet tarvitsee pääsyn kameraan valokuvien ottamiseen."
+        }
+      ],
       [
         "expo-location",
         {

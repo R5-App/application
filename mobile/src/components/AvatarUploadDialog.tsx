@@ -29,28 +29,42 @@ export default function AvatarUploadDialog({
   const pickImage = async () => {
     try {
       setError(null);
+      console.log('[AvatarUpload] Request permission to access media library');
 
-      // Request permission
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') {
-        setError('Camera roll permission required');
+      // Request permission - use the async permission request
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      console.log('[AvatarUpload] Permission result:', permissionResult);
+      
+      if (!permissionResult.granted) {
+        const message = permissionResult.status === 'denied' 
+          ? 'Kamera-rulla-oikeus hylätty. Ota käyttöön asetuksista.' 
+          : 'Kamera-rulla-oikeus vaaditaan valokuvien valitsemiseen';
+        setError(message);
         return;
       }
 
-      // Pick image
+      console.log('[AvatarUpload] Permission granted, launching image library');
+
+      // Pick image - use correct mediaTypes format (array, not enum)
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ['images'], // Correct format for SDK 54+
         allowsEditing: true,
         aspect: [1, 1], // Square for easier circular display
         quality: 0.8,
       });
 
-      if (!result.canceled) {
+      console.log('[AvatarUpload] Image picker result:', result);
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        console.log('[AvatarUpload] Image selected:', result.assets[0].fileName);
         setSelectedImage(result.assets[0]);
+      } else {
+        console.log('[AvatarUpload] Image selection canceled by user');
       }
-    } catch (err) {
-      setError('Failed to pick image');
-      console.error('Image picker error:', err);
+    } catch (err: any) {
+      const errorMsg = err?.message || 'Valintavirhe';
+      console.error('[AvatarUpload] Image picker error:', err);
+      setError(`Virhe: ${errorMsg}`);
     }
   };
 

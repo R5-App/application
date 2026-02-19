@@ -20,10 +20,11 @@ export const avatarService = {
       const formData = new FormData();
       
       // Append file to form data
+      // Note: Expo ImagePicker returns: uri, width, height, type, fileName, fileSize, mimeType
       formData.append('avatar', {
         uri: file.uri,
-        type: file.type || 'image/jpeg',
-        name: file.name || `avatar-${Date.now()}.jpg`,
+        type: file.mimeType || file.type || 'image/jpeg',
+        name: file.fileName || file.name || `avatar-${Date.now()}.jpg`,
       } as any);
 
       // Append pet_id if provided
