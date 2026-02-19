@@ -5,8 +5,11 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import petService from '../services/petService';
+import avatarService from '../services/avatarService';
+import AvatarDisplay from '../components/AvatarDisplay';
+import AvatarUploadDialog from '../components/AvatarUploadDialog';
 import { Pet } from '../types';
-import { COLORS, LAYOUT } from '../styles/theme';
+import { COLORS, LAYOUT, SPACING } from '../styles/theme';
 import { calculateAge, formatDate, validatePetData } from '../helpers';
 import { petsStyles as styles } from '../styles/screenStyles';
 import { useSnackbar } from '../contexts/SnackbarContext';
@@ -22,6 +25,9 @@ export default function PetDetailsScreen() {
   const [loading, setLoading] = useState(true);   // Tracks whether data is still being fetched from the API
   const [editDialogVisible, setEditDialogVisible] = useState(false); // modal popip visibility
   const [error, setError] = useState<string | null>(null);
+  const [avatarUploadDialogVisible, setAvatarUploadDialogVisible] = useState(false);
+  const [avatarId, setAvatarId] = useState<number | undefined>();
+  const [loadingAvatar, setLoadingAvatar] = useState(false);
 
   // For editing pet name, breed,age etc:
   const [editName, setEditName] = useState('');
@@ -53,6 +59,8 @@ export default function PetDetailsScreen() {
       
       if (result.success && result.data) {
         setPet(result.data); // store pet data in state
+        // Fetch avatar for this pet
+        fetchPetAvatar(parseInt(petId));
       } else {
         setError(result.message || 'Lemmikin tietojen lataus epäonnistui');
       }
@@ -61,6 +69,21 @@ export default function PetDetailsScreen() {
       console.error('Error fetching pet details:', error);
     } finally {
       setLoading(false); // mark loading as complete
+    }
+  };
+
+  // Fetch pet avatar
+  const fetchPetAvatar = async (petIdNum: number) => {
+    try {
+      setLoadingAvatar(true);
+      const result = await avatarService.getAvatarByPetId(petIdNum);
+      if (result.success && result.data) {
+        setAvatarId(result.data.id);
+      }
+    } catch (error) {
+      console.error('Error fetching pet avatar:', error);
+    } finally {
+      setLoadingAvatar(false);
     }
   };
 
@@ -80,6 +103,17 @@ export default function PetDetailsScreen() {
       setEditNotes(pet.notes || '');
       setEditDialogVisible(true); // Show the edit dialog modal to the user
     }
+  };
+
+  // Open avatar upload dialog
+  const handleUploadAvatar = () => {
+    setAvatarUploadDialogVisible(true);
+  };
+
+  // Handle successful avatar upload
+  const handleAvatarUploadSuccess = (newAvatarId: number) => {
+    setAvatarId(newAvatarId);
+    showSnackbar('Kuva lisätty onnistuneesti', 'success');
   };
 
   // Save edited pet data
@@ -226,15 +260,14 @@ export default function PetDetailsScreen() {
     <ScrollView style={styles.container}>
       
       {/*HEADER*/}
-      {/* Display pet icon and name at top with colored background */}
+      {/* Display pet avatar and name at top */}
       <View style={styles.headerContainer}>
         
-        {/* Paw icon */}
-        <MaterialCommunityIcons 
-          name="paw" 
-          size={LAYOUT.iconXl} 
-          color={COLORS.onPrimaryContainer}
-          style={styles.headerIcon}
+        {/* Avatar with upload capability */}
+        <AvatarDisplay
+          avatarId={avatarId}
+          size="large"
+          style={{ marginBottom: SPACING.md }}
         />
         
         {/* headline (pet name) */}
@@ -307,16 +340,6 @@ export default function PetDetailsScreen() {
 
       {/* ACTION BUTTONS*/}
       <View style={styles.actionsContainer}>
-        {/* Edit button*/}
-        <Button 
-          mode="outlined" 
-          onPress={handleEditPet}
-          icon="pencil"
-          style={styles.actionButton}
-        >
-          Muokkaa lemmikin tietoja
-        </Button>
-
         {/* Vaccinations - hidden for hoitaja */}
         {pet.role !== 'hoitaja' && (
           <Button 
@@ -351,6 +374,26 @@ export default function PetDetailsScreen() {
           </Button>
         )}
 
+        {/* Edit button*/}
+        <Button 
+          mode="outlined" 
+          onPress={handleEditPet}
+          icon="pencil"
+          style={styles.actionButton}
+        >
+          Muokkaa lemmikin tietoja
+        </Button>
+
+        {/* Edit avatar button*/}
+        <Button 
+          mode="outlined" 
+          onPress={handleUploadAvatar}
+          icon="camera"
+          style={styles.actionButton}
+        >
+          {avatarId ? 'Vaihda kuva' : 'Lisää kuva'}
+        </Button>
+
         {/* Delete button - only for owner */}
         {pet.role === 'omistaja' && (
           <Button 
@@ -359,7 +402,7 @@ export default function PetDetailsScreen() {
             onPress={handleDeletePet}
             disabled={isDeleting}
             icon="delete"
-            style={styles.actionButton}
+            style={[styles.actionButton, styles.deleteButton]}
           >
             Poista lemmikki
           </Button>
@@ -525,6 +568,16 @@ export default function PetDetailsScreen() {
           </Dialog.Actions>
         </Dialog>
       </Portal>
+
+      {/* Avatar Upload Dialog */}
+      <AvatarUploadDialog
+        visible={avatarUploadDialogVisible}
+        onDismiss={() => setAvatarUploadDialogVisible(false)}
+        onSuccess={handleAvatarUploadSuccess}
+        petId={parseInt(petId)}
+        title={avatarId ? 'Vaihda lemmikin kuva' : 'Lisää lemmikin kuva'}
+        description="Valitse kuva puhelimen galleriasta"
+      />
     </ScrollView>
   );
 }
