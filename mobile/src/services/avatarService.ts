@@ -119,8 +119,22 @@ export const avatarService = {
 
   /**
    * Download/Get avatar file URL for display
+   * Embeds auth token in URL so React Native Image component can authenticate
    */
   getAvatarImageUrl(avatarId: number): string {
+    try {
+      // Get token from axios default headers (set by authService)
+      const authHeader = apiClient.defaults.headers.common['Authorization'] as string;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        const token = authHeader.replace('Bearer ', '');
+        // Pass token as query parameter so Image component can authenticate
+        return `${apiClient.defaults.baseURL}/api/avatars/${avatarId}/download?token=${token}`;
+      }
+    } catch (error) {
+      console.warn('Could not get auth token for image URL');
+    }
+    
+    // Fallback without token (might fail if download route requires auth)
     return `${apiClient.defaults.baseURL}/api/avatars/${avatarId}/download`;
   },
 

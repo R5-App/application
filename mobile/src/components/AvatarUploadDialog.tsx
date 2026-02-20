@@ -45,9 +45,9 @@ export default function AvatarUploadDialog({
 
       console.log('[AvatarUpload] Permission granted, launching image library');
 
-      // Pick image - use correct mediaTypes format (array, not enum)
+      // Pick image - use correct mediaTypes format
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'], // Correct format for SDK 54+
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         aspect: [1, 1], // Square for easier circular display
         quality: 0.8,

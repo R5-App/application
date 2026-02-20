@@ -5,11 +5,10 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import petService from '../services/petService';
-import avatarService from '../services/avatarService';
 import AvatarDisplay from '../components/AvatarDisplay';
 import AvatarUploadDialog from '../components/AvatarUploadDialog';
 import { Pet } from '../types';
-import { COLORS, LAYOUT, SPACING } from '../styles/theme';
+import { COLORS, SPACING } from '../styles/theme';
 import { calculateAge, formatDate, validatePetData } from '../helpers';
 import { petsStyles as styles } from '../styles/screenStyles';
 import { useSnackbar } from '../contexts/SnackbarContext';
@@ -27,7 +26,6 @@ export default function PetDetailsScreen() {
   const [error, setError] = useState<string | null>(null);
   const [avatarUploadDialogVisible, setAvatarUploadDialogVisible] = useState(false);
   const [avatarId, setAvatarId] = useState<number | undefined>();
-  const [loadingAvatar, setLoadingAvatar] = useState(false);
 
   // For editing pet name, breed,age etc:
   const [editName, setEditName] = useState('');
@@ -59,8 +57,10 @@ export default function PetDetailsScreen() {
       
       if (result.success && result.data) {
         setPet(result.data); // store pet data in state
-        // Fetch avatar for this pet
-        fetchPetAvatar(parseInt(petId));
+        // Avatar ID comes with the pet data
+        if (result.data.avatar_id) {
+          setAvatarId(result.data.avatar_id);
+        }
       } else {
         setError(result.message || 'Lemmikin tietojen lataus epäonnistui');
       }
@@ -69,21 +69,6 @@ export default function PetDetailsScreen() {
       console.error('Error fetching pet details:', error);
     } finally {
       setLoading(false); // mark loading as complete
-    }
-  };
-
-  // Fetch pet avatar
-  const fetchPetAvatar = async (petIdNum: number) => {
-    try {
-      setLoadingAvatar(true);
-      const result = await avatarService.getAvatarByPetId(petIdNum);
-      if (result.success && result.data) {
-        setAvatarId(result.data.id);
-      }
-    } catch (error) {
-      console.error('Error fetching pet avatar:', error);
-    } finally {
-      setLoadingAvatar(false);
     }
   };
 
@@ -129,18 +114,6 @@ export default function PetDetailsScreen() {
       showSnackbar(validation.message || 'Virhe', 'error');
       return;
     }
-   // ennen kuin const validation jne lisättiin, tässä oli:
-   // if (!editName || !editBreed || !editType || !editSex) {  // Validate that required fields are filled in
-   //   setValidationMessage('Täytä kaikki pakolliset kentät');
-   //   setValidationDialogVisible(true);
-   //   return; // Exit early if validation fails
-   // }
-   // Validate birthdate format (should be YYYY-MM-DD)
-   // if (!/^\d{4}-\d{2}-\d{2}$/.test(editBirthdate)) {
-   //   setValidationMessage('Syntymäpäivä pitää olla muodossa VVVV-KK-PP');
-   //   setValidationDialogVisible(true);
-   //   return;
-   // }
     setIsSaving(true); // Mark save operation as in progress (to disable buttons and show loading)
     
     // Send updated pet data to API (PUT request)
