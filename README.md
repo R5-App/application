@@ -262,12 +262,6 @@ cd mobile
 expo build:ios
 ```
 
-### Web
-```bash
-cd mobile
-expo build:web
-```
-
 ## Permissions
 
 The app requires the following permissions:
