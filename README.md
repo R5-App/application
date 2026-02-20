@@ -45,30 +45,128 @@ MyPet is a full-featured mobile application that helps pet owners manage their p
 - Material Design 3 UI
 - Cross-platform support (iOS, Android, Web)
 
-## Project Structure
+## Repository Architecture
+
+The repository follows a monorepo structure with the mobile application as the primary component.
 
 ```
 application/
-├── mobile/                 # React Native mobile app
-│   ├── src/
-│   │   ├── App.tsx        # Root component
-│   │   ├── assets/        # Images, fonts, icons
-│   │   ├── components/    # Reusable UI components
-│   │   ├── screens/       # Screen components
-│   │   ├── navigation/    # Navigation configuration
-│   │   ├── services/      # API and external services
-│   │   ├── contexts/      # React Context providers
-│   │   ├── hooks/         # Custom React hooks
-│   │   ├── helpers/       # Helper functions
-│   │   ├── utils/         # Utility functions
-│   │   ├── config/        # App configuration
-│   │   ├── types/         # TypeScript definitions
-│   │   └── styles/        # Styling and theme
-│   ├── android/           # Android native code
-│   └── app.json          # Expo configuration
-├── android/               # Android build configuration
-├── package.json          # Root workspace configuration
-└── LICENSE
+├── mobile/                          # React Native mobile application
+├── .vscode/                         # VS Code workspace settings
+├── .git/                            # Git version control
+├── LICENSE                          # MIT License
+└── README.md                        # This file
+```
+
+## Project Structure
+
+```
+mobile/
+├── src/
+│   ├── App.tsx                      # Root application component
+│   │
+│   ├── assets/                      # Static assets
+│   │   ├── fonts/                   # Custom fonts
+│   │   ├── icons/                   # Icon assets
+│   │   └── images/                  # Image assets
+│   │
+│   ├── components/                  # Reusable UI components
+│   │   ├── AvatarDisplay.tsx        # Pet avatar display component
+│   │   ├── AvatarUploadDialog.tsx   # Avatar upload modal
+│   │   ├── RedeemShareCodeDialog.tsx # Share code redemption
+│   │   ├── SharePetDialog.tsx       # Pet sharing dialog
+│   │   ├── SwipeableCard.tsx        # Swipeable card component
+│   │   └── SyncSetupDialog.tsx      # Sync configuration dialog
+│   │
+│   ├── screens/                     # Application screens
+│   │   ├── AddPetScreen.tsx         # Add new pet
+│   │   ├── CalendarScreen.tsx       # Calendar view
+│   │   ├── HealthScreen.tsx         # Health records hub
+│   │   ├── HomeScreen.tsx           # Main dashboard
+│   │   ├── LoginScreen.tsx          # User login
+│   │   ├── MapScreen.tsx            # Map view for walks
+│   │   ├── MedicationsScreen.tsx    # Medication management
+│   │   ├── PetProfileScreen.tsx     # Individual pet profile
+│   │   ├── PetsScreen.tsx           # Pet list view
+│   │   ├── ProfileScreen.tsx        # User profile
+│   │   ├── RegisterScreen.tsx       # User registration
+│   │   ├── SettingsScreen.tsx       # App settings
+│   │   ├── VaccinationsScreen.tsx   # Vaccination records
+│   │   ├── VisitsScreen.tsx         # Veterinary visits
+│   │   ├── WalkDetailScreen.tsx     # Walk tracking detail
+│   │   ├── WalkHistoryScreen.tsx    # Walk history list
+│   │   └── WeightManagementScreen.tsx # Weight tracking
+│   │
+│   ├── navigation/                  # Navigation configuration
+│   │   └── Navigation.tsx           # App navigation structure
+│   │
+│   ├── services/                    # Business logic & API layer
+│   │   ├── api.ts                   # Base API client (Axios)
+│   │   ├── authService.ts           # Authentication service
+│   │   ├── avatarService.ts         # Avatar management
+│   │   ├── calendarService.ts       # Calendar events
+│   │   ├── locationService.ts       # GPS & location tracking
+│   │   ├── medicationsService.ts    # Medication records
+│   │   ├── petService.ts            # Pet data management
+│   │   ├── routeService.ts          # Walk route tracking
+│   │   ├── storageService.ts        # Local storage (AsyncStorage)
+│   │   ├── vaccinationsService.ts   # Vaccination records
+│   │   ├── visitsService.ts         # Veterinary visits
+│   │   └── weightsService.ts        # Weight tracking
+│   │
+│   ├── contexts/                    # React Context providers
+│   │   ├── AuthContext.tsx          # Authentication state
+│   │   ├── SnackbarContext.tsx      # Global notifications
+│   │   ├── WalkContext.tsx          # Walk tracking state
+│   │   └── index.ts                 # Context exports
+│   │
+│   ├── hooks/                       # Custom React hooks
+│   │   └── index.ts                 # Hook exports
+│   │
+│   ├── helpers/                     # Helper functions
+│   │   └── index.ts                 # Helper exports
+│   │
+│   ├── utils/                       # Utility functions
+│   │   └── constants.ts             # App constants
+│   │
+│   ├── config/                      # Application configuration
+│   │   └── index.ts                 # Config settings (API URLs)
+│   │
+│   ├── types/                       # TypeScript type definitions
+│   │   └── index.ts                 # Type exports
+│   │
+│   └── styles/                      # Styling & theming
+│       ├── theme.ts                 # MD3 theme (colors, typography)
+│       ├── authStyles.ts            # Auth screen styles
+│       ├── screenStyles.ts          # Screen-specific styles
+│       ├── index.ts                 # Style exports
+│       └── README.md                # Design system documentation
+│
+├── android/                         # Android native code
+│   ├── app/                         # Android app module
+│   │   ├── src/
+│   │   │   ├── main/
+│   │   │   │   ├── AndroidManifest.xml
+│   │   │   │   ├── java/com/mypet/ # Native Java code
+│   │   │   │   └── res/             # Android resources
+│   │   │   ├── debug/               # Debug build configuration
+│   │   │   └── debugOptimized/      # Optimized debug build
+│   │   ├── build.gradle             # App build configuration
+│   │   └── proguard-rules.pro       # ProGuard rules
+│   ├── gradle/                      # Gradle wrapper
+│   ├── build.gradle                 # Project build configuration
+│   ├── settings.gradle              # Project settings
+│   ├── gradle.properties            # Gradle properties
+│   ├── gradlew                      # Gradle wrapper (Unix)
+│   └── gradlew.bat                  # Gradle wrapper (Windows)
+│
+├── app.json                         # Expo configuration
+├── babel.config.js                  # Babel configuration
+├── eslint.config.mjs                # ESLint configuration
+├── metro.config.js                  # Metro bundler configuration
+├── tsconfig.json                    # TypeScript configuration
+├── package.json                     # Dependencies and scripts
+└── index.ts                         # App entry point
 ```
 
 ## Technology Stack
