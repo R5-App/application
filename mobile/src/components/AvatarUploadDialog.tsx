@@ -29,28 +29,49 @@ export default function AvatarUploadDialog({
   const pickImage = async () => {
     try {
       setError(null);
+      console.log('[AvatarUpload] Request permission to access media library');
 
-      // Request permission
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') {
-        setError('Camera roll permission required');
+      // Request permission - use the async permission request
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      console.log('[AvatarUpload] Permission result:', permissionResult);
+      
+      if (!permissionResult.granted) {
+        const message = permissionResult.status === 'denied' 
+          ? 'Kamera-rulla-oikeus hylätty. Ota käyttöön asetuksista.' 
+          : 'Kamera-rulla-oikeus vaaditaan valokuvien valitsemiseen';
+        setError(message);
         return;
       }
 
-      // Pick image
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [1, 1], // Square for easier circular display
-        quality: 0.8,
-      });
+      console.log('[AvatarUpload] Permission granted, launching image library');
 
-      if (!result.canceled) {
-        setSelectedImage(result.assets[0]);
+      try {
+        // Pick image with proper error handling
+        const result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ['images'],
+          allowsEditing: true,
+          aspect: [1, 1], // Square for easier circular display
+          quality: 0.8,
+          allowsMultiple: false,
+        });
+
+        console.log('[AvatarUpload] Image picker result:', result);
+
+        if (!result.canceled && result.assets && result.assets.length > 0) {
+          console.log('[AvatarUpload] Image selected:', result.assets[0].fileName);
+          setSelectedImage(result.assets[0]);
+        } else {
+          console.log('[AvatarUpload] Image selection canceled by user');
+        }
+      } catch (pickerError: any) {
+        console.error('[AvatarUpload] Image picker launcher error:', pickerError);
+        const errorMsg = pickerError?.message || 'Kuvan valinta epäonnistui';
+        setError(`Virhe: ${errorMsg}`);
       }
-    } catch (err) {
-      setError('Failed to pick image');
-      console.error('Image picker error:', err);
+    } catch (err: any) {
+      const errorMsg = err?.message || 'Valintavirhe';
+      console.error('[AvatarUpload] Permission error:', err);
+      setError(`Virhe: ${errorMsg}`);
     }
   };
 

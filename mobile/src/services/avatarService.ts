@@ -20,10 +20,11 @@ export const avatarService = {
       const formData = new FormData();
       
       // Append file to form data
+      // Note: Expo ImagePicker returns: uri, width, height, type, fileName, fileSize, mimeType
       formData.append('avatar', {
         uri: file.uri,
-        type: file.type || 'image/jpeg',
-        name: file.name || `avatar-${Date.now()}.jpg`,
+        type: file.mimeType || file.type || 'image/jpeg',
+        name: file.fileName || file.name || `avatar-${Date.now()}.jpg`,
       } as any);
 
       // Append pet_id if provided
@@ -89,6 +90,12 @@ export const avatarService = {
 
       return { success: false, message: response.data.message };
     } catch (error: any) {
+      // Check if this is a 404 (no avatar found) - this is a normal state, not an error
+      if (error.response?.status === 404) {
+        // Avatar not found is a valid state, not an error
+        return { success: false, message: 'No avatar found' };
+      }
+      
       const errorMessage = error.response?.data?.message || 'Failed to get pet avatar';
       console.error('Get pet avatar error:', errorMessage);
       return { success: false, message: errorMessage };
@@ -118,8 +125,22 @@ export const avatarService = {
 
   /**
    * Download/Get avatar file URL for display
+   * Embeds auth token in URL so React Native Image component can authenticate
    */
   getAvatarImageUrl(avatarId: number): string {
+    try {
+      // Get token from axios default headers (set by authService)
+      const authHeader = apiClient.defaults.headers.common['Authorization'] as string;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        const token = authHeader.replace('Bearer ', '');
+        // Pass token as query parameter so Image component can authenticate
+        return `${apiClient.defaults.baseURL}/api/avatars/${avatarId}/download?token=${token}`;
+      }
+    } catch (error) {
+      console.warn('Could not get auth token for image URL');
+    }
+    
+    // Fallback without token (might fail if download route requires auth)
     return `${apiClient.defaults.baseURL}/api/avatars/${avatarId}/download`;
   },
 
