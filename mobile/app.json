@@ -29,7 +29,9 @@
         "NSLocationWhenInUseUsageDescription": "MyPet tarvitsee sijaintitietosi lenkkien seurantaan ja reitin tallentamiseen.",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "MyPet tarvitsee sijaintitietosi lenkkien seurantaan myös taustalla.",
         "NSLocationAlwaysUsageDescription": "MyPet tarvitsee sijaintitietosi lenkkien seurantaan myös taustalla.",
-        "NSMotionUsageDescription": "MyPet tarvitsee liikeanturitietoja askeleiden laskemiseen lenkin aikana."
+        "NSMotionUsageDescription": "MyPet tarvitsee liikeanturitietoja askeleiden laskemiseen lenkin aikana.",
+        "NSPhotoLibraryUsageDescription": "MyPet tarvitsee pääsyn valokuviin lemmikin kuvan valitsemiseen.",
+        "NSCameraRollAddOnlyAccessPrivacy": "MyPet tarvitsee pääsyn valokuviin lemmikin kuvan valitsemiseen."
       }
     },
     "plugins": [

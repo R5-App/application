@@ -100,6 +100,27 @@ export const petsStyles = StyleSheet.create({
   card: {
     ...COMMON_STYLES.card,
   },
+
+  cardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.md,
+  },
+
+  cardAvatarContainer: {
+    marginRight: SPACING.lg,
+  },
+
+  cardTextContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  cardShareButton: {
+    marginLeft: SPACING.sm,
+  },
   
   petNameRow: {
     flexDirection: 'row',
@@ -140,11 +161,9 @@ export const petsStyles = StyleSheet.create({
   },
 
    headerContainer: {
-    backgroundColor: COLORS.primaryContainer,
     paddingVertical: SPACING.xl,
     alignItems: 'center',
-    borderBottomLeftRadius: BORDER_RADIUS.large,
-    borderBottomRightRadius: BORDER_RADIUS.large,
+    backgroundColor: COLORS.background,
   },
   
   headerIcon: {
@@ -153,7 +172,7 @@ export const petsStyles = StyleSheet.create({
   
   headerTitle: {
     ...TYPOGRAPHY.headlineMedium,
-    color: COLORS.onPrimaryContainer,
+    color: COLORS.onSurface,
   },
   
   // === Pet Sharing Styles ===
@@ -293,6 +312,10 @@ export const petsStyles = StyleSheet.create({
   
   actionButton: {
     marginBottom: SPACING.sm,
+  },
+
+  deleteButton: {
+    marginTop: SPACING.lg,
   },
   
   editInput: {
@@ -1991,5 +2014,70 @@ export const calendarStyles = StyleSheet.create({
   addEventButton: {
     borderRadius: 12,
     elevation: 0,
+  },
+});
+
+// ============================================
+// AVATAR STYLES
+// ============================================
+
+/**
+ * Avatar size configurations
+ * Define dimensions for small, medium, and large avatar containers
+ */
+export const AVATAR_SIZES = {
+  small: { container: 56, icon: 28 },
+  medium: { container: 80, icon: 40 },
+  large: { container: 120, icon: 60 },
+};
+
+export const avatarStyles = StyleSheet.create({
+  // Avatar Display Component
+  container: {
+    overflow: 'hidden',
+    backgroundColor: COLORS.surface,
+  },
+  
+  image: {
+    resizeMode: 'cover',
+  },
+  
+  placeholder: {
+    backgroundColor: COLORS.surfaceVariant,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: COLORS.outlineVariant,
+  },
+
+  // Avatar Upload Dialog
+  description: {
+    marginBottom: SPACING.md,
+  },
+  
+  previewContainer: {
+    alignItems: 'center',
+    marginVertical: SPACING.lg,
+  },
+  
+  preview: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    marginBottom: SPACING.sm,
+  },
+  
+  fileName: {
+    color: COLORS.onSurfaceVariant,
+  },
+  
+  error: {
+    color: COLORS.error,
+    marginTop: SPACING.md,
+  },
+  
+  actions: {
+    justifyContent: 'space-between',
+    paddingHorizontal: SPACING.lg,
   },
 });

@@ -11,8 +11,17 @@ export interface Pet {
 //  age: number;
   weight?: number;
   image?: string;
+  avatar_id?: number; // Avatar/image ID from database
   notes?: string;
   role?: 'omistaja' | 'hoitaja' | 'lääkäri'; // User's role for this pet
+}
+
+export interface Avatar {
+  id: number;
+  user_id: string;
+  pet_id: number | null;
+  filename: string;
+  created_at: string;
 }
 
 export interface User {
