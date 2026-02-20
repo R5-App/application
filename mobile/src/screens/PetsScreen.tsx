@@ -64,6 +64,7 @@ export default function PetsScreen() {
             if (avatarResult.success && avatarResult.data) {
               avatars[pet.id] = avatarResult.data.id;
             }
+            // If avatar not found, just omit it - that's a valid state
           } catch (err) {
             // Continue if avatar fetch fails for a single pet
             console.error(`Failed to fetch avatar for pet ${pet.id}:`, err);

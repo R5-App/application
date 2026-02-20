@@ -5,6 +5,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import petService from '../services/petService';
+import avatarService from '../services/avatarService';
 import AvatarDisplay from '../components/AvatarDisplay';
 import AvatarUploadDialog from '../components/AvatarUploadDialog';
 import { Pet } from '../types';
@@ -57,9 +58,17 @@ export default function PetDetailsScreen() {
       
       if (result.success && result.data) {
         setPet(result.data); // store pet data in state
-        // Avatar ID comes with the pet data
-        if (result.data.avatar_id) {
-          setAvatarId(result.data.avatar_id);
+        
+        // Fetch avatar separately (similar to PetsScreen)
+        try {
+          const avatarResult = await avatarService.getAvatarByPetId(parseInt(petId));
+          if (avatarResult.success && avatarResult.data) {
+            setAvatarId(avatarResult.data.id);
+          }
+          // If avatar not found, that's OK - we just don't display it
+        } catch (err) {
+          console.error('Error fetching pet avatar:', err);
+          // Continue without avatar - it's not a critical error
         }
       } else {
         setError(result.message || 'Lemmikin tietojen lataus epäonnistui');

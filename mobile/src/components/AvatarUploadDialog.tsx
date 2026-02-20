@@ -45,25 +45,32 @@ export default function AvatarUploadDialog({
 
       console.log('[AvatarUpload] Permission granted, launching image library');
 
-      // Pick image - use correct mediaTypes format
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [1, 1], // Square for easier circular display
-        quality: 0.8,
-      });
+      try {
+        // Pick image with proper error handling
+        const result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ['images'],
+          allowsEditing: true,
+          aspect: [1, 1], // Square for easier circular display
+          quality: 0.8,
+          allowsMultiple: false,
+        });
 
-      console.log('[AvatarUpload] Image picker result:', result);
+        console.log('[AvatarUpload] Image picker result:', result);
 
-      if (!result.canceled && result.assets && result.assets.length > 0) {
-        console.log('[AvatarUpload] Image selected:', result.assets[0].fileName);
-        setSelectedImage(result.assets[0]);
-      } else {
-        console.log('[AvatarUpload] Image selection canceled by user');
+        if (!result.canceled && result.assets && result.assets.length > 0) {
+          console.log('[AvatarUpload] Image selected:', result.assets[0].fileName);
+          setSelectedImage(result.assets[0]);
+        } else {
+          console.log('[AvatarUpload] Image selection canceled by user');
+        }
+      } catch (pickerError: any) {
+        console.error('[AvatarUpload] Image picker launcher error:', pickerError);
+        const errorMsg = pickerError?.message || 'Kuvan valinta epäonnistui';
+        setError(`Virhe: ${errorMsg}`);
       }
     } catch (err: any) {
       const errorMsg = err?.message || 'Valintavirhe';
-      console.error('[AvatarUpload] Image picker error:', err);
+      console.error('[AvatarUpload] Permission error:', err);
       setError(`Virhe: ${errorMsg}`);
     }
   };

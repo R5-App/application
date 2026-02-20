@@ -90,6 +90,12 @@ export const avatarService = {
 
       return { success: false, message: response.data.message };
     } catch (error: any) {
+      // Check if this is a 404 (no avatar found) - this is a normal state, not an error
+      if (error.response?.status === 404) {
+        // Avatar not found is a valid state, not an error
+        return { success: false, message: 'No avatar found' };
+      }
+      
       const errorMessage = error.response?.data?.message || 'Failed to get pet avatar';
       console.error('Get pet avatar error:', errorMessage);
       return { success: false, message: errorMessage };
