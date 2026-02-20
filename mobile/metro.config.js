@@ -1,47 +1,32 @@
 const { getDefaultConfig } = require('expo/metro-config');
 const path = require('path');
 
-const config = getDefaultConfig(__dirname);
+const projectRoot = __dirname;
+const workspaceRoot = path.resolve(projectRoot, '..');
 
-// Ignore build directories and kotlin compilation artifacts
-config.resolver.blockList = [
-  // Build directories
-  /.*\/build\/.*/,
-  /.*\/\.gradle\/.*/,
-  
-  // Kotlin build artifacts
-  /.*\/classes\/kotlin\/.*/,
-  
-  // Gradle plugin build artifacts
-  /.*gradle-plugin.*\/build\/.*/,
-  
-  // Other build artifacts
-  /.*\/intermediates\/.*/,
-  /.*\/outputs\/.*/,
-  
-  // Common ignore patterns
-  /.*\/__tests__\/.*/,
-];
+const config = getDefaultConfig(projectRoot);
 
-// Watch folders configuration
-config.watchFolders = [
-  path.resolve(__dirname),
-];
-
-// Ignore patterns for the watcher
-config.watcher = {
-  ...config.watcher,
-  additionalExts: ['cjs'],
-  watchman: {
-    ...config.watcher?.watchman,
-    ignore_dirs: [
-      'build',
-      '.gradle',
-      'intermediates',
-      'outputs',
-      'classes',
-    ],
-  },
+// Override unstable_serverRoot to projectRoot (mobile/) so Metro resolves
+// the entry file (./index.ts) from the correct directory, not from the
+// npm workspace root (application/) which is auto-detected via package.json "workspaces".
+config.server = {
+  ...config.server,
+  unstable_serverRoot: projectRoot,
 };
+
+// Varmistetaan, että Metro etsii moduuleja molemmista paikoista
+config.watchFolders = [projectRoot, workspaceRoot];
+config.resolver.nodeModulesPaths = [
+  path.resolve(projectRoot, 'node_modules'),
+  path.resolve(workspaceRoot, 'node_modules'),
+];
+
+// Lisätään selkeä polunmääritys aloitustiedostolle
+config.transformer.getTransformOptions = async () => ({
+  transform: {
+    experimentalImportSupport: false,
+    inlineRequires: true,
+  },
+});
 
 module.exports = config;

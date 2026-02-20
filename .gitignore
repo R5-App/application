@@ -151,3 +151,4 @@ mobile/ios/
 *.cer
 *.certSigningRequest
 *-base64.txt
+package-lock.json
