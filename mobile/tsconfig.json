@@ -58,5 +58,5 @@
   "exclude": [
     "node_modules"
   ],
-  "extends": "expo/tsconfig.base"
+  "extends": ".expo/tsconfig.base"
 }
