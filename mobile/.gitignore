@@ -12,3 +12,4 @@ build/
 # Environment variables
 .env.local
 .env.*.local
+*.keystore
